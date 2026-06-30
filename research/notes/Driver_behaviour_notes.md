@@ -1,24 +1,25 @@
-```md
 # Research Notes 01
 
 ## Paper Information
 
-- **Title:** Driver Behavior Classification: A Systematic Literature Review
-- **Authors:** Soukaina Bouhsissin, Nawal Sael, Faouzia Benabbou
-- **Year:** 2023
-- **Paper Type:** Systematic Literature Review
+| Field | Details |
+|-------|---------|
+| **Title** | Driver Behavior Classification: A Systematic Literature Review |
+| **Authors** | Soukaina Bouhsissin, Nawal Sael, Faouzia Benabbou |
+| **Year** | 2023 |
+| **Paper Type** | Systematic Literature Review |
 
 ---
 
-# 1. Research Problem
+## 1. Research Problem
 
 Road traffic accidents remain one of the leading causes of fatalities worldwide. Unsafe driving behaviors such as aggressive acceleration, harsh braking, lane deviation, and driver fatigue contribute significantly to these accidents. Numerous intelligent transportation systems have been proposed to automatically classify driver behavior using different sensors and machine learning techniques.
 
 ---
 
-# 2. Research Objective
+## 2. Research Objective
 
-This survey aims to analyze and compare existing driver behavior classification research by studying:
+The survey analyzes and compares existing driver behavior classification research by studying:
 
 - Common data sources
 - Sensors used
@@ -26,11 +27,12 @@ This survey aims to analyze and compare existing driver behavior classification 
 - Machine Learning techniques
 - Deep Learning techniques
 - Driver behavior categories
-- Current research trends and limitations
+- Current research trends
+- Research limitations
 
 ---
 
-# 3. Driver Behaviors Studied
+## 3. Driver Behaviors Studied
 
 The literature focuses on classifying:
 
@@ -45,17 +47,17 @@ The literature focuses on classifying:
 
 ---
 
-# 4. Data Sources & Sensors
+## 4. Data Sources & Sensors
 
-## Common Data Sources
+### Common Data Sources
 
 | Source | Approximate Usage |
-|----------|------------------|
+| :--- | :---: |
 | Driving Simulator | ~25% |
 | Camera | ~17% |
 | OBD-II Scanner | ~2% |
 
-## Frequently Used Sensors
+### Frequently Used Sensors
 
 - GPS
 - Accelerometer
@@ -67,7 +69,7 @@ The literature focuses on classifying:
 
 ---
 
-# 5. Common Vehicle Features
+## 5. Common Vehicle Features
 
 The most frequently used features include:
 
@@ -79,7 +81,7 @@ The most frequently used features include:
 
 ---
 
-# 6. Popular Public Datasets
+## 6. Popular Public Datasets
 
 - SHRP2
 - UAH DriveSet
@@ -88,9 +90,9 @@ These datasets are commonly used for training and evaluating driver behavior cla
 
 ---
 
-# 7. Machine Learning Algorithms
+## 7. Machine Learning Algorithms
 
-Frequently used algorithms include:
+Frequently used algorithms:
 
 - Support Vector Machine (SVM)
 - Random Forest
@@ -99,27 +101,27 @@ Frequently used algorithms include:
 - Logistic Regression
 - K-Means Clustering
 
-Machine Learning methods accounted for approximately **60%** of the reviewed studies.
+> Machine Learning methods accounted for approximately **60%** of the reviewed studies.
 
 ---
 
-# 8. Deep Learning Algorithms
+## 8. Deep Learning Algorithms
 
-Frequently used architectures include:
+Frequently used architectures:
 
 - LSTM
 - GRU
 - CNN
 - RNN
 
-Deep Learning methods accounted for approximately **33%** of the reviewed studies.
+> Deep Learning methods accounted for approximately **33%** of the reviewed studies.
 
 ---
 
-# 9. Representative Results
+## 9. Representative Results
 
 | Algorithm | Application | Performance |
-|------------|-------------|-------------|
+| :--- | :--- | :---: |
 | Random Forest | Driver Behavior Classification | ~96% Accuracy |
 | GRU | Aggressive Driving Recognition | ~95% Accuracy |
 | Bayesian Classification | Smartphone Driver Recognition | ~93.3% Accuracy |
@@ -128,32 +130,34 @@ Deep Learning methods accounted for approximately **33%** of the reviewed studie
 
 ---
 
-# 10. Key Observations
+## 10. Key Observations
 
 - Vehicle speed, acceleration, and deceleration are the most commonly used features.
-- Smartphone sensors are widely adopted because they are inexpensive and easy to deploy.
-- Driving simulators remain the most popular data source for academic research.
+- Smartphone sensors are inexpensive and widely adopted.
+- Driving simulators remain the most popular research data source.
 - OBD-II-based research is comparatively limited.
-- SVM is the most commonly used Machine Learning algorithm.
-- GRU and LSTM are widely used for sequential driving behavior analysis.
+- SVM is the most frequently used machine learning algorithm.
+- GRU and LSTM are commonly used for sequential driving behavior analysis.
 
 ---
 
-# 11. Limitations Mentioned by the Authors
+## 11. Limitations
 
-- Only papers published between 2015–2022 were reviewed.
-- Only Scopus-indexed journals and conferences were considered.
-- The survey primarily focuses on driver behavior classification rather than broader vehicle diagnostics or predictive maintenance.
+The authors mention the following limitations:
+
+- Only papers published between **2015–2022** were reviewed.
+- Only **Scopus-indexed** journals and conferences were included.
+- The survey focuses mainly on driver behavior classification rather than vehicle diagnostics or predictive maintenance.
 
 ---
 
-# 12. Insights for DriveVitals
+## 12. Insights for DriveVitals
 
-This paper provides several important insights for DriveVitals:
+### System Design
 
-## System Design
+DriveVitals should combine multiple capabilities rather than focusing only on driver behavior.
 
-DriveVitals should combine multiple capabilities instead of focusing solely on driver behavior:
+Modules should include:
 
 - Driver Behavior Analysis
 - Vehicle Health Monitoring
@@ -162,9 +166,7 @@ DriveVitals should combine multiple capabilities instead of focusing solely on d
 - Real-Time Dashboard
 - Fleet Analytics
 
----
-
-## Telemetry Selection
+### Telemetry Selection
 
 Besides speed and acceleration, DriveVitals should collect ECU telemetry such as:
 
@@ -176,15 +178,13 @@ Besides speed and acceleration, DriveVitals should collect ECU telemetry such as
 - Coolant Temperature
 - Battery Voltage
 - Oxygen Sensor Values
-- Air-Fuel Ratio
+- Air-Fuel Ratio (AFR)
 
 These parameters can improve both driver behavior analysis and vehicle health monitoring.
 
----
+### Future AI Models
 
-## Future AI Models
-
-Potential algorithms for future implementation include:
+Potential machine learning models:
 
 - Random Forest
 - Support Vector Machine (SVM)
@@ -193,31 +193,33 @@ Potential algorithms for future implementation include:
 
 ---
 
-# 13. Research Gaps
+## 13. Research Gaps
 
-Potential research gaps identified from this survey:
+Potential research opportunities identified from this survey:
 
-- Limited research utilizing OBD-II telemetry.
+- Limited research using OBD-II telemetry.
 - Most studies focus only on driver behavior.
 - Few systems integrate vehicle diagnostics with driver analytics.
 - Limited work on combining fleet monitoring with individual vehicle monitoring.
-- Predictive maintenance is less explored in conjunction with driver behavior analysis.
+- Predictive maintenance remains relatively unexplored alongside driver behavior analysis.
 
 ---
 
-# 14. Action Items for DriveVitals
+## 14. Action Items for DriveVitals
 
 Based on this paper:
 
-- Study OBD-II architecture and supported PIDs.
-- Identify important ECU parameters for behavior analysis.
-- Design rule-based driver scoring logic.
+- Study OBD-II architecture.
+- Study supported OBD-II PIDs.
+- Identify the most useful ECU parameters.
+- Design rule-based driver scoring.
 - Build a real-time telemetry dashboard.
-- Investigate AI models after collecting sufficient telemetry data.
+- Investigate AI models after collecting sufficient telemetry.
 
 ---
 
-# 15. Personal Reflection
+## 15. Personal Reflection
 
-This paper provided a comprehensive overview of the driver behavior classification domain. It highlighted the dominant sensors, datasets, algorithms, and current research trends. One particularly interesting observation is the relatively small number of OBD-II-based studies, suggesting an opportunity to explore richer ECU telemetry. The findings reinforce the decision to develop DriveVitals as a modular platform combining driver behavior analysis, vehicle health monitoring, fuel efficiency estimation, and future AI-based predictive maintenance.
-```
+This paper provided a comprehensive overview of the driver behavior classification domain. It highlighted the dominant sensors, datasets, machine learning algorithms, and current research trends.
+
+One particularly interesting observation is the relatively small number of studies utilizing OBD-II telemetry. This presents an opportunity for DriveVitals to contribute by integrating real-time ECU telemetry with driver behavior analysis, vehicle health monitoring, and future predictive maintenance capabilities.

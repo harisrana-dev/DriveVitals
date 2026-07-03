@@ -1,27 +1,17 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI
 from api.telemetry_routes import router as telemetry_router
+from websocket.ws_server import websocket_endpoint, processor_worker
+import asyncio
 
 app = FastAPI()
+
+# HTTP routes
 app.include_router(telemetry_router, prefix="/api")
 
+# WebSocket route
+app.websocket("/ws/telemetry")(websocket_endpoint)
 
-# store active connections (for future dashboard use)
-active_connections = []
 
-@app.websocket("/ws/telemetry")
-async def telemetry_ws(websocket: WebSocket):
-    await websocket.accept()
-    active_connections.append(websocket)
-
-    try:
-        while True:
-            data = await websocket.receive_json()
-            print("📡 LIVE TELEMETRY:", data)
-
-            # optional: broadcast to all connected dashboards later
-            for conn in active_connections:
-                await conn.send_json(data)
-
-    except WebSocketDisconnect:
-        print("❌ Client disconnected")
-        active_connections.remove(websocket)
+@app.on_event("startup")
+async def startup():
+    asyncio.create_task(processor_worker())

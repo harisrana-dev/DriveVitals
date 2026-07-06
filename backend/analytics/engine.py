@@ -1,12 +1,18 @@
 """
-DriveVitals Analytics Engine (SAFE VERSION)
+DriveVitals Analytics Engine
 
-This version prevents startup crashes by making
-all analyzers optional.
+Coordinates all analytics modules and updates the
+Vehicle State Manager with the latest live state.
+
+The Analytics Engine acts as the central orchestration
+layer between telemetry processing and live dashboard state.
 """
 
 from telemetry.models import TelemetryPacket
 from analytics.rule_engine import RuleEngine
+
+# Global live state manager
+from state.state_manager import state_manager
 
 
 class AnalyticsEngine:
@@ -15,13 +21,19 @@ class AnalyticsEngine:
 
         self.rule_engine = RuleEngine()
 
-        # safe optional loading
+        # Shared live vehicle state
+        self.state_manager = state_manager
+
+        # Optional analyzers
         self.driver_behaviour = None
         self.vehicle_health = None
         self.fuel_efficiency = None
         self.trip_performance = None
 
-        # try loading analyzers safely
+        # -----------------------------
+        # Safe loading of analyzers
+        # -----------------------------
+
         try:
             from analytics.driver_behaviour import DriverBehaviourAnalyzer
             self.driver_behaviour = DriverBehaviourAnalyzer()
@@ -46,26 +58,62 @@ class AnalyticsEngine:
         except Exception:
             print("⚠️ trip_performance not loaded")
 
+    # --------------------------------------------------
+
     def process(self, packet: TelemetryPacket):
 
+        # Evaluate engineering rules
         rule_results = self.rule_engine.evaluate(packet)
 
-        results = {
+        analytics_results = {
             "vehicle_id": packet.vehicle_id,
             "timestamp": packet.timestamp,
             "rules": rule_results,
         }
 
+        # Driver Behaviour
         if self.driver_behaviour:
-            results["driver_behaviour"] = self.driver_behaviour.analyze(packet, rule_results)
+            analytics_results["driver_behaviour"] = (
+                self.driver_behaviour.analyze(
+                    packet,
+                    rule_results
+                )
+            )
 
+        # Vehicle Health
         if self.vehicle_health:
-            results["vehicle_health"] = self.vehicle_health.analyze(packet, rule_results)
+            analytics_results["vehicle_health"] = (
+                self.vehicle_health.analyze(
+                    packet,
+                    rule_results
+                )
+            )
 
+        # Fuel Efficiency
         if self.fuel_efficiency:
-            results["fuel_efficiency"] = self.fuel_efficiency.analyze(packet, rule_results)
+            analytics_results["fuel_efficiency"] = (
+                self.fuel_efficiency.analyze(
+                    packet,
+                    rule_results
+                )
+            )
 
+        # Trip Performance
         if self.trip_performance:
-            results["trip_performance"] = self.trip_performance.analyze(packet, rule_results)
+            analytics_results["trip_performance"] = (
+                self.trip_performance.analyze(
+                    packet,
+                    rule_results
+                )
+            )
 
-        return results
+        # ---------------------------------------
+        # Update the live Vehicle State Manager
+        # ---------------------------------------
+
+        self.state_manager.update_state(
+            packet,
+            analytics_results
+        )
+
+        return analytics_results

@@ -9,9 +9,10 @@ VehicleState object which is continuously updated as new
 telemetry is processed.
 """
 
-from datetime import datetime
+from datetime import datetime,timezone
 
 from state.vehicle_state import VehicleState
+
 
 
 class VehicleStateManager:

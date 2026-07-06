@@ -1,15 +1,24 @@
 from fastapi import FastAPI
 from api.telemetry_routes import router as telemetry_router
 from websocket.ws_server import websocket_endpoint, processor_worker
+from api.state_routes import router as state_router
 import asyncio
 
-app = FastAPI()
+app = FastAPI(
+    title="DriveVitals Backend TEST"
+)
 
+print("✅ MY MAIN.PY IS LOADED")
 # HTTP routes
 app.include_router(telemetry_router, prefix="/api")
 
 # WebSocket route
 app.websocket("/ws/telemetry")(websocket_endpoint)
+
+# State API route
+app.include_router(state_router, prefix="/api")
+
+print(app.routes)
 
 
 @app.on_event("startup")

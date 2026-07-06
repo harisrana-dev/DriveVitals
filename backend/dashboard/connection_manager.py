@@ -62,14 +62,13 @@ class DashboardConnectionManager:
         if not self.active_connections:
             return
 
-        message = json.dumps(data, default=str)
 
         disconnected = []
 
         for websocket in self.active_connections:
 
             try:
-                await websocket.send_text(message)
+                await websocket.send_json(data)
 
             except Exception:
                 disconnected.append(websocket)

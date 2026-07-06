@@ -9,8 +9,10 @@ VehicleState object which is continuously updated as new
 telemetry is processed.
 """
 
+import asyncio
 from datetime import datetime,timezone
-
+from dataclasses import asdict
+from dashboard.connection_manager import dashboard_manager
 from state.vehicle_state import VehicleState
 
 
@@ -67,7 +69,17 @@ class VehicleStateManager:
             "rules", []
         )
 
-        state.last_updated = datetime.now(timezone.utc)
+        # Broadcast updated vehicle state
+        try:
+           asyncio.create_task(
+               dashboard_manager.broadcast({
+                    "type": "vehicle_update",
+                    "vehicle": asdict(state)
+                })
+            )
+        except RuntimeError:
+            # No running event loop (mainly during testing)
+            pass
 
     # --------------------------------------------------
 

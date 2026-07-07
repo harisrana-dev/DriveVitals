@@ -10,20 +10,22 @@ telemetry is processed.
 """
 
 import asyncio
-from datetime import datetime,timezone
+from datetime import datetime, timezone
 from dataclasses import asdict
+from fastapi.encoders import jsonable_encoder
 from dashboard.connection_manager import dashboard_manager
 from state.vehicle_state import VehicleState
 
 
-
 class VehicleStateManager:
+    """
+    Maintains the latest live state of every connected vehicle.
+    """
 
     def __init__(self):
 
-        # Dictionary of all live vehicles
-        # Key = vehicle_id
-        # Value = VehicleState
+        # Key   -> vehicle_id
+        # Value -> VehicleState
 
         self.states: dict[str, VehicleState] = {}
 
@@ -32,23 +34,32 @@ class VehicleStateManager:
     def update_state(
         self,
         packet,
-        analytics_results
-    ):
+        analytics_results,
+    ) -> VehicleState:
+        """
+        Update the live state for a vehicle and broadcast
+        the latest state to all connected dashboard clients.
+        """
 
         vehicle_id = packet.vehicle_id
 
         if vehicle_id not in self.states:
-
             self.states[vehicle_id] = VehicleState(
                 vehicle_id=vehicle_id
             )
 
         state = self.states[vehicle_id]
 
+        # -----------------------------
         # Latest telemetry
+        # -----------------------------
+
         state.telemetry = packet.model_dump()
 
+        # -----------------------------
         # Analytics
+        # -----------------------------
+
         state.driver_behaviour = analytics_results.get(
             "driver_behaviour", {}
         )
@@ -69,42 +80,73 @@ class VehicleStateManager:
             "rules", []
         )
 
-        # Broadcast updated vehicle state
+        # -----------------------------
+        # Timestamp
+        # -----------------------------
+
+        state.last_updated = datetime.now(timezone.utc)
+        
+        print("STATE MANAGER:", id(self))
+        print("DASHBOARD MANAGER:", id(dashboard_manager))
+        print("ACTIVE:", len(dashboard_manager.active_connections))
+        # -----------------------------
+        # Broadcast updated state
+        # -----------------------------
+        print(asdict(state))
         try:
-           asyncio.create_task(
-               dashboard_manager.broadcast({
-                    "type": "vehicle_update",
-                    "vehicle": asdict(state)
-                })
+            asyncio.create_task(
+                
+                dashboard_manager.broadcast(
+                    {
+                        "type": "vehicle_update",
+                        "vehicle": jsonable_encoder(state),
+                    }
+                )
             )
+
         except RuntimeError:
-            # No running event loop (mainly during testing)
+            # Happens only when no event loop exists
+            # (typically during isolated testing).
             pass
+
+        return state
 
     # --------------------------------------------------
 
-    def get_vehicle(self, vehicle_id):
+    def get_vehicle(
+        self,
+        vehicle_id: str,
+    ) -> VehicleState | None:
 
         return self.states.get(vehicle_id)
 
     # --------------------------------------------------
 
-    def get_all_vehicles(self):
+    def get_all_vehicles(
+        self,
+    ) -> dict[str, VehicleState]:
+
         return dict(self.states)
 
     # --------------------------------------------------
 
-    def remove_vehicle(self, vehicle_id):
+    def remove_vehicle(
+        self,
+        vehicle_id: str,
+    ):
 
         if vehicle_id in self.states:
             del self.states[vehicle_id]
 
     # --------------------------------------------------
 
-    def vehicle_count(self):
+    def vehicle_count(self) -> int:
 
         return len(self.states)
-    
-    # Global singleton instance
+
+
+# ------------------------------------------------------
+# Global singleton
+# ------------------------------------------------------
 
 state_manager = VehicleStateManager()

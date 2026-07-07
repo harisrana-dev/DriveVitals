@@ -13,7 +13,6 @@ It does NOT perform analytics or telemetry processing.
 It only manages dashboard connections.
 """
 
-import json
 from fastapi import WebSocket
 
 
@@ -33,10 +32,6 @@ class DashboardConnectionManager:
 
         self.active_connections.append(websocket)
 
-        print(
-            f"🖥 Dashboard connected "
-            f"({len(self.active_connections)} clients)"
-        )
 
     # --------------------------------------------------
 
@@ -56,24 +51,34 @@ class DashboardConnectionManager:
 
     async def broadcast(self, data):
         """
-        Broadcast a JSON message to every dashboard.
+        Broadcast a vehicle update to every connected dashboard.
         """
+
 
         if not self.active_connections:
             return
-
 
         disconnected = []
 
         for websocket in self.active_connections:
 
             try:
+                vehicle = data.get("vehicle", {})
+                vehicle_id = vehicle.get("vehicle_id", "UNKNOWN")
+
+                print(f"➡️ Sending update for {vehicle_id}")
+
                 await websocket.send_json(data)
 
-            except Exception:
+                print(f"✅ Successfully sent {vehicle_id}")
+
+            except Exception as e:
+
+                print("❌ Broadcast Exception:")
+                print(repr(e))
+
                 disconnected.append(websocket)
 
-        # Clean up dead connections
         for websocket in disconnected:
             self.disconnect(websocket)
 

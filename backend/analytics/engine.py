@@ -113,7 +113,7 @@ class AnalyticsEngine:
 
         self.state_manager.update_state(
             packet,
-            analytics_results
+             analytics_results
         )
 
         return analytics_results

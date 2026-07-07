@@ -1,4 +1,6 @@
 import useDashboardSocket from "../hooks/useDashboardSocket";
+import FleetOverview from "../components/FleetOverview";
+import VehicleCard from "../components/VehicleCard";
 
 export default function Dashboard() {
   const { fleet, connected } = useDashboardSocket(
@@ -21,28 +23,15 @@ export default function Dashboard() {
           {connected ? "LIVE" : "OFFLINE"}
         </div>
       </header>
+      <FleetOverview fleet={fleet}/>
 
       <div style={styles.grid}>
-        {Object.values(fleet).map((v) => (
-          <div key={v.vehicle_id} style={styles.card}>
-            <h3>{v.vehicle_id}</h3>
-
-            <p>🚗 Speed: {v?.telemetry?.speed_kmh?.toFixed?.(1) ?? 0} km/h</p>
-            <p>⚙️ RPM: {v?.telemetry?.rpm ?? 0}</p>
-            <p>🧠 Mode: {v?.telemetry?.phase ?? "N/A"}</p>
-            <p>⛽ Fuel Rate: {v?.telemetry?.fuel_rate_lph ?? 0}</p>
-            <p
-              style={{
-                color:
-                   v?.vehicle_health?.health === "healthy"
-                     ? "#00c853"
-                     : "#ff5252",
-                }}
-            >
-                {v?.vehicle_health?.health ?? "unknown"}
-            </p>
-          </div>
-        ))}
+          {Object.values(fleet).map((v) => (
+             <VehicleCard
+                key={v.vehicle_id}
+                vehicle={v}
+             />
+           ))}
       </div>
     </div>
   );
@@ -67,10 +56,5 @@ const styles = {
     gap: "16px",
     marginTop: "20px"
   },
-  card: {
-    background: "#121821",
-    padding: "16px",
-    borderRadius: "12px",
-    border: "1px solid #1f2a36"
-  }
+
 };

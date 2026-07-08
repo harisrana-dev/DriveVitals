@@ -1,0 +1,63 @@
+/*
+  DriveVitals — Enterprise Fleet Intelligence Platform
+  Design tokens: colors, spacing, radii, layout constants.
+  Do not introduce ad-hoc values outside this system.
+*/
+
+:root {
+  /* Backgrounds */
+  --color-bg-primary: #0F172A;
+  --color-bg-secondary: #111827;
+  --color-bg-card: #1E293B;
+  --color-bg-navbar: #0B1220;
+
+  /* Text */
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+
+  /* Status */
+  --color-status-healthy: #22C55E;
+  --color-status-warning: #F59E0B;
+  --color-status-critical: #EF4444;
+  --color-status-info: #3B82F6;
+  --color-status-maintenance: #A855F7;
+  --color-status-offline: #6B7280;
+  --color-status-live: #00D084;
+
+  /* Borders / dividers */
+  --color-border: #243044;
+  --color-border-subtle: #1B2536;
+
+  /* Spacing system — never introduce values outside this scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Layout */
+  --layout-max-width: 1920px;
+  --layout-padding-x: 24px;
+  --layout-gap: 24px;
+  --section-margin: 32px;
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 72px;
+  --navbar-height: 64px;
+
+  /* Radii */
+  --radius-card: 12px;
+  --radius-button: 10px;
+  --radius-pill: 999px;
+
+  /* Typography sizes */
+  --font-size-dashboard-title: 36px;
+  --font-size-section-heading: 24px;
+  --font-size-card-title: 16px;
+  --font-size-kpi-value: 32px;
+  --font-size-table: 14px;
+  --font-size-caption: 12px;
+}

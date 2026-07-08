@@ -1,0 +1,37 @@
+.text-dashboard-title {
+  font-size: var(--font-size-dashboard-title);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+}
+
+.text-section-heading {
+  font-size: var(--font-size-section-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+}
+
+.text-card-title {
+  font-size: var(--font-size-card-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.text-kpi-value {
+  font-size: var(--font-size-kpi-value);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.text-table {
+  font-size: var(--font-size-table);
+  color: var(--color-text-secondary);
+}
+
+.text-caption {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+}

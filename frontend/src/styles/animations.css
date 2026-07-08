@@ -1,0 +1,15 @@
+/*
+  Sprint 1 uses no motion beyond subtle, functional transitions
+  (hover/focus states). No page animations, no charts, no motion effects.
+*/
+
+.transition-subtle {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}

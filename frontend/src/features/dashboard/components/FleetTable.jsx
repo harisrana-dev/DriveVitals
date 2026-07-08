@@ -1,13 +1,14 @@
 import { Search, SlidersHorizontal, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import Card from '../../../components/common/Card/Card';
-import { fleetTableData, statusColorMap, statusLabelMap } from '../dashboardData';
+import { statusColorMap, statusLabelMap } from '../dashboardData';
+import { useDashboard } from '../../../context/DashboardContext';
 
 const COLUMNS = [
   { key: 'vehicle', label: 'Vehicle' },
   { key: 'driver', label: 'Driver' },
   { key: 'status', label: 'Status' },
   { key: 'speed', label: 'Speed' },
-  { key: 'fuel', label: 'Fuel' },
+  { key: 'consumption', label: 'Consumption' },
   { key: 'health', label: 'Health' },
   { key: 'driverScore', label: 'Driver Score' },
   { key: 'alerts', label: 'Alerts' },
@@ -18,6 +19,37 @@ const COLUMNS = [
 // Sprint 1: mock data, sticky header, and inert search/filter/sort/pagination
 // affordances. Later sprints will swap fleetTableData for live WebSocket rows.
 function FleetTable() {
+
+  const { vehicles } = useDashboard();
+
+  const rows = Object.values(vehicles).map((vehicle)=>({
+
+  id: vehicle.vehicle_id,
+
+  vehicle: vehicle.vehicle_id,
+
+  driver: vehicle.telemetry.driver_id,
+
+  status:
+   vehicle.vehicle_health.health === "critical"
+   ? "critical"
+   : vehicle.alerts.length > 0
+   ? "warning"
+   : "active",
+
+  speed: `${vehicle.telemetry.speed_kmh} km/h`,
+
+  consumption: `${vehicle.telemetry.fuel_rate_lph.toFixed(2)} L/h`,
+
+  health: vehicle.vehicle_health.health,
+
+  driverScore: "--",
+
+  alerts: vehicle.alerts.length,
+
+  lastUpdated: new Date(vehicle.last_updated).toLocaleTimeString()
+
+}));
   return (
     <Card
       title="Live Fleet"
@@ -51,7 +83,7 @@ function FleetTable() {
             </tr>
           </thead>
           <tbody>
-            {fleetTableData.map((row) => (
+            {rows.map((row)=>(
               <tr key={row.id} className="fleet-table-row">
                 <td className="fleet-table-vehicle-cell">{row.vehicle}</td>
                 <td>{row.driver}</td>
@@ -61,7 +93,7 @@ function FleetTable() {
                   </span>
                 </td>
                 <td>{row.speed}</td>
-                <td>{row.fuel}</td>
+                <td>{row.consumption}</td>
                 <td>{row.health}</td>
                 <td>{row.driverScore}</td>
                 <td>

@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown } from 'lucide-react';
+
 import Card from '../../../components/common/Card/Card';
 
 const STATUS_TOKEN = {
@@ -11,9 +11,15 @@ const STATUS_TOKEN = {
 };
 
 // KPICard: Icon / Title / Primary metric / Trend / Context label
-function KPICard({ icon: Icon, title, value, trend, trendDirection, context, status }) {
+function KPICard({
+  icon: Icon,
+  title,
+  value,
+  context,
+  status,
+  statusText,
+}) {
   const accent = STATUS_TOKEN[status] || STATUS_TOKEN.info;
-  const TrendIcon = trendDirection === 'up' ? TrendingUp : TrendingDown;
 
   return (
     <Card className="kpi-card">
@@ -27,13 +33,14 @@ function KPICard({ icon: Icon, title, value, trend, trendDirection, context, sta
       <div className="kpi-card-value text-kpi-value">{value}</div>
 
       <div className="kpi-card-bottom">
+        <span className="text-caption">{context}</span>
+
         <span
-          className={`kpi-card-trend kpi-card-trend--${trendDirection === 'up' ? 'up' : 'down'}`}
+          className="kpi-card-status text-caption"
+          style={{ color: accent }}
         >
-          <TrendIcon size={13} strokeWidth={2.5} />
-          {trend}
+          {statusText}
         </span>
-        <span className="kpi-card-context text-caption">{context}</span>
       </div>
     </Card>
   );

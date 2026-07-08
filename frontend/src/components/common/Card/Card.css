@@ -35,3 +35,8 @@
 .card-body--no-padding {
   padding: 0;
 }
+
+.kpi-card-status {
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}

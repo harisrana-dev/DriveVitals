@@ -6,11 +6,20 @@ import MaintenanceQueue from './components/MaintenanceQueue';
 import FleetTrends from './components/FleetTrends';
 import RecentEvents from './components/RecentEvents';
 import './Dashboard.css';
+import useDashboardSocket from "../../hooks/useDashboardSocket";
+import { useDashboard } from "../../context/DashboardContext";
 
 // Dashboard: Sprint 1 — layout skeleton only.
 // No charts, gauges, WebSocket, or API calls. Static/mock data throughout.
 function Dashboard() {
-  return (
+    const { vehicles } = useDashboard();
+
+    console.log("🔥 Dashboard Context:", vehicles);
+      
+    useDashboardSocket();
+
+
+    return (
     <div className="dashboard">
       <div className="dashboard-heading">
         <h1 className="text-dashboard-title">Fleet Command Center</h1>

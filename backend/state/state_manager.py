@@ -15,6 +15,8 @@ from dataclasses import asdict
 from fastapi.encoders import jsonable_encoder
 from dashboard.connection_manager import dashboard_manager
 from state.vehicle_state import VehicleState
+from collections import deque
+from analytics.event_metadata import enrich_event
 
 
 class VehicleStateManager:
@@ -28,6 +30,12 @@ class VehicleStateManager:
         # Value -> VehicleState
 
         self.states: dict[str, VehicleState] = {}
+
+        # Global event history (newest first)
+        self.events = deque(maxlen=200)
+
+        # Fast lookup for duplicate events
+        self.event_index = {}
 
     # --------------------------------------------------
 
@@ -79,6 +87,44 @@ class VehicleStateManager:
         state.alerts = analytics_results.get(
             "rules", []
         )
+        new_events = analytics_results.get("rules", [])
+
+
+        for raw_event in new_events:
+
+            event = raw_event.copy()
+            event["vehicle_id"] = packet.vehicle_id
+            event["driver_id"] = packet.driver_id
+            event = enrich_event(event)
+            
+
+
+            event_key = (
+               event["vehicle_id"],
+               event["event"]
+            )
+
+
+            if event_key in self.event_index:
+
+
+               existing = self.event_index[event_key]
+
+               existing["occurrences"] += 1
+
+               existing["timestamp"] = event["timestamp"]
+
+               existing["value"] = event["value"]
+
+
+            else:
+
+              event["occurrences"] = 1
+
+              self.events.appendleft(event)
+
+              self.event_index[event_key] = event
+        print("Event history size:", len(self.events))
 
         # -----------------------------
         # Timestamp
@@ -86,23 +132,26 @@ class VehicleStateManager:
 
         state.last_updated = datetime.now(timezone.utc)
         
-        print("STATE MANAGER:", id(self))
-        print("DASHBOARD MANAGER:", id(dashboard_manager))
-        print("ACTIVE:", len(dashboard_manager.active_connections))
         # -----------------------------
         # Broadcast updated state
         # -----------------------------
         print(asdict(state))
         try:
+            print("Broadcasting...")
             asyncio.create_task(
+                
                 
                 dashboard_manager.broadcast(
                     {
-                        "type": "vehicle_update",
+                        "type": "dashboard_update",
                         "vehicle": jsonable_encoder(state),
+                        "recent_events": jsonable_encoder(
+                           self.get_recent_events()
+                        ),
                     }
                 )
             )
+            print("Broadcast queued")
 
         except RuntimeError:
             # Happens only when no event loop exists
@@ -112,6 +161,9 @@ class VehicleStateManager:
         return state
 
     # --------------------------------------------------
+    def get_recent_events(self):
+
+       return list(self.events)
 
     def get_vehicle(
         self,

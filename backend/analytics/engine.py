@@ -61,6 +61,8 @@ class AnalyticsEngine:
     # --------------------------------------------------
 
     def process(self, packet: TelemetryPacket):
+        print(f"Processing {packet.vehicle_id}")
+        
 
         # Evaluate engineering rules
         rule_results = self.rule_engine.evaluate(packet)

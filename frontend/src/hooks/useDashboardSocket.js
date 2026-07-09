@@ -12,7 +12,8 @@ export default function useDashboardSocket(){
 
 
     const {
-        updateVehicle
+        updateVehicle,
+        updateRecentEvents
     } = useDashboard();
 
 
@@ -25,24 +26,25 @@ export default function useDashboardSocket(){
 
 
         const unsubscribe =
-        dashboardSocket.subscribe(
-            (message)=>{
+        dashboardSocket.subscribe((message) => {
 
+            console.log("📩 Received WebSocket message:", message);
 
-                if(
-                    message.type === "vehicle_update"
-                ){
-                    console.log("🚗 Updating vehicle:", message.vehicle);
-                    
-                    updateVehicle(
-                        message.vehicle
-                    );
+            if (message.type === "dashboard_update") {
 
-                } 
+                 console.log("🚗 Vehicle:", message.vehicle);
+                 console.log("📋 Recent Events:", message.recent_events);
 
+                 updateVehicle(message.vehicle);
+                 updateRecentEvents(message.recent_events);
+
+            } else {
+
+                console.log("⚠️ Unknown message type:", message.type);
 
             }
-        );
+
+        });
 
 
 

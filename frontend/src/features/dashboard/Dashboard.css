@@ -332,3 +332,45 @@
   color: var(--color-text-muted);
   opacity: 0.6;
 }
+
+.recent-events-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+
+.recent-events-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+
+.recent-events-table th {
+
+    text-align: left;
+    padding: 12px;
+
+    font-size: 12px;
+    color: var(--color-text-secondary);
+
+    border-bottom: 1px solid var(--color-border);
+
+}
+
+
+.recent-events-table td {
+
+    padding: 12px;
+
+    font-size: 13px;
+
+    border-bottom: 1px solid var(--color-border);
+
+}
+
+
+.recent-events-table tr:hover {
+
+    background: var(--color-surface-hover);
+
+}

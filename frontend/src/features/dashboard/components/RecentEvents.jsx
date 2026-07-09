@@ -2,35 +2,97 @@ import { ListTree } from 'lucide-react';
 import Card from '../../../components/common/Card/Card';
 import { useDashboard } from "../../../context/DashboardContext";
 
-// RecentEvents: Sprint 1 empty state. Event feed arrives in a later sprint.
 function RecentEvents() {
-    const { vehicles } = useDashboard();
 
-    const fleet = Object.values(vehicles);
+    const { recentEvents } = useDashboard();
+    console.log("EVENT DATA:", recentEvents);
 
-    const events = fleet.flatMap(vehicle =>
-        vehicle.alerts.map(alert => ({
-            ...alert,
-            driver_id: vehicle.telemetry.driver_id,
-        }))
+    return (
+        <Card title="Recent Events" className="widget-empty-card">
+
+            <div className="recent-events-table-wrapper">
+
+                {recentEvents.length === 0 ? (
+
+                    <div className="widget-empty-state">
+                        <ListTree
+                            size={22}
+                            strokeWidth={1.5}
+                            className="widget-empty-icon"
+                        />
+
+                        <p className="text-caption">
+                            No recent events
+                        </p>
+                    </div>
+
+                ) : (
+
+                    <table className="recent-events-table">
+
+                        <thead>
+                            <tr>
+                                <th>Fault</th>
+                                <th>Vehicle</th>
+                                <th>Occurrences</th>
+                                <th>Last Seen</th>
+                            </tr>
+                        </thead>
+
+
+                        <tbody>
+
+                        {recentEvents.map((event,index)=>(
+
+                        <tr key={index}>
+
+                        <td>
+
+                        <span className="event-name">
+
+                        {event.icon}
+
+                        {event.title}
+
+                        </span>
+
+                        </td>
+
+
+                        <td>
+                        {event.vehicle_id || "Unknown"}
+                        </td>
+
+
+                        <td>
+                        x{event.occurrences}
+                        </td>
+
+                        
+                        <td>
+                        {
+                         new Date(
+                         event.timestamp
+                         ).toLocaleTimeString()
+                        }
+                        </td>
+                        
+
+
+                        </tr>
+
+                        ))}
+
+                        </tbody>
+
+                    </table>
+
+                )}
+
+            </div>
+
+        </Card>
     );
-    console.log(events);
-  return (
-    <Card title="Recent Events" className="widget-empty-card">
-      <div className="widget-empty-state">
-        <ListTree size={22} strokeWidth={1.5} className="widget-empty-icon" />
-        {events.length === 0 ? (
-    <p className="text-caption">No recent events</p>
-    ) : (
-        events.map((event,index)=>(
-           <div key={index}>
-               {event.type}
-           </div>
-        ))
-    )}
-      </div>
-    </Card>
-  );
 }
 
 export default RecentEvents;

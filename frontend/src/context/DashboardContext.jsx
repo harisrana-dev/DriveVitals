@@ -9,8 +9,11 @@ export function DashboardProvider({ children }) {
 
 
     const [vehicles, setVehicles] = useState({});
+    const [recentEvents, setRecentEvents] = useState([]);
 
-
+    const updateRecentEvents = (events) => {
+        setRecentEvents(events);
+    };
 
     const updateVehicle = (vehicle) => {
 
@@ -40,7 +43,9 @@ export function DashboardProvider({ children }) {
 
             value={{
                 vehicles,
+                recentEvents,
                 updateVehicle,
+                updateRecentEvents,
                 clearVehicles
             }}
 

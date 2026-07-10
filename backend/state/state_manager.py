@@ -84,6 +84,13 @@ class VehicleStateManager:
             "trip_performance", {}
         )
 
+        state.driver_ranking = analytics_results.get(
+             "driver_ranking",
+             state.driver_ranking
+        )
+        print("🏆 Driver Ranking:", state.driver_ranking)
+        
+
         state.alerts = analytics_results.get(
             "rules", []
         )

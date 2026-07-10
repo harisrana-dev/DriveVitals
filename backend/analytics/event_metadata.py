@@ -1,52 +1,27 @@
 EVENT_METADATA = {
-
     "overspeed": {
-        "title": "Overspeeding",
-        "icon": "🚨",
-        "category": "Driver Behaviour",
-        "severity": "WARNING",
+        "title": "Overspeed Detected",
     },
-
-
-    "high_rpm": {
-        "title": "High Engine RPM",
-        "icon": "⚙️",
-        "category": "Vehicle Health",
-        "severity": "WARNING",
-    },
-
 
     "high_engine_load": {
         "title": "High Engine Load",
-        "icon": "🔥",
-        "category": "Vehicle Health",
-        "severity": "WARNING",
     },
 
+    "high_rpm": {
+        "title": "High Engine RPM",
+    },
 
     "high_coolant_temperature": {
-        "title": "High Coolant Temperature",
-        "icon": "🌡️",
-        "category": "Critical",
-        "severity": "CRITICAL",
+        "title": "Coolant Temperature High",
     },
-
 
     "high_fuel_consumption": {
         "title": "High Fuel Consumption",
-        "icon": "⛽",
-        "category": "Fuel Efficiency",
-        "severity": "WARNING",
     },
-
 
     "excessive_idle": {
         "title": "Excessive Idle",
-        "icon": "🅿️",
-        "category": "Driver Behaviour",
-        "severity": "INFO",
-    }
-
+    },
 }
 
 def enrich_event(event):

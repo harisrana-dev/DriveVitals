@@ -29,6 +29,7 @@ class AnalyticsEngine:
         self.vehicle_health = None
         self.fuel_efficiency = None
         self.trip_performance = None
+        self.driver_ranking = None
 
         # -----------------------------
         # Safe loading of analyzers
@@ -57,6 +58,12 @@ class AnalyticsEngine:
             self.trip_performance = TripPerformanceAnalyzer()
         except Exception:
             print("⚠️ trip_performance not loaded")
+        
+        try:
+            from analytics.driver_ranking import DriverRankingAnalyzer
+            self.driver_ranking = DriverRankingAnalyzer()
+        except Exception:
+            print("⚠️ driver_ranking not loaded")
 
     # --------------------------------------------------
 
@@ -81,6 +88,23 @@ class AnalyticsEngine:
                     rule_results
                 )
             )
+        vehicle_state = self.state_manager.get_vehicle(
+            packet.vehicle_id
+        )
+
+        current_score = (
+            vehicle_state.driver_ranking["score"]
+            if vehicle_state
+            else 100
+        )
+
+        analytics_results["driver_ranking"] = (
+            self.driver_ranking.analyze(
+                packet,
+                rule_results,
+                current_score
+            )
+        )
 
         # Vehicle Health
         if self.vehicle_health:
@@ -108,6 +132,7 @@ class AnalyticsEngine:
                     rule_results
                 )
             )
+
 
         # ---------------------------------------
         # Update the live Vehicle State Manager

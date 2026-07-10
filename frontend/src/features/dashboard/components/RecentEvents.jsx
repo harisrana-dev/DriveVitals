@@ -31,12 +31,13 @@ function RecentEvents() {
                     <table className="recent-events-table">
 
                         <thead>
-                            <tr>
-                                <th>Fault</th>
-                                <th>Vehicle</th>
-                                <th>Occurrences</th>
-                                <th>Last Seen</th>
-                            </tr>
+                          <tr>
+                            <th>Severity</th>
+                            <th>Event</th>
+                            <th>VehicleID</th>
+                            <th>Count</th>
+                            <th>Time</th>
+                          </tr>
                         </thead>
 
 
@@ -48,13 +49,15 @@ function RecentEvents() {
 
                         <td>
 
-                        <span className="event-name">
+                        <span className={`event-severity ${event.severity.toLowerCase()}`}>
+                           {event.severity}
+                        </span>
 
-                        {event.icon}
+                        </td>
+
+                        <td>
 
                         {event.title}
-
-                        </span>
 
                         </td>
 

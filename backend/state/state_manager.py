@@ -63,6 +63,22 @@ class VehicleStateManager:
         # -----------------------------
 
         state.telemetry = packet.model_dump()
+        # -----------------------------
+        # Vehicle Status
+        # -----------------------------
+
+        if packet.speed_kmh > 1:
+
+            state.status = "active"
+
+        elif packet.rpm > 0:
+
+            state.status = "idle"
+
+        else:
+
+           state.status = "offline"
+
 
         # -----------------------------
         # Analytics

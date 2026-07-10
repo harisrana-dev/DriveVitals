@@ -22,34 +22,35 @@ function FleetTable() {
 
   const { vehicles } = useDashboard();
 
-  const rows = Object.values(vehicles).map((vehicle)=>({
+  const rows = Object.values(vehicles).map((vehicle) => {
 
-  id: vehicle.vehicle_id,
+  console.log("Vehicle:", vehicle);
 
-  vehicle: vehicle.vehicle_id,
+  return {
 
-  driver: vehicle.telemetry.driver_id,
+    id: vehicle.vehicle_id,
 
-  status:
-   vehicle.vehicle_health.health === "critical"
-   ? "critical"
-   : vehicle.alerts.length > 0
-   ? "warning"
-   : "active",
+    vehicle: vehicle.vehicle_id,
 
-  speed: `${vehicle.telemetry.speed_kmh} km/h`,
+    driver: vehicle.telemetry.driver_id,
 
-  consumption: `${vehicle.telemetry.fuel_rate_lph.toFixed(2)} L/h`,
+    status: vehicle.status,
 
-  health: vehicle.vehicle_health.health,
+    speed: `${vehicle.telemetry.speed_kmh} km/h`,
 
-  driverScore: "--",
+    consumption: `${vehicle.telemetry.fuel_rate_lph.toFixed(2)} L/h`,
 
-  alerts: vehicle.alerts.length,
+    health: vehicle.vehicle_health.health,
 
-  lastUpdated: new Date(vehicle.last_updated).toLocaleTimeString()
+    driverScore: "--",
 
-}));
+    alerts: vehicle.alerts.length,
+
+    lastUpdated: new Date(vehicle.last_updated).toLocaleTimeString(),
+
+  };
+
+});
   return (
     <Card
       title="Live Fleet"
@@ -94,7 +95,17 @@ function FleetTable() {
                 </td>
                 <td>{row.speed}</td>
                 <td>{row.consumption}</td>
-                <td>{row.health}</td>
+                <td>
+
+                <span
+                className={`status-badge status-badge--${row.health}`}
+                >
+
+                {row.health}
+
+                </span>
+
+                </td>
                 <td>{row.driverScore}</td>
                 <td>
                   {row.alerts > 0 ? (
@@ -111,7 +122,7 @@ function FleetTable() {
       </div>
 
       <div className="fleet-table-pagination">
-        <span className="text-caption">Showing 1–6 of 48 vehicles</span>
+        <span className="text-caption">Showing 1–4 of 44 vehicles</span>
         <div className="fleet-table-pagination-controls">
           <button type="button" className="fleet-table-page-btn" disabled>
             <ChevronLeft size={14} strokeWidth={2} />

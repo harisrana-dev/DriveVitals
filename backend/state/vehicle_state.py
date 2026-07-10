@@ -17,6 +17,8 @@ class VehicleState:
     # Vehicle identity
     vehicle_id: str
 
+    status: str = "Offline"
+
     # Latest telemetry packet
     telemetry: dict = field(default_factory=dict)
 

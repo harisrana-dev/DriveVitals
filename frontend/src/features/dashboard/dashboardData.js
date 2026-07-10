@@ -153,17 +153,21 @@ export const fleetTableData = [
 
 // Status → color-token mapping shared by table + badges.
 export const statusColorMap = {
-  active: 'healthy',
-  warning: 'warning',
-  critical: 'critical',
-  offline: 'offline',
-  maintenance: 'maintenance',
+
+    active: "success",
+
+    idle: "warning",
+
+    offline: "critical",
+
 };
 
 export const statusLabelMap = {
-  active: 'Active',
-  warning: 'Warning',
-  critical: 'Critical',
-  offline: 'Offline',
-  maintenance: 'Maintenance',
+
+    active: "Active",
+
+    idle: "Idle",
+
+    offline: "Offline",
+
 };

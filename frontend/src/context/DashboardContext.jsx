@@ -10,6 +10,7 @@ export function DashboardProvider({ children }) {
 
     const [vehicles, setVehicles] = useState({});
     const [recentEvents, setRecentEvents] = useState([]);
+    const [fleetTrends, setFleetTrends] = useState([]);
 
     const updateRecentEvents = (events) => {
         setRecentEvents(events);
@@ -24,6 +25,17 @@ export function DashboardProvider({ children }) {
             [vehicle.vehicle_id]: vehicle
 
         }));
+
+    };
+
+    const updateFleetTrends = (trends) => {
+
+        const normalized = Array.isArray(trends[0])
+            ? trends.flat()
+            : trends;
+
+
+        setFleetTrends(normalized);
 
     };
 
@@ -44,11 +56,14 @@ export function DashboardProvider({ children }) {
             value={{
                 vehicles,
                 recentEvents,
+                fleetTrends,
+
                 updateVehicle,
                 updateRecentEvents,
-                clearVehicles
-            }}
+                updateFleetTrends,
 
+                clearVehicles,
+            }}
         >
 
             {children}

@@ -37,6 +37,8 @@ class VehicleStateManager:
         # Fast lookup for duplicate events
         self.event_index = {}
 
+        self.fleet_trends = []
+
     # --------------------------------------------------
 
     def update_state(
@@ -111,7 +113,11 @@ class VehicleStateManager:
             "rules", []
         )
         new_events = analytics_results.get("rules", [])
-
+        
+        state.maintenance_queue = analytics_results.get(
+            "maintenance_queue",
+            []
+        )
 
         for raw_event in new_events:
 
@@ -171,6 +177,7 @@ class VehicleStateManager:
                         "recent_events": jsonable_encoder(
                            self.get_recent_events()
                         ),
+                        "fleet_trends": self.fleet_trends,
                     }
                 )
             )

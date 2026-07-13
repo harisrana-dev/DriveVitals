@@ -13,8 +13,10 @@ export default function useDashboardSocket(){
 
     const {
         updateVehicle,
-        updateRecentEvents
+        updateRecentEvents,
+        updateFleetTrends
     } = useDashboard();
+    
 
 
 
@@ -34,9 +36,11 @@ export default function useDashboardSocket(){
 
                  console.log("🚗 Vehicle:", message.vehicle);
                  console.log("📋 Recent Events:", message.recent_events);
+                 console.log(message.fleet_trends);
 
                  updateVehicle(message.vehicle);
                  updateRecentEvents(message.recent_events);
+                 updateFleetTrends(message.fleet_trends);
 
             } else {
 

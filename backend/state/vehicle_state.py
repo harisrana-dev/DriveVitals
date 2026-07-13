@@ -43,5 +43,7 @@ class VehicleState:
             "violations":0
         }
     )
+
+    maintenance_queue: list = field(default_factory=list)
     # Last update timestamp
     last_updated: datetime | None = None

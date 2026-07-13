@@ -30,6 +30,8 @@ class AnalyticsEngine:
         self.fuel_efficiency = None
         self.trip_performance = None
         self.driver_ranking = None
+        self.maintenance_queue = None
+        self.fleet_trends = None
 
         # -----------------------------
         # Safe loading of analyzers
@@ -64,6 +66,19 @@ class AnalyticsEngine:
             self.driver_ranking = DriverRankingAnalyzer()
         except Exception:
             print("⚠️ driver_ranking not loaded")
+
+        try:
+            from analytics.maintenance_queue import MaintenanceQueueAnalyzer
+            self.maintenance_queue = MaintenanceQueueAnalyzer()
+        except Exception as e:
+            print("⚠️ maintenance_queue not loaded")
+            print(e)
+
+        try:
+            from analytics.fleet_trends import FleetTrendAnalyzer
+            self.fleet_trends = FleetTrendAnalyzer()
+        except Exception as e:
+            print(e)
 
     # --------------------------------------------------
 
@@ -133,6 +148,19 @@ class AnalyticsEngine:
                 )
             )
 
+        if self.maintenance_queue:
+
+            analytics_results["maintenance_queue"] = (
+                self.maintenance_queue.analyze(
+                    packet,
+                    analytics_results
+                )
+        )
+        print(
+            "🔧 Maintenance:",
+            analytics_results["maintenance_queue"]
+        )
+
 
         # ---------------------------------------
         # Update the live Vehicle State Manager
@@ -142,5 +170,11 @@ class AnalyticsEngine:
             packet,
              analytics_results
         )
+
+        trend = self.fleet_trends.update(
+           self.state_manager
+        )
+
+        self.state_manager.fleet_trends = trend
 
         return analytics_results

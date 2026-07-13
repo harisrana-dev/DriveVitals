@@ -23,7 +23,8 @@ function FleetTable() {
   const { vehicles } = useDashboard();
 
   const rows = Object.values(vehicles).map((vehicle) => {
-
+  
+  console.log(vehicle.maintenance_queue);
   console.log("Vehicle:", vehicle);
 
   return {

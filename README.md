@@ -56,9 +56,9 @@ Infrastructure & Database Integration
 
 ## Team
 
-- Haris Rana — Project Lead / Backend / Analytics
-- Backend Engineer
-- Frontend Engineer
+- Haris Rana - Project Lead / Backend / Analytics
+- Mian Salman - Backend / API
+- Wahad Ahmed - Frontend
 
 ---
 

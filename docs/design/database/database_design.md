@@ -1,394 +1,578 @@
-# Database Design
+# DriveVitals Database Design Documentation
 
-## DriveVitals Database Design
+## 1. Overview
 
-**Version:** 1.0
-**Project:** DriveVitals – Intelligent Fleet Vehicle Telemetry & Analytics Platform
+The DriveVitals platform requires a persistent data storage layer to transform real-time vehicle telemetry into historical fleet intelligence.
 
----
+Unlike a simple telemetry dashboard, DriveVitals stores, processes, and analyzes vehicle data over time to generate meaningful operational insights.
 
-# 1. Purpose
+The database layer stores:
 
-The DriveVitals database is designed to store, organize, and manage vehicle telemetry collected from OBD-II devices (or simulators during development), along with fleet information, trips, analytics, alerts, and vehicle health assessments.
+- Vehicle information
+- Raw ECU/OBD-II telemetry data
+- Processed fuel efficiency analytics
+- Driver behavior events
+- Trip summaries
+- Vehicle health analysis
+- Fleet intelligence insights
+- Historical performance trends
 
-The database serves as the central storage layer of the DriveVitals platform and enables:
+The database enables advanced fleet management capabilities including:
 
-* Real-time telemetry ingestion
-* Historical trip analysis
-* Driver behavior assessment
-* Vehicle health monitoring
-* Fleet-wide analytics
-* Predictive maintenance in future releases
-
-The schema is designed to support both simulated telemetry (Version 1) and real OBD-II hardware (future versions) without structural changes.
-
----
-
-# 2. Database Design Principles
-
-The database has been designed according to the following principles:
-
-* Modular architecture
-* High scalability
-* Data normalization
-* Minimal redundancy
-* Efficient querying
-* Easy future extensibility
-* Compatibility with PostgreSQL
-
-Raw telemetry is stored separately from processed analytics, allowing the analytics engine to be continuously improved without modifying historical data.
+- Real-time fleet monitoring
+- Fuel efficiency analysis
+- Driver performance evaluation
+- Vehicle health monitoring
+- Predictive maintenance research
+- Historical reporting
+- Machine learning-based anomaly detection
 
 ---
 
-# 3. Database Management System
+# 2. Database Architecture
 
-DriveVitals uses **PostgreSQL** as its primary relational database because it provides:
+DriveVitals follows a layered data architecture:
 
-* High reliability
-* Excellent indexing capabilities
-* Strong ACID compliance
-* JSON support
-* Time-series friendly querying
-* Open-source ecosystem
-* Excellent FastAPI integration through SQLAlchemy
+```
+Vehicle Simulator / OBD-II Source
+              |
+              |
+              v
+      Telemetry Ingestion Layer
+              |
+              |
+              v
+        PostgreSQL Database
+              |
+              |
+              v
+        Analytics Engine
+              |
+              |
+              v
+       Fleet Intelligence Layer
+              |
+              |
+              v
+        Dashboard Insights
+```
 
----
-
-# 4. Conceptual Database Model
-
-The system is organized around fleets.
-
-Each fleet owns multiple vehicles.
-
-Each vehicle performs multiple trips.
-
-Each trip generates thousands of telemetry records.
-
-Telemetry is processed by the analytics engine to generate alerts, driver scores, and vehicle health summaries.
-
-Conceptual relationship:
-
-Fleet
-→ Driver
-→ Vehicle
-→ Trip
-→ Telemetry
-→ Analytics
+The database acts as the historical memory of the fleet by storing both raw vehicle signals and processed intelligence.
 
 ---
 
-# 5. Entity Relationship Overview
+# 3. Database Technology
 
-## Fleet
+## Database
 
-Represents an organization operating one or more vehicles.
+```
+PostgreSQL
+```
 
-Examples:
+PostgreSQL is selected as the primary database because DriveVitals requires:
 
-* Logistics company
-* Ride-hailing company
-* Delivery company
-* Automotive service provider
+- High-volume telemetry storage
+- Time-based historical queries
+- Concurrent data processing
+- Scalable relational storage
+- Cloud deployment compatibility
 
-Relationship:
 
-Fleet (1) → (Many) Drivers
+## ORM
 
-Fleet (1) → (Many) Vehicles
+```
+SQLAlchemy
+```
 
----
+SQLAlchemy provides:
 
-## Driver
+- Database abstraction
+- Object relational mapping
+- Clean model architecture
+- Easy migration between environments
 
-Represents an individual responsible for operating a vehicle.
 
-A driver may operate different vehicles over time.
+## Migration Tool
 
-Relationship:
+```
+Alembic
+```
 
-Driver (1) → (Many) Trips
+Alembic manages:
 
----
-
-## Vehicle
-
-Represents a physical vehicle within the fleet.
-
-Relationship:
-
-Vehicle (1) → (Many) Trips
-
----
-
-## Trip
-
-Represents one continuous driving session.
-
-Each trip belongs to:
-
-* One vehicle
-* One driver
-
-Each trip contains many telemetry records.
-
-Relationship:
-
-Trip (1) → (Many) Telemetry
-
-Trip (1) → (Many) Alerts
-
-Trip (1) → (One) Driver Score
-
-Trip (1) → (One) Vehicle Health
-
-Trip (1) → (One) Analytics Summary
+- Database schema changes
+- Version-controlled migrations
+- Production database updates
 
 ---
 
-## Telemetry
+# 4. Database Design Principles
 
-Stores raw OBD-II readings captured continuously during a trip.
+The database design follows these principles:
 
-This is expected to become the largest table in the database.
+## Separation of Raw and Processed Data
 
----
+Raw telemetry is stored independently from analytics results.
 
-## Alerts
+Example:
 
-Stores events detected by the analytics engine.
+```
+Telemetry Data
 
-Examples include:
+speed
+rpm
+engine_load
+fuel_rate
 
-* Harsh Braking
-* Harsh Acceleration
-* Overspeeding
-* High Engine Temperature
-* High Engine Load
 
----
+        |
+        v
 
-## Driver Score
 
-Stores summarized driver behavior metrics for each completed trip.
+Analytics Processing
 
----
 
-## Vehicle Health
+        |
+        v
 
-Stores summarized vehicle condition after each trip.
 
----
-
-## Analytics Summary
-
-Stores aggregated trip-level statistics used by the dashboard.
+Fuel Efficiency
+Vehicle Health
+Driver Score
+```
 
 ---
 
-# 6. Logical Database Schema
+## Historical Intelligence
 
-## fleets
+All analytics results are timestamped to support:
 
-| Column        | Description          |
-| ------------- | -------------------- |
-| fleet_id (PK) | Fleet identifier     |
-| company_name  | Organization name    |
-| contact_email | Fleet contact        |
-| created_at    | Record creation time |
+- Daily comparisons
+- Weekly trends
+- Monthly reports
+- Performance analysis
 
 ---
 
-## drivers
+## Future Hardware Compatibility
 
-| Column         | Description       |
-| -------------- | ----------------- |
-| driver_id (PK) | Driver identifier |
-| fleet_id (FK)  | Associated fleet  |
-| full_name      | Driver name       |
-| license_number | Driving license   |
-| created_at     | Registration date |
+The database design supports multiple telemetry sources:
 
----
+```
+Simulator
+    |
+    |
+OBD-II Adapter
+    |
+    |
+CAN Bus Integration
+```
 
-## vehicles
-
-| Column          | Description                   |
-| --------------- | ----------------------------- |
-| vehicle_id (PK) | Vehicle identifier            |
-| fleet_id (FK)   | Fleet owner                   |
-| manufacturer    | Vehicle manufacturer          |
-| model           | Vehicle model                 |
-| year            | Manufacturing year            |
-| fuel_type       | Petrol/Diesel/Hybrid/EV       |
-| engine_size     | Engine displacement           |
-| vin             | Vehicle Identification Number |
-| created_at      | Record creation               |
+The backend remains independent of the data source.
 
 ---
 
-## trips
+# 5. Database Entities
 
-| Column          | Description        |
-| --------------- | ------------------ |
-| trip_id (PK)    | Trip identifier    |
-| vehicle_id (FK) | Vehicle used       |
-| driver_id (FK)  | Driver             |
-| start_time      | Trip start         |
-| end_time        | Trip end           |
-| duration        | Trip duration      |
-| distance        | Distance traveled  |
-| average_speed   | Average trip speed |
-| maximum_speed   | Maximum speed      |
+The initial database consists of the following entities:
 
----
-
-## telemetry
-
-| Column              | Description                |
-| ------------------- | -------------------------- |
-| telemetry_id (PK)   | Reading identifier         |
-| trip_id (FK)        | Parent trip                |
-| timestamp           | Reading timestamp          |
-| rpm                 | Engine RPM                 |
-| speed               | Vehicle speed              |
-| throttle_position   | Throttle percentage        |
-| engine_load         | Engine load                |
-| coolant_temperature | Coolant temperature        |
-| fuel_rate           | Fuel consumption           |
-| gear                | Current gear               |
-| battery_voltage     | Battery voltage            |
-| maf                 | Mass Air Flow              |
-| map                 | Manifold Absolute Pressure |
-| fuel_level          | Fuel level                 |
-| engine_runtime      | Engine runtime             |
+| Entity | Purpose |
+|-|-|
+| Vehicle | Stores registered fleet vehicles |
+| Telemetry | Stores raw vehicle sensor data |
+| Fuel Efficiency | Stores calculated fuel economy results |
+| Driver Events | Stores detected driving behavior |
+| Trips | Stores completed journey summaries |
+| Vehicle Health | Stores vehicle condition analysis |
+| Fleet Insights | Stores generated recommendations |
 
 ---
 
-## alerts
+# 6. Entity Relationship Overview
 
-| Column        | Description               |
-| ------------- | ------------------------- |
-| alert_id (PK) | Alert identifier          |
-| trip_id (FK)  | Parent trip               |
-| timestamp     | Alert timestamp           |
-| severity      | INFO / WARNING / CRITICAL |
-| alert_type    | Alert category            |
-| description   | Alert details             |
+```
+                         Vehicle
+                            |
+                            |
+        -----------------------------------------
+        |                  |                    |
+        v                  v                    v
 
----
+   Telemetry       Fuel Efficiency       Vehicle Health
 
-## driver_scores
 
-| Column                    | Description      |
-| ------------------------- | ---------------- |
-| score_id (PK)             | Score identifier |
-| trip_id (FK)              | Parent trip      |
-| overall_score             | Driver score     |
-| harsh_acceleration_events | Count            |
-| harsh_braking_events      | Count            |
-| overspeed_events          | Count            |
-| idle_time                 | Idle duration    |
-| fuel_efficiency_score     | Efficiency score |
+        |
+        |
+        v
 
----
+      Trips
 
-## vehicle_health
+        |
+        |
+        v
 
-| Column               | Description            |
-| -------------------- | ---------------------- |
-| health_id (PK)       | Health identifier      |
-| trip_id (FK)         | Parent trip            |
-| engine_health        | Engine score           |
-| battery_health       | Battery score          |
-| cooling_health       | Cooling score          |
-| overall_health       | Overall vehicle health |
-| maintenance_required | Boolean                |
+ Driver Behaviour Events
+
+
+        |
+        |
+        v
+
+ Fleet Intelligence Insights
+```
 
 ---
 
-## analytics_summary
-
-| Column               | Description          |
-| -------------------- | -------------------- |
-| summary_id (PK)      | Summary identifier   |
-| trip_id (FK)         | Parent trip          |
-| average_rpm          | Average RPM          |
-| average_speed        | Average speed        |
-| fuel_consumed        | Total fuel used      |
-| fuel_efficiency      | Overall efficiency   |
-| trip_score           | Trip score           |
-| driver_score         | Driver score         |
-| vehicle_health_score | Vehicle health score |
+# 7. Database Tables
 
 ---
 
-# 7. Relationship Summary
+# 7.1 Vehicle Table
 
-Fleet (1) → (Many) Drivers
+Stores registered fleet vehicles.
 
-Fleet (1) → (Many) Vehicles
+Table:
 
-Vehicle (1) → (Many) Trips
+```
+vehicles
+```
 
-Driver (1) → (Many) Trips
+## Columns
 
-Trip (1) → (Many) Telemetry
+| Column | Type | Description |
+|-|-|-|
+| id | Integer | Primary key |
+| vehicle_id | String | Unique vehicle identifier |
+| make | String | Manufacturer |
+| model | String | Vehicle model |
+| year | Integer | Manufacturing year |
+| created_at | Timestamp | Registration date |
 
-Trip (1) → (Many) Alerts
+Example:
 
-Trip (1) → (One) Driver Score
-
-Trip (1) → (One) Vehicle Health
-
-Trip (1) → (One) Analytics Summary
-
----
-
-# 8. Indexing Strategy
-
-The following columns should be indexed for efficient querying:
-
-* fleet_id
-* vehicle_id
-* driver_id
-* trip_id
-* timestamp
-
-Telemetry is expected to contain the largest number of records; therefore, timestamp-based indexing is essential for efficient historical analysis.
+```json
+{
+ "vehicle_id":"V001",
+ "make":"Toyota",
+ "model":"Corolla",
+ "year":2022
+}
+```
 
 ---
 
-# 9. Scalability Considerations
+# 7.2 Telemetry Table
 
-The database is designed to support:
+Stores raw vehicle signals received from OBD-II or simulator.
 
-* Multiple fleets
-* Thousands of vehicles
-* Millions of telemetry records
-* High-frequency telemetry ingestion
-* Future cloud deployment
-* Horizontal analytics expansion
+This table represents the vehicle's real-time state history.
 
-No schema modifications are required when replacing the simulator with real OBD-II hardware.
+Table:
+
+```
+telemetry
+```
+
+## Columns
+
+| Column | Type | Description |
+|-|-|-|
+| id | Integer | Primary key |
+| vehicle_id | String | Vehicle reference |
+| timestamp | Timestamp | Data capture time |
+| speed_kmh | Float | Vehicle speed |
+| rpm | Float | Engine RPM |
+| engine_load | Float | Engine load percentage |
+| coolant_temp | Float | Coolant temperature |
+| throttle_position | Float | Throttle position |
+| fuel_rate_lph | Float | Fuel consumption rate |
+| maf | Float | Mass airflow |
+
+Example:
+
+```json
+{
+ "vehicle_id":"V001",
+ "speed_kmh":65,
+ "rpm":2400,
+ "engine_load":45,
+ "coolant_temp":88
+}
+```
 
 ---
 
-# 10. Future Extensions
+# 7.3 Fuel Efficiency Table
 
-The schema is intentionally extensible for future versions of DriveVitals.
+Stores processed fuel economy analytics.
 
-Potential future additions include:
+The primary business metric is:
 
-* OBD-II device management
-* Supported PID discovery
-* Diagnostic Trouble Codes (DTCs)
-* GPS route history
-* Predictive maintenance records
-* AI model predictions
-* Driver authentication
-* Fleet maintenance scheduling
-* Vehicle service history
-* Cloud synchronization
-* Computer vision driver monitoring
+```
+km/L
+```
 
-These features can be integrated without redesigning the existing database structure.
+The system converts raw fuel consumption data into fleet-friendly efficiency measurements.
+
+Table:
+
+```
+fuel_efficiency
+```
+
+## Columns
+
+| Column | Type | Description |
+|-|-|-|
+| id | Integer | Primary key |
+| vehicle_id | String | Vehicle reference |
+| timestamp | Timestamp | Calculation time |
+| km_per_liter | Float | Fuel efficiency |
+| rating | String | Efficiency rating |
+
+Example:
+
+```json
+{
+ "vehicle_id":"V001",
+ "km_per_liter":14.8,
+ "rating":"good"
+}
+```
+
+---
+
+# 7.4 Driver Events Table
+
+Stores detected driver behavior events.
+
+Table:
+
+```
+driver_events
+```
+
+## Columns
+
+| Column | Type | Description |
+|-|-|-|
+| id | Integer | Primary key |
+| vehicle_id | String | Vehicle reference |
+| timestamp | Timestamp | Event time |
+| event_type | String | Event category |
+| severity | String | Severity level |
+| value | Float | Event measurement |
+
+Supported events:
+
+```
+harsh_acceleration
+harsh_braking
+overspeeding
+excessive_idling
+aggressive_driving
+```
+
+Example:
+
+```json
+{
+ "event_type":"harsh_acceleration",
+ "severity":"medium"
+}
+```
+
+---
+
+# 7.5 Trips Table
+
+Stores completed trip summaries.
+
+Table:
+
+```
+trips
+```
+
+## Columns
+
+| Column | Type | Description |
+|-|-|-|
+| id | Integer | Primary key |
+| vehicle_id | String | Vehicle reference |
+| start_time | Timestamp | Trip start |
+| end_time | Timestamp | Trip end |
+| distance_km | Float | Distance travelled |
+| fuel_consumed | Float | Fuel consumed |
+| average_efficiency | Float | Trip km/L |
+| driver_score | Float | Driving score |
+
+Example:
+
+```json
+{
+ "distance_km":24.5,
+ "average_efficiency":13.8,
+ "driver_score":88
+}
+```
+
+---
+
+# 7.6 Vehicle Health Table
+
+Stores vehicle condition analysis results.
+
+Table:
+
+```
+vehicle_health
+```
+
+## Columns
+
+| Column | Type | Description |
+|-|-|-|
+| id | Integer | Primary key |
+| vehicle_id | String | Vehicle reference |
+| timestamp | Timestamp | Analysis time |
+| health_score | Float | Overall health score |
+| status | String | Health status |
+| issues | JSON | Detected problems |
+
+Example:
+
+```json
+{
+ "health_score":82,
+ "status":"attention",
+ "issues":[
+    "high engine load"
+ ]
+}
+```
+
+---
+
+# 7.7 Fleet Insights Table
+
+Stores generated fleet intelligence recommendations.
+
+Table:
+
+```
+fleet_insights
+```
+
+## Columns
+
+| Column | Type | Description |
+|-|-|-|
+| id | Integer | Primary key |
+| vehicle_id | String | Vehicle reference |
+| timestamp | Timestamp | Insight generation time |
+| category | String | Insight category |
+| message | String | Generated insight |
+| recommendation | String | Recommended action |
+
+Example:
+
+```json
+{
+ "category":"fuel",
+ "message":"Fuel efficiency decreased by 15%",
+ "recommendation":"Review driving behaviour"
+}
+```
+
+---
+
+# 8. Data Processing Flow
+
+Example fuel efficiency pipeline:
+
+```
+Vehicle Telemetry
+
+speed
+rpm
+fuel_rate
+
+
+        |
+        v
+
+
+Fuel Efficiency Analyzer
+
+
+        |
+        v
+
+
+km/L Calculation
+
+
+        |
+        v
+
+
+fuel_efficiency table
+
+
+        |
+        v
+
+
+Trend Analysis
+
+
+        |
+        v
+
+
+Fleet Insight Generation
+
+
+        |
+        v
+
+
+Dashboard Visualization
+```
+
+---
+
+# 9. Future Database Extensions
+
+Future versions may include:
+
+- Users
+- Fleet organizations
+- Vehicle maintenance records
+- GPS tracking history
+- Diagnostic trouble codes (DTC)
+- Service history
+- Machine learning prediction results
+- Driver profiles
+
+---
+
+# 10. Design Goals
+
+The DriveVitals database prioritizes:
+
+- Scalability for fleet-level telemetry
+- Separation of raw and processed information
+- Historical analytics capability
+- Real-time and batch processing support
+- Machine learning integration
+- Compatibility with real OBD-II/CAN data sources
+
+---
+
+# Conclusion
+
+The DriveVitals database provides the foundation for transforming raw automotive telemetry into an intelligent fleet management platform.
+
+By combining PostgreSQL storage, structured analytics data, and historical performance tracking, DriveVitals can generate actionable insights for fuel optimization, driver safety, and predictive vehicle maintenance.

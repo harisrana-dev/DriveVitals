@@ -374,3 +374,4 @@ Contributions, issues, and feature discussions are welcome — open an issue or 
 **DriveVitals** — a vehicle intelligence and analytics platform currently under active development.
 
 </div>
+

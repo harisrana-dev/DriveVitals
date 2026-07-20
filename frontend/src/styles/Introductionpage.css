@@ -1,0 +1,123 @@
+/* Google Font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  overflow: hidden;
+}
+
+.fragment {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(
+    -45deg,
+    #6a11cb,
+    #2575fc,
+    #8e44ad,
+    #3498db
+  );
+  background-size: 400% 400%;
+  animation: gradientMove 10s ease infinite;
+}
+
+/* Floating Center Container */
+.main-content {
+  text-align: center;
+  animation: float 3s ease-in-out infinite;
+}
+
+/* 3D Glass Button */
+.get-started-btn {
+  position: relative;
+  padding: 18px 60px;
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+
+  background: linear-gradient(135deg, #ff6b6b, #ff416c);
+
+  box-shadow:
+    0 10px 0 #c62828,
+    0 18px 35px rgba(0, 0, 0, 0.35);
+
+  transition: all 0.3s ease;
+  overflow: hidden;
+  letter-spacing: 1px;
+}
+
+/* Shine Animation */
+.get-started-btn::before {
+  content: "";
+  position: absolute;
+  top: -60%;
+  left: -40%;
+  width: 40%;
+  height: 220%;
+  background: rgba(255,255,255,0.4);
+  transform: rotate(25deg);
+  transition: 0.6s;
+}
+
+.get-started-btn:hover::before {
+  left: 120%;
+}
+
+/* Hover */
+.get-started-btn:hover {
+  transform: translateY(-8px) scale(1.05);
+
+  box-shadow:
+    0 18px 0 #c62828,
+    0 25px 45px rgba(0,0,0,.45),
+    0 0 35px rgba(255,90,120,.8);
+}
+
+/* Click Effect */
+.get-started-btn:active {
+  transform: translateY(10px);
+
+  box-shadow:
+    0 3px 0 #c62828,
+    0 8px 15px rgba(0,0,0,.3);
+}
+
+/* Floating Animation */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}

@@ -1,0 +1,94 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap");
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Poppins",sans-serif;
+}
+
+.signup-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  overflow-y: auto;
+}
+
+.signup-box{
+    width:400px;
+    padding:40px;
+    background:rgba(255,255,255,.15);
+    backdrop-filter:blur(15px);
+    border-radius:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.3);
+    color:white;
+    text-align:center;
+}
+
+.signup-box h1{
+    margin-bottom:10px;
+}
+
+.signup-box p{
+    margin-bottom:25px;
+}
+
+.input-group{
+    margin-bottom:18px;
+}
+
+.input-group input{
+    width:100%;
+    padding:14px;
+    border:none;
+    outline:none;
+    border-radius:10px;
+    background:rgba(255,255,255,.2);
+    color:white;
+    font-size:16px;
+}
+
+.input-group input::placeholder{
+    color:#eee;
+}
+
+.signup-btn{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(to right,#ff416c,#ff4b2b);
+    color:white;
+    font-size:18px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.signup-btn:hover{
+    transform:translateY(-3px);
+    box-shadow:0 8px 20px rgba(255,75,43,.5);
+}
+
+.login-text{
+    margin-top:20px;
+}
+
+.login-text a{
+    color:#ffd369;
+    text-decoration:none;
+    font-weight:bold;
+}
+
+.login-text a:hover{
+    text-decoration:underline;
+}
+
+.error-msg {
+  color: #ff6b6b;
+  margin-bottom: 12px;
+  font-size: 14px;
+}

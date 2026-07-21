@@ -425,8 +425,32 @@ class SimulationRunner:
             previous_oil_life_percent=unit.previous_oil_life_percent,
         )
         unit.previous_oil_life_percent = physics_result.oil_life_percent
+
+        # Accumulate physics results into the active Trip entity.
+        trip = unit.trip_entity
+        trip.distance_completed_km += physics_result.distance_travelled_km
+        trip.fuel_consumed_liters += physics_result.fuel_consumed_liters
+        trip.duration_minutes += tick_context.delta_time / 60.0
+        if trip.fuel_consumed_liters > 0:
+            trip.fuel_efficiency_km_per_liter = (
+                trip.distance_completed_km / trip.fuel_consumed_liters
+            )
+        if trip.duration_minutes > 0:
+            trip.average_speed_kmh = (
+                trip.distance_completed_km / trip.duration_minutes
+            ) * 60.0
+
         print("\n[6] PHYSICS RESULT")
         print(physics_result)
+
+        print("\n[6a] TRIP PROGRESS")
+        print(
+            f"  distance_completed_km={trip.distance_completed_km:.6f} | "
+            f"fuel_consumed_liters={trip.fuel_consumed_liters:.6f} | "
+            f"duration_minutes={trip.duration_minutes:.6f} | "
+            f"average_speed_kmh={trip.average_speed_kmh:.6f} | "
+            f"fuel_efficiency_km_per_liter={trip.fuel_efficiency_km_per_liter:.6f}"
+        )
 
         print("\n[7] VEHICLE STATE AFTER PHYSICS")
         print(unit.vehicle_entity.state)

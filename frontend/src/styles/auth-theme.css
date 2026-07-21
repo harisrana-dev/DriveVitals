@@ -1,0 +1,42 @@
+/* ─── Dark theme (default) ───────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --bg-primary:    #080d14;
+  --bg-secondary:  #0c1420;
+  --bg-panel:      #0f1a28;
+  --border:        #1a2740;
+  --border-subtle: #111e2e;
+  --text-primary:  #f1f5f9;
+  --text-secondary:#94a3b8;
+  --text-muted:    #475569;
+  --text-faint:    #2d3f55;
+  --accent:        #2563eb;
+  --accent-hover:  #1d4ed8;
+  --accent-ring:   rgba(37, 99, 235, 0.25);
+  --error-text:    #f87171;
+  --error-bg:      rgba(248, 113, 113, 0.08);
+  --error-border:  rgba(248, 113, 113, 0.2);
+  --input-bg:      #0c1420;
+  --panel-bg:      #0c1420;
+}
+
+/* ─── Light theme ────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-primary:    #f8fafc;
+  --bg-secondary:  #ffffff;
+  --bg-panel:      #f1f5f9;
+  --border:        #e2e8f0;
+  --border-subtle: #e8edf3;
+  --text-primary:  #0f172a;
+  --text-secondary:#475569;
+  --text-muted:    #64748b;
+  --text-faint:    #cbd5e1;
+  --accent:        #2563eb;
+  --accent-hover:  #1d4ed8;
+  --accent-ring:   rgba(37, 99, 235, 0.18);
+  --error-text:    #dc2626;
+  --error-bg:      rgba(220, 38, 38, 0.06);
+  --error-border:  rgba(220, 38, 38, 0.18);
+  --input-bg:      #ffffff;
+  --panel-bg:      #f1f5f9;
+}

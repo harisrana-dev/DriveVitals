@@ -78,6 +78,8 @@ class Driver:
     current_trip_id: str | None = None
     working_hours: float = 0.0
     break_time_minutes: float = 0.0
+    continuous_work_hours: float = 0.0
+    break_remaining_minutes: float = 0.0
     completed_trip_ids: list[str] = field(default_factory=list)
     violation_count: int = 0
     fuel_efficiency_score: float = 100.0
@@ -103,3 +105,12 @@ class Driver:
             raise ConfigurationError("break_time_minutes cannot be negative.")
         if self.violation_count < 0:
             raise ConfigurationError("violation_count cannot be negative.")
+        if self.continuous_work_hours < 0:
+            raise ConfigurationError(
+                "continuous_work_hours cannot be negative."
+            )
+
+        if self.break_remaining_minutes < 0:
+            raise ConfigurationError(
+                "break_remaining_minutes cannot be negative."
+            )

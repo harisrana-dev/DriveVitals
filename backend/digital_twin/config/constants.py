@@ -21,7 +21,7 @@ DEFAULT_SIMULATED_SECONDS_PER_TICK: float = 1.0
 
 #: Default clock speed multiplier: 1 real second of stepping ==
 #: 1 simulated minute.
-DEFAULT_CLOCK_SPEED: float = 60.0
+DEFAULT_CLOCK_SPEED: float = 1.0
 
 #: Clock speed multipliers the platform is expected to support in the
 #: UI/API (informational; SimulationClock itself accepts any positive

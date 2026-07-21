@@ -1,56 +1,32 @@
 """TripManager: creates trips, ends trips, and maintains active/history registries.
 
-Sprint 1 scope: trip lifecycle bookkeeping only. Route calculation,
-ETA, and cargo modeling belong to future sprints (Entities/Physics).
+The manager owns trip lifecycle and registry concerns. The canonical
+domain state is represented by ``digital_twin.entities.trip.Trip``.
+
+Route calculation, ETA, physics, and cargo modeling belong to their
+respective domain modules.
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from datetime import datetime
 
 from digital_twin.common.enums import ExecutionPhase, TripStatus
 from digital_twin.common.exceptions import EntityAlreadyExistsError, EntityNotFoundError
+from digital_twin.entities.trip import Trip
 from digital_twin.runtime.tick_context import TickContext
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class TripRecord:
-    """Minimal, persistent registry record for a single trip.
-
-    Attributes:
-        trip_id: Unique identifier for the trip.
-        origin: Free-form origin label/address.
-        destination: Free-form destination label/address.
-        status: Current lifecycle status of the trip.
-        driver_id: Id of the assigned driver, if any.
-        vehicle_id: Id of the assigned vehicle, if any.
-        created_at: Simulated time the trip was created.
-        started_at: Simulated time the trip began, if started.
-        ended_at: Simulated time the trip ended, if ended.
-    """
-
-    trip_id: str
-    origin: str
-    destination: str
-    status: TripStatus = TripStatus.PENDING
-    driver_id: str | None = None
-    vehicle_id: str | None = None
-    created_at: datetime | None = None
-    started_at: datetime | None = None
-    ended_at: datetime | None = None
-
-
 class TripManager:
-    """Owns trip creation, lifecycle transitions, and history."""
+    """Owns trip creation, lifecycle transitions, and historical records."""
 
     def __init__(self) -> None:
         """Initialize empty active and historical trip registries."""
-        self._active_trips: dict[str, TripRecord] = {}
-        self._trip_history: dict[str, TripRecord] = {}
+        self._active_trips: dict[str, Trip] = {}
+        self._trip_history: dict[str, Trip] = {}
 
     @property
     def phase(self) -> ExecutionPhase:
@@ -63,156 +39,169 @@ class TripManager:
         origin: str,
         destination: str,
         created_at: datetime,
-    ) -> TripRecord:
-        """Create a new pending trip.
+    ) -> Trip:
+        """Create and register a new pending Trip entity.
 
         Args:
             trip_id: Unique id for the new trip.
-            origin: Free-form origin label/address.
-            destination: Free-form destination label/address.
-            created_at: Simulated time of creation (typically the
-                current tick's simulation_time).
+            origin: Origin label/address.
+            destination: Destination label/address.
+            created_at: Simulated creation timestamp.
 
         Returns:
-            The newly created TripRecord.
+            The newly created Trip entity.
 
         Raises:
-            EntityAlreadyExistsError: If trip_id already exists in
-                either the active or historical registries.
+            EntityAlreadyExistsError: If trip_id already exists.
         """
         if trip_id in self._active_trips or trip_id in self._trip_history:
             raise EntityAlreadyExistsError("Trip", trip_id)
-        record = TripRecord(
+
+        trip = Trip(
             trip_id=trip_id,
-            origin=origin,
-            destination=destination,
-            created_at=created_at,
+            start_time=created_at,
         )
-        self._active_trips[trip_id] = record
-        logger.info("Created trip %s: %s -> %s", trip_id, origin, destination)
-        return record
 
-    def assign_trip(self, trip_id: str, driver_id: str, vehicle_id: str) -> None:
-        """Assign a driver and vehicle to a pending trip.
+        self._active_trips[trip_id] = trip
 
-        Args:
-            trip_id: Id of the trip to assign.
-            driver_id: Id of the driver assigned.
-            vehicle_id: Id of the vehicle assigned.
+        logger.info(
+            "Created trip %s: %s -> %s",
+            trip_id,
+            origin,
+            destination,
+        )
 
-        Raises:
-            EntityNotFoundError: If trip_id is not an active trip.
-        """
-        record = self._require_active(trip_id)
-        record.driver_id = driver_id
-        record.vehicle_id = vehicle_id
-        record.status = TripStatus.ASSIGNED
+        return trip
 
-    def start_trip(self, trip_id: str, started_at: datetime) -> None:
-        """Transition an assigned trip to IN_PROGRESS.
+    def assign_trip(
+        self,
+        trip_id: str,
+        driver_id: str,
+        vehicle_id: str,
+    ) -> None:
+       """Assign a driver and vehicle to a pending trip."""
+       record = self._require_active(trip_id)
 
-        Args:
-            trip_id: Id of the trip to start.
-            started_at: Simulated time the trip started.
+       if record.status != TripStatus.PENDING:
+           raise ValueError(
+               f"Trip '{trip_id}' cannot be assigned from status "
+               f"'{record.status.value}'."
+            )
 
-        Raises:
-            EntityNotFoundError: If trip_id is not an active trip.
-        """
-        record = self._require_active(trip_id)
-        record.status = TripStatus.IN_PROGRESS
-        record.started_at = started_at
+       record.driver_id = driver_id
+       record.vehicle_id = vehicle_id
+       record.status = TripStatus.ASSIGNED
 
-    def end_trip(self, trip_id: str, ended_at: datetime, cancelled: bool = False) -> TripRecord:
-        """End a trip, moving it from active to historical registry.
+    def start_trip(
+        self,
+        trip_id: str,
+        started_at: datetime,
+    ) -> None:
+       """Transition an assigned trip to IN_PROGRESS."""
+       record = self._require_active(trip_id)
+
+       if record.status != TripStatus.ASSIGNED:
+           raise ValueError(
+               f"Trip '{trip_id}' cannot start from status "
+               f"'{record.status.value}'."
+            )
+
+       record.status = TripStatus.IN_PROGRESS
+       record.started_at = started_at
+
+       logger.info("Started trip %s", trip_id)
+
+    def end_trip(
+        self,
+        trip_id: str,
+        ended_at: datetime,
+        cancelled: bool = False,
+    ) -> Trip:
+        """End a trip and move it to permanent historical storage.
 
         Args:
             trip_id: Id of the trip to end.
-            ended_at: Simulated time the trip ended.
-            cancelled: If True, marks the trip CANCELLED instead of
-                COMPLETED.
+            ended_at: Simulated end timestamp.
+            cancelled: If True, marks the trip as CANCELLED.
 
         Returns:
-            The finalized TripRecord, now stored in history.
+            The finalized Trip entity.
 
         Raises:
-            EntityNotFoundError: If trip_id is not an active trip.
+            EntityNotFoundError: If trip_id is not active.
         """
-        record = self._require_active(trip_id)
-        record.status = TripStatus.CANCELLED if cancelled else TripStatus.COMPLETED
-        record.ended_at = ended_at
-        del self._active_trips[trip_id]
-        self._trip_history[trip_id] = record
-        logger.info("Ended trip %s status=%s", trip_id, record.status.value)
-        return record
+        trip = self._require_active(trip_id)
 
-    def get_trip(self, trip_id: str) -> TripRecord:
-        """Look up a trip by id, checking active trips then history.
+        trip.status = (
+            TripStatus.CANCELLED
+            if cancelled
+            else TripStatus.COMPLETED
+        )
+        trip.end_time = ended_at
+
+        del self._active_trips[trip_id]
+        self._trip_history[trip_id] = trip
+
+        logger.info(
+            "Ended trip %s status=%s",
+            trip_id,
+            trip.status.value,
+        )
+
+        return trip
+
+    def get_trip(self, trip_id: str) -> Trip:
+        """Look up a trip in active or historical storage.
 
         Args:
             trip_id: Id of the trip to retrieve.
 
         Returns:
-            The matching TripRecord.
+            The canonical Trip entity.
 
         Raises:
-            EntityNotFoundError: If trip_id exists in neither registry.
+            EntityNotFoundError: If the trip does not exist.
         """
         if trip_id in self._active_trips:
             return self._active_trips[trip_id]
+
         if trip_id in self._trip_history:
             return self._trip_history[trip_id]
+
         raise EntityNotFoundError("Trip", trip_id)
 
-    def list_active_trips(self) -> list[TripRecord]:
-        """List all currently active (non-terminal) trips.
-
-        Returns:
-            All TripRecord instances in the active registry.
-        """
+    def list_active_trips(self) -> list[Trip]:
+        """Return all currently active trips."""
         return list(self._active_trips.values())
 
-    def list_pending_trips(self) -> list[TripRecord]:
-        """List active trips awaiting assignment.
+    def list_pending_trips(self) -> list[Trip]:
+        """Return active trips awaiting assignment."""
+        return [
+            trip
+            for trip in self._active_trips.values()
+            if trip.status == TripStatus.PENDING
+        ]
 
-        Returns:
-            TripRecords whose status is PENDING.
-        """
-        return [t for t in self._active_trips.values() if t.status == TripStatus.PENDING]
-
-    def list_trip_history(self) -> list[TripRecord]:
-        """List all completed/cancelled trips.
-
-        Returns:
-            All TripRecord instances in the historical registry.
-        """
+    def list_trip_history(self) -> list[Trip]:
+        """Return all completed and cancelled trips."""
         return list(self._trip_history.values())
 
     def on_tick(self, context: TickContext) -> None:
         """Per-tick hook for TripManager.
 
-        Sprint 1 does not simulate trip progress (no physics/routing
-        yet); this hook exists so TripManager satisfies the
-        TickableManager protocol and future sprints can add progress
-        tracking without changing the runtime.
-
-        Args:
-            context: The current tick's immutable context.
+        Trip progress is currently handled by future simulation and
+        physics layers. The manager only maintains lifecycle state.
         """
-        logger.debug("TripManager on_tick tick_id=%s (no-op)", context.tick_id)
+        logger.debug(
+            "TripManager on_tick tick_id=%s (no-op)",
+            context.tick_id,
+        )
 
-    def _require_active(self, trip_id: str) -> TripRecord:
-        """Look up an active trip or raise if it doesn't exist.
+    def _require_active(self, trip_id: str) -> Trip:
+        """Look up an active trip or raise an error."""
+        trip = self._active_trips.get(trip_id)
 
-        Args:
-            trip_id: Id to look up.
-
-        Returns:
-            The matching TripRecord from the active registry.
-
-        Raises:
-            EntityNotFoundError: If trip_id is not an active trip.
-        """
-        record = self._active_trips.get(trip_id)
-        if record is None:
+        if trip is None:
             raise EntityNotFoundError("Trip", trip_id)
-        return record
+
+        return trip

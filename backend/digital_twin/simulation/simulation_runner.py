@@ -99,12 +99,12 @@ class RunnerConfig:
     """
 
     fleet_size: int = 3
-    num_ticks: int = 10
+    num_ticks: int = 100
     real_time_pacing: bool = False
     random_seed: int = 42
-    weather: WeatherCondition = WeatherCondition.CLEAR
+    weather: WeatherCondition = WeatherCondition.RAIN
     road_condition: RoadCondition = RoadCondition.NORMAL
-    speed_limit_kmh: float = 90.0
+    speed_limit_kmh: float = 120
 
 
 @dataclass

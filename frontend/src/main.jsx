@@ -6,9 +6,9 @@ import "./styles/globals.css";
 import { DashboardProvider } from "./context/DashboardContext";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-    <React.StrictMode>
-        <DashboardProvider>
-            <App />
-        </DashboardProvider>
-    </React.StrictMode>
+  <React.StrictMode>
+    <DashboardProvider>
+      <App />
+    </DashboardProvider>
+  </React.StrictMode>,
 );

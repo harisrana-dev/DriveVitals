@@ -98,6 +98,12 @@ PID_MAP: dict[str, PidMetadata] = {
         pid_name="Tyre Health",
         is_standard=False,
     ),
+    "fuel_rate": PidMetadata(
+        pid_code=const.PID_FUEL_RATE,
+        mode=const.OBD_MODE_CURRENT_DATA,
+        pid_name="Fuel Rate",
+        is_standard=True,
+    ),
 }
 
 

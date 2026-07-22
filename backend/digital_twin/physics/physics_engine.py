@@ -102,6 +102,7 @@ class PhysicsTickResult:
             already folded into `vehicle.state.odometer_km`).
         average_speed_kmh: Average speed over this tick.
         fuel_consumed_liters: Fuel/energy consumed this tick.
+        fuel_rate_lph: Instantaneous fuel consumption rate in L/h.
         remaining_range_km: Estimated remaining range at this tick's
             fuel level and consumption rate.
         oil_life_percent: Updated oil life; not persisted anywhere on
@@ -115,6 +116,7 @@ class PhysicsTickResult:
     distance_travelled_km: float
     average_speed_kmh: float
     fuel_consumed_liters: float
+    fuel_rate_lph: float
     remaining_range_km: float
     oil_life_percent: float
     is_overheating: bool
@@ -321,12 +323,14 @@ class PhysicsEngine:
         state.odometer_km = new_odometer_km
         state.engine_hours = new_engine_hours
         state.health_score = new_health_score
+        state.fuel_rate_lph = fuel_rate_l_per_hour
 
         return PhysicsTickResult(
             acceleration_mps2=acceleration_mps2,
             distance_travelled_km=distance_travelled_km,
             average_speed_kmh=average_speed_kmh,
             fuel_consumed_liters=fuel_consumed_liters,
+            fuel_rate_lph=fuel_rate_l_per_hour,
             remaining_range_km=remaining_range_km,
             oil_life_percent=new_oil_life_percent,
             is_overheating=is_overheating,

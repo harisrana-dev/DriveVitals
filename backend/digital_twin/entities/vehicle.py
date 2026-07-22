@@ -105,6 +105,7 @@ class VehicleState:
     odometer_km: float = 0.0
     engine_hours: float = 0.0
     health_score: float = 100.0
+    fuel_rate_lph: float = 0.0
 
     def __post_init__(self) -> None:
         """Validate percentage-bounded fields and non-negative cumulative fields.

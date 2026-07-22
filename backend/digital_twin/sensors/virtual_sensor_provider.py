@@ -279,6 +279,18 @@ class TyreHealthSensor(_NumericVehicleStateSensor):
         return 100.0 - state.tyre_wear_percent
 
 
+class FuelRateSensor(_NumericVehicleStateSensor):
+    """Reports instantaneous fuel consumption rate in L/h.
+
+    Reads from `VehicleState.fuel_rate_lph`, which is set by the
+    PhysicsEngine each tick from the real fuel model computation.
+    """
+
+    _sensor_name = "fuel_rate"
+    _unit = "L/h"
+    _state_attribute = "fuel_rate_lph"
+
+
 #: The complete, fixed set of sensors this sprint implements. Order
 #: matches the "IMPLEMENTED" table in the module gap report above.
 _ALL_SENSOR_TYPES: tuple[type[Sensor], ...] = (
@@ -292,6 +304,7 @@ _ALL_SENSOR_TYPES: tuple[type[Sensor], ...] = (
     OdometerSensor,
     BrakePadHealthSensor,
     TyreHealthSensor,
+    FuelRateSensor,
 )
 
 

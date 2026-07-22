@@ -43,7 +43,7 @@ from digital_twin.managers.fleet_manager import FleetManager
 from digital_twin.managers.maintenance_manager import MaintenanceManager
 from digital_twin.managers.trip_manager import TripManager
 from digital_twin.managers.vehicle_manager import VehicleManager
-from digital_twin.physics.physics_engine import PhysicsEngine
+from digital_twin.physics.physics_engine import PhysicsEngine, PhysicsTickResult
 from digital_twin.runtime.digital_twin_runtime import DigitalTwinRuntime
 from digital_twin.runtime.tick_context import TickContext
 from digital_twin.sensors.sensor_models import SensorReading
@@ -58,6 +58,15 @@ from digital_twin.telemetry.telemetry_generator import TelemetryGenerator
 from digital_twin.telemetry.telemetry_packet import TelemetryPacket
 from digital_twin.telemetry.telemetry_pipeline import TelemetryPipeline
 from digital_twin.telemetry.telemetry_stream import InMemoryTelemetryStream, TelemetryStream
+
+from datetime import datetime
+
+
+def _make_status_change(status: TripStatus, timestamp: datetime) -> "TripStatusChange":
+    """Create a TripStatusChange record for trip lifecycle tracking."""
+    from digital_twin.entities.trip import TripStatusChange
+    return TripStatusChange(status=status, timestamp=timestamp)
+
 
 #: Deterministic cycle of behaviour profiles applied to drivers in
 #: order, wrapping if fleet_size exceeds the cycle length. Uses the
@@ -139,6 +148,8 @@ class _VehicleUnit:
             simply live on VehicleState).
         last_packet: The most recently generated TelemetryPacket, kept
             for the runner's own summary printing.
+        trip_counter: Number of trips completed by this vehicle so far.
+        completed_trips: List of completed Trip entities for this vehicle.
     """
 
     vehicle_id: str
@@ -152,6 +163,14 @@ class _VehicleUnit:
     ticks_since_last_shift: int = 999
     previous_oil_life_percent: float = 100.0
     last_packet: TelemetryPacket | None = None
+    last_physics_result: PhysicsTickResult | None = None
+    trip_counter: int = 0
+    completed_trips: list[Trip] = None  # type: ignore[assignment]
+    trip_distance_km: float = 50.0
+
+    def __post_init__(self) -> None:
+        if self.completed_trips is None:
+            self.completed_trips = []
 
 
 class SimulationRunner:
@@ -309,6 +328,9 @@ class SimulationRunner:
                 status=TripStatus.IN_PROGRESS,
                 distance_planned_km=50.0,
             )
+            trip_entity.status_history.append(
+                _make_status_change(TripStatus.IN_PROGRESS, start_time)
+            )
 
             self._vehicle_units[vehicle_id] = _VehicleUnit(
                 vehicle_id=vehicle_id,
@@ -319,6 +341,75 @@ class SimulationRunner:
                 sensor_provider=VirtualSensorProvider(),
                 telemetry_generator=TelemetryGenerator(),
             )
+
+    def _create_trip_entity(
+        self,
+        vehicle_id: str,
+        driver_id: str,
+        trip_id: str,
+        distance_planned_km: float = 50.0,
+        start_time: datetime | None = None,
+    ) -> Trip:
+        """Create a new Trip entity in IN_PROGRESS status.
+
+        Args:
+            vehicle_id: The vehicle this trip belongs to.
+            driver_id: The driver assigned to this trip.
+            trip_id: Unique trip identifier.
+            distance_planned_km: Total planned distance for the trip.
+            start_time: Optional start time for the trip.
+
+        Returns:
+            A new Trip entity ready for simulation.
+        """
+        trip = Trip(
+            trip_id=trip_id,
+            vehicle_id=vehicle_id,
+            driver_id=driver_id,
+            status=TripStatus.IN_PROGRESS,
+            distance_planned_km=distance_planned_km,
+        )
+        if start_time is not None:
+            trip.start_time = start_time
+            trip.status_history.append(
+                _make_status_change(TripStatus.IN_PROGRESS, start_time)
+            )
+        return trip
+
+    def _complete_and_create_next_trip(self, unit: _VehicleUnit, tick_context: TickContext) -> None:
+        """Complete the current trip and create a new one for the vehicle.
+
+        The completed trip is preserved in unit.completed_trips.
+        A new trip is created with reset metrics and assigned to the vehicle.
+        """
+        trip = unit.trip_entity
+
+        # Finalize the completed trip
+        trip.distance_completed_km = trip.distance_planned_km
+        trip.end_time = tick_context.simulation_time
+        trip.status = TripStatus.COMPLETED
+        trip.status_history.append(
+            _make_status_change(TripStatus.COMPLETED, tick_context.simulation_time)
+        )
+
+        # Preserve the completed trip
+        unit.completed_trips.append(trip)
+
+        # Create the next trip
+        unit.trip_counter += 1
+        new_trip_id = f"{unit.vehicle_id}-trip-{unit.trip_counter:04d}"
+        new_trip = self._create_trip_entity(
+            vehicle_id=unit.vehicle_id,
+            driver_id=unit.driver_id,
+            trip_id=new_trip_id,
+            distance_planned_km=unit.trip_distance_km,
+            start_time=tick_context.simulation_time,
+        )
+
+        # Assign the new trip to the vehicle and driver
+        unit.trip_entity = new_trip
+        unit.vehicle_entity.current_trip_id = new_trip_id
+        unit.driver_entity.current_trip_id = new_trip_id
 
     def start(self) -> None:
         """Start the underlying DigitalTwinRuntime."""
@@ -425,6 +516,7 @@ class SimulationRunner:
             previous_oil_life_percent=unit.previous_oil_life_percent,
         )
         unit.previous_oil_life_percent = physics_result.oil_life_percent
+        unit.last_physics_result = physics_result
 
         # Accumulate physics results into the active Trip entity.
         trip = unit.trip_entity
@@ -439,6 +531,10 @@ class SimulationRunner:
             trip.average_speed_kmh = (
                 trip.distance_completed_km / trip.duration_minutes
             ) * 60.0
+
+        # Check for trip completion
+        if trip.distance_completed_km >= trip.distance_planned_km:
+            self._complete_and_create_next_trip(unit, tick_context)
 
         print("\n[6] PHYSICS RESULT")
         print(physics_result)
@@ -502,6 +598,31 @@ class SimulationRunner:
             f"rpm={state.current_rpm:5.0f} | "
             f"gear={state.current_gear:2d}"
         )
+
+    def get_completed_trips(self, vehicle_id: str) -> list[Trip]:
+        """Return all completed trips for a vehicle.
+
+        Args:
+            vehicle_id: Id of the vehicle to query.
+
+        Returns:
+            List of completed Trip entities, oldest first.
+        """
+        return list(self._vehicle_units[vehicle_id].completed_trips)
+
+    def get_all_trip_ids_for_vehicle(self, vehicle_id: str) -> list[str]:
+        """Return all trip IDs associated with a vehicle (completed + active).
+
+        Args:
+            vehicle_id: Id of the vehicle to query.
+
+        Returns:
+            List of trip ID strings.
+        """
+        unit = self._vehicle_units[vehicle_id]
+        ids = [t.trip_id for t in unit.completed_trips]
+        ids.append(unit.trip_entity.trip_id)
+        return ids
 
 
 def main() -> None:

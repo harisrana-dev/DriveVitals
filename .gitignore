@@ -103,7 +103,6 @@ Desktop.ini
 # ----------------------------
 # Generated Telemetry
 # ----------------------------
-telemetry/
 simulation_output/
 generated_data/
 logs/
@@ -111,7 +110,6 @@ logs/
 # ----------------------------
 # ML
 # ----------------------------
-models/
 checkpoints/
 wandb/
 

@@ -21,6 +21,7 @@ from backend.fleet.runtime.fleet_runner import FleetRunner
 from backend.telemetry.models.telemetry_sample import TelemetrySample
 from backend.fleet.models.trip import Trip
 from backend.pipeline.telemetry_pipeline import TelemetryPipeline
+from backend.analytics.engine import AnalyticsEngine
 
 def print_telemetry(sample: TelemetrySample) -> None:
     """
@@ -62,6 +63,8 @@ def main() -> None:
         tick_seconds=tick_seconds,
     )
     pipeline = TelemetryPipeline()
+    analytics_engine = AnalyticsEngine()
+    pipeline.register(analytics_engine)
 
     # Add every configured assignment to the runtime.
     for assignment in configured_fleet.assignments:

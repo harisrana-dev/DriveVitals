@@ -20,6 +20,7 @@ from backend.fleet.config.fleet_factory import FleetFactory
 from backend.fleet.runtime.fleet_runner import FleetRunner
 from backend.telemetry.models.telemetry_sample import TelemetrySample
 from backend.fleet.models.trip import Trip
+from backend.pipeline.telemetry_pipeline import TelemetryPipeline
 
 def print_telemetry(sample: TelemetrySample) -> None:
     """
@@ -60,6 +61,7 @@ def main() -> None:
     fleet = FleetRunner(
         tick_seconds=tick_seconds,
     )
+    pipeline = TelemetryPipeline()
 
     # Add every configured assignment to the runtime.
     for assignment in configured_fleet.assignments:
@@ -118,6 +120,7 @@ def main() -> None:
 
         for sample in samples:
             print_telemetry(sample)
+            pipeline.publish(sample)
 
         now = now + timedelta(seconds=tick_seconds)
         time.sleep(tick_seconds)

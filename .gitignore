@@ -63,6 +63,7 @@ pnpm-debug.log*
 # VS Code
 # ----------------------------
 .vscode/
+.mimocode/
 
 # Uncomment if you want to share workspace settings
 # !.vscode/settings.json

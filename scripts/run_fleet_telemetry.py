@@ -22,6 +22,10 @@ from backend.telemetry.models.telemetry_sample import TelemetrySample
 from backend.fleet.models.trip import Trip
 from backend.pipeline.telemetry_pipeline import TelemetryPipeline
 from backend.analytics.engine import AnalyticsEngine
+from backend.analytics.state.runtime_state_store import RuntimeStateStore
+from backend.analytics.context.context_store import AnalyticsContextStore
+from backend.analytics.context.analytics_context import AnalyticsContext
+
 
 def print_telemetry(sample: TelemetrySample) -> None:
     """
@@ -63,7 +67,15 @@ def main() -> None:
         tick_seconds=tick_seconds,
     )
     pipeline = TelemetryPipeline()
-    analytics_engine = AnalyticsEngine()
+
+    runtime_store = RuntimeStateStore()
+    context_store = AnalyticsContextStore()
+
+    analytics_engine = AnalyticsEngine(
+        runtime_store=runtime_store,
+        context_store=context_store,
+    )
+
     pipeline.register(analytics_engine)
 
     # Add every configured assignment to the runtime.
@@ -91,6 +103,20 @@ def main() -> None:
             route_id=route.route_id,
         )
 
+        context_store.register(
+            AnalyticsContext(
+                vehicle_id=vehicle.vehicle_id,
+                driver_id=driver.driver_id,
+                trip_id=trip.trip_id,
+                route_id=route.route_id,
+                route_type=route.route_type,
+                speed_limit_kmh=route.speed_limit_kmh,
+                vehicle_make=vehicle.make,
+                vehicle_model=vehicle.model,
+                vehicle_year=vehicle.year,
+            )
+        )
+
         fleet.add_assignment(
             assignment=assignment,
             vehicle=vehicle,
@@ -107,7 +133,7 @@ def main() -> None:
     print()
 
     now = start_time
-    tick = 0
+    tick =0
 
     fleet.start_all(now=now)
 
@@ -125,6 +151,16 @@ def main() -> None:
             print_telemetry(sample)
             pipeline.publish(sample)
 
+            analysis_input = analytics_engine.get_input(sample.vehicle_id)
+
+            print(
+                f"  [ANALYTICS] "
+                f"{analysis_input.context.vehicle_make} "
+                f"{analysis_input.context.vehicle_model} | "
+                f"Route: {analysis_input.context.route_type} | "
+                f"Limit: {analysis_input.context.speed_limit_kmh:.0f} km/h"
+            )
+        tick+=1
         now = now + timedelta(seconds=tick_seconds)
         time.sleep(tick_seconds)
 

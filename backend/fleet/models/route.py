@@ -23,3 +23,4 @@ class Route:
     destination: str
     distance_km: float
     route_type: RouteType
+    speed_limit_kmh: float = 60.0

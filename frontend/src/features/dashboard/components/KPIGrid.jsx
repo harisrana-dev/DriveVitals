@@ -1,147 +1,116 @@
 import KPICard from './KPICard';
 import { useDashboard } from '../../../context/DashboardContext';
 import {
-  Radio,
-  HeartPulse,
-  TriangleAlert,
+  Truck,
+  MapPin,
   Fuel,
-  Gauge,
+  DollarSign,
   Wrench,
-} from "lucide-react";
+  UserCheck,
+} from 'lucide-react';
 
-// KPIGrid: exactly six KPI cards, per Sprint 1 spec.
 function KPIGrid() {
-    const { vehicles } = useDashboard();
+  const { vehicles } = useDashboard();
+  const fleet = Object.values(vehicles);
 
-    const fleet = Object.values(vehicles);
+  /* ── Derived metrics ─────────────────────────────────── */
 
-    const vehiclesOnline = fleet.length;
+  // 🚚 Total Vehicles
+  const totalVehicles = fleet.length;
 
-    const healthyVehicles = fleet.filter(
-       vehicle => vehicle.vehicle_health.health === "healthy"
-    ).length;
+  // 📍 Total Distance Travelled (sum of odometer readings, km)
+  const totalDistance = fleet
+    .reduce((sum, v) => sum + (v.telemetry?.odometer_km ?? 0), 0)
+    .toLocaleString();
 
-    const activeAlerts = fleet.reduce(
-       (total, vehicle) => total + vehicle.alerts.length,
-       0
-    );
+  // ⛽ Fuel Consumed (sum across fleet, litres)
+  const fuelConsumed = fleet
+    .reduce((sum, v) => sum + (v.fuel_efficiency?.total_fuel_consumed_liters ?? 0), 0)
+    .toLocaleString();
 
-    const averageSpeed =
-       fleet.length > 0
-          ? (
-              fleet.reduce(
-                  (total, vehicle) => total + vehicle.telemetry.speed_kmh,
-                  0
-              ) / fleet.length
-          ).toFixed(1)
-          : 0;
+  // 💰 Fleet Operating Cost (sum of trip costs)
+  const operatingCost = fleet
+    .reduce((sum, v) => sum + (v.financials?.operating_cost_usd ?? 0), 0)
+    .toLocaleString();
 
-    const fuelVehicles = fleet.filter(
-       vehicle => vehicle.fuel_efficiency.km_per_liter !== null
-    );
+  // 🔧 Maintenance Due
+  const maintenanceDue = fleet.filter(
+    (v) =>
+      v.alerts?.some((a) => a.type === 'maintenance') ||
+      v.vehicle_health?.health === 'maintenance'
+  ).length;
 
-    const averageFuelEfficiency =
-       fuelVehicles.length > 0
-          ? (
-              fuelVehicles.reduce(
-                  (total, vehicle) =>
-                      total + vehicle.fuel_efficiency.km_per_liter,
-                  0
-              ) / fuelVehicles.length
-          ).toFixed(1)
-          : "--";
+  // 👨‍✈️ Active Drivers
+  const activeDrivers = fleet.filter(
+    (v) => v.status === 'active' || v.telemetry?.speed_kmh > 0
+  ).length;
 
-   const vehiclesNeedingAttention = fleet.filter(
-      vehicle =>
-          vehicle.alerts.length > 0 ||
-          vehicle.vehicle_health.health !== "healthy"
-   ).length;
+  /* ── Statuses ─────────────────────────────────────────── */
+  const maintenanceStatus = maintenanceDue === 0 ? 'healthy' : maintenanceDue >= 5 ? 'critical' : 'warning';
+  const driverStatus      = activeDrivers === 0  ? 'offline' : 'healthy';
 
-const kpiData = [
-  {
-    id: "vehicles-online",
-    icon: Radio,
-    title: "Vehicles Online",
-    value: vehiclesOnline,
-    context: "Status",
-    statusText: "Live Monitoring",
-    status: "info",
-  },
-
-  {
-    id: "healthy",
-    icon: HeartPulse,
-    title: "Healthy Vehicles",
-    value: healthyVehicles,
-    context: "Fleet Health",
-    statusText:
-      healthyVehicles === vehiclesOnline
-        ? "Excellent"
-        : "Needs Attention",
-    status:
-      healthyVehicles === vehiclesOnline
-        ? "healthy"
-        : "warning",
-  },
-
-  {
-    id: "alerts",
-    icon: TriangleAlert,
-    title: "Active Alerts",
-    value: activeAlerts,
-    context: "Priority",
-    statusText:
-      activeAlerts > 0
-        ? "Needs Review"
-        : "No Active Alerts",
-    status:
-      activeAlerts > 0
-        ? "warning"
-        : "healthy",
-  },
-
-  {
-    id: "fuel",
-    icon: Fuel,
-    title: "Avg Fuel Efficiency",
-    value: `${averageFuelEfficiency} km/L`,
-    context: "Fleet Average",
-    statusText: "Current",
-    status: "info",
-  },
-
-  {
-    id: "speed",
-    icon: Gauge,
-    title: "Avg Fleet Speed",
-    value: `${averageSpeed} km/h`,
-    context: "Across Fleet",
-    statusText: "Live",
-    status: "info",
-  },
-
-  {
-    id: "attention",
-    icon: Wrench,
-    title: "Need Attention",
-    value: vehiclesNeedingAttention,
-    context: "Operations",
-    statusText:
-      vehiclesNeedingAttention > 0
-        ? "Requires Action"
-        : "All Clear",
-    status:
-      vehiclesNeedingAttention > 0
-        ? "warning"
-        : "healthy",
-  },
-];
+  const kpiData = [
+    {
+      id:         'total-vehicles',
+      icon:       Truck,
+      title:      'Total Vehicles',
+      value:      totalVehicles || '--',
+      context:    'Fleet Size',
+      statusText: totalVehicles > 0 ? 'Registered' : 'No data',
+      status:     'healthy',          // 🟢 Green
+    },
+    {
+      id:         'total-distance',
+      icon:       MapPin,
+      title:      'Total Distance',
+      value:      totalDistance ? `${totalDistance} km` : '--',
+      context:    'Odometer Sum',
+      statusText: 'All Vehicles',
+      status:     'info',             // 🔵 Blue
+    },
+    {
+      id:         'fuel-consumed',
+      icon:       Fuel,
+      title:      'Fuel Consumed',
+      value:      fuelConsumed ? `${fuelConsumed} L` : '--',
+      context:    'Fleet Total',
+      statusText: 'This Period',
+      status:     'warning',          // 🟠 Orange
+    },
+    {
+      id:         'operating-cost',
+      icon:       DollarSign,
+      title:      'Fleet Operating Cost',
+      value:      operatingCost ? `$${operatingCost}` : '--',
+      context:    'Total Spend',
+      statusText: 'This Period',
+      status:     'info',             // 🔵 Blue
+    },
+    {
+      id:         'maintenance-due',
+      icon:       Wrench,
+      title:      'Maintenance Due',
+      value:      maintenanceDue,
+      context:    'Vehicles',
+      statusText: maintenanceDue === 0 ? 'All Clear' : 'Requires Action',
+      status:     maintenanceStatus,  // 🟢 / 🟠 / 🔴 based on count
+    },
+    {
+      id:         'active-drivers',
+      icon:       UserCheck,
+      title:      'Active Drivers',
+      value:      activeDrivers || '--',
+      context:    'On Duty Now',
+      statusText: activeDrivers > 0 ? 'Live' : 'None On Duty',
+      status:     driverStatus,       // 🟢 Green
+    },
+  ];
 
   return (
     <section className="kpi-grid" aria-label="Fleet key performance indicators">
       {kpiData.map((kpi) => (
-    <KPICard key={kpi.id} {...kpi} />
-))}
+        <KPICard key={kpi.id} {...kpi} />
+      ))}
     </section>
   );
 }

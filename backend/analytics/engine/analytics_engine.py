@@ -49,6 +49,15 @@ from backend.analytics.state.runtime_state_store import (
 from backend.telemetry.models.telemetry_sample import (
     TelemetrySample,
 )
+from backend.analytics.snapshot.analytics_snapshot import (
+    AnalyticsSnapshot,
+)
+from backend.analytics.snapshot.snapshot_store import (
+    AnalyticsSnapshotStore,
+)
+from backend.streaming.snapshot_stream import (
+    AnalyticsSnapshotStream,
+)
 
 
 class AnalyticsEngine:
@@ -74,6 +83,8 @@ class AnalyticsEngine:
         driver_behaviour_analyzer: DriverBehaviourAnalyzer,
         event_tracker: BehaviourEventTracker,
         behaviour_summarizer: DriverBehaviourSummarizer,
+        snapshot_store: AnalyticsSnapshotStore,
+        snapshot_stream: AnalyticsSnapshotStream,
     ) -> None:
         self._runtime_store = runtime_store
         self._context_store = context_store
@@ -84,6 +95,10 @@ class AnalyticsEngine:
         self._behaviour_summarizer = (
             behaviour_summarizer
         )
+        self._snapshot_stream = (
+            snapshot_stream
+        )
+        self._snapshot_store = snapshot_store
 
         # Latest AnalysisInput for each vehicle.
         self._latest_inputs: dict[
@@ -116,7 +131,7 @@ class AnalyticsEngine:
     def consume(
         self,
         sample: TelemetrySample,
-    ) -> None:
+    ) -> AnalyticsSnapshot:
         """
         Consume telemetry and run the analytics pipeline.
         """
@@ -200,6 +215,29 @@ class AnalyticsEngine:
             ).extend(
                 completed_events
             )
+        snapshot = AnalyticsSnapshot(
+            vehicle_id=sample.vehicle_id,
+            driver_id=sample.driver_id,
+            trip_id=sample.trip_id,
+            timestamp=sample.timestamp,
+            telemetry=sample,
+            behaviour=behaviour_analysis,
+            completed_events=tuple(completed_events),
+            active_event_types=tuple(
+                self._event_tracker.active_event_types(
+                    sample.vehicle_id
+                )
+            ),
+        )
+        self._snapshot_store.update(
+            snapshot
+        )
+        self._snapshot_stream.publish(
+            snapshot
+        )
+
+
+        return snapshot
 
     def get_input(
         self,
@@ -225,6 +263,27 @@ class AnalyticsEngine:
         return self._latest_behaviour.get(
             vehicle_id
         )
+
+    def get_snapshot(
+        self,
+        vehicle_id: str,
+    ) -> AnalyticsSnapshot | None:
+        """
+        Return the latest analytics snapshot for one vehicle.
+        """
+
+        return self._snapshot_store.get(
+            vehicle_id
+        )
+
+    def get_all_snapshots(
+        self,
+    ) -> tuple[AnalyticsSnapshot, ...]:
+        """
+        Return the latest analytics snapshot for every vehicle.
+        """
+
+        return self._snapshot_store.get_all()
 
     def drain_completed_events(
         self,

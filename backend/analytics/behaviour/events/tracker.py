@@ -149,6 +149,21 @@ class BehaviourEventTracker:
 
         return completed_events
 
+    def active_event_types(
+        self,
+        vehicle_id: str,
+    ) -> tuple[str, ...]:
+        """
+        Return the continuous behaviour events currently active
+        for one vehicle.
+        """
+
+        return tuple(
+            active.event_type
+            for active in self._active_events.values()
+            if active.vehicle_id == vehicle_id
+        )
+
     @staticmethod
     def _complete(
         active: _ActiveEvent,

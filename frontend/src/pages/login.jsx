@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/login.css";
 import ThemeToggle from "../components/ThemeToggle";
+import AppLoader from "../components/common/AppLoader";
 
 /* ── Inline fleet SVG illustration ──────────────────────── */
 function FleetIllustration() {
@@ -86,6 +87,7 @@ function Login() {
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [showLoader, setShowLoader] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -102,7 +104,7 @@ function Login() {
     }
 
     if (email === "admin@drivevitals.com" && password === "admin123") {
-      navigate("/dashboard");
+      setShowLoader(true);
     } else {
       setError("Invalid email or password.");
     }
@@ -168,6 +170,9 @@ function Login() {
         </div>
       </div>
 
+      {showLoader && (
+        <AppLoader onComplete={() => navigate("/dashboard")} />
+      )}
     </div>
   );
 }

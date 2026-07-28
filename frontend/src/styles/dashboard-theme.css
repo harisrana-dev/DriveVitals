@@ -1,0 +1,165 @@
+/* Dashboard theme variables — layered on top of base theme.css */
+/* Uses [data-theme] selectors to match the source dashboard's design system */
+
+:root, [data-theme="light"] {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8f9fa;
+  --color-border: #e2e5ea;
+  --color-border-light: #eef0f3;
+  --color-text-primary: #1a1d26;
+  --color-text-secondary: #5c6370;
+  --color-text-muted: #8b919a;
+  --color-accent: #3b5bdb;
+  --color-accent-hover: #2f4fc4;
+  --color-accent-light: #edf2ff;
+  --color-accent-subtle: rgba(59, 91, 219, 0.08);
+  --color-green: #2b8a3e;
+  --color-green-light: #ebfbee;
+  --color-green-bg: rgba(43, 138, 62, 0.08);
+  --color-amber: #e67700;
+  --color-amber-light: #fff9db;
+  --color-amber-bg: rgba(230, 119, 0, 0.08);
+  --color-red: #c92a2a;
+  --color-red-light: #fff5f5;
+  --color-red-bg: rgba(201, 42, 42, 0.08);
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-border: #e2e5ea;
+  --color-sidebar-hover: #f5f6f8;
+  --color-sidebar-active: #edf2ff;
+  --color-sidebar-active-text: #3b5bdb;
+  --color-topbar-bg: #ffffff;
+  --color-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --color-shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --color-shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+  --chart-grid: #eef0f3;
+  --chart-tooltip-bg: #1a1d26;
+  --chart-tooltip-text: #ffffff;
+}
+
+[data-theme="dark"] {
+  --color-bg: #111318;
+  --color-surface: #1a1d26;
+  --color-surface-hover: #22262f;
+  --color-border: #2a2e38;
+  --color-border-light: #22262f;
+  --color-text-primary: #e8eaed;
+  --color-text-secondary: #9aa0ab;
+  --color-text-muted: #6b7280;
+  --color-accent: #5c7cfa;
+  --color-accent-hover: #748ffc;
+  --color-accent-light: rgba(92, 124, 250, 0.12);
+  --color-accent-subtle: rgba(92, 124, 250, 0.06);
+  --color-green: #51cf66;
+  --color-green-light: rgba(81, 207, 102, 0.1);
+  --color-green-bg: rgba(81, 207, 102, 0.06);
+  --color-amber: #fcc419;
+  --color-amber-light: rgba(252, 196, 25, 0.1);
+  --color-amber-bg: rgba(252, 196, 25, 0.06);
+  --color-red: #ff6b6b;
+  --color-red-light: rgba(255, 107, 107, 0.1);
+  --color-red-bg: rgba(255, 107, 107, 0.06);
+  --color-sidebar-bg: #1a1d26;
+  --color-sidebar-border: #2a2e38;
+  --color-sidebar-hover: #22262f;
+  --color-sidebar-active: rgba(92, 124, 250, 0.1);
+  --color-sidebar-active-text: #748ffc;
+  --color-topbar-bg: #1a1d26;
+  --color-shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --color-shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+  --color-shadow-lg: 0 4px 16px rgba(0,0,0,0.4);
+  --chart-grid: #2a2e38;
+  --chart-tooltip-bg: #e8eaed;
+  --chart-tooltip-text: #1a1d26;
+}
+
+/* Dashboard reset */
+#root {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  text-align: left;
+  border: none;
+}
+
+/* Scrollbar styling for dashboard */
+.dashboard-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dashboard-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.dashboard-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.25s ease-out both;
+}
+
+.stagger-1 { animation-delay: 0.03s; }
+.stagger-2 { animation-delay: 0.06s; }
+.stagger-3 { animation-delay: 0.09s; }
+.stagger-4 { animation-delay: 0.12s; }
+.stagger-5 { animation-delay: 0.15s; }
+.stagger-6 { animation-delay: 0.18s; }
+
+/* Responsive grid helpers */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.fleet-pulse-legend {
+  display: flex;
+  gap: 16px;
+}
+
+@media (max-width: 1280px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .fleet-pulse-legend {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .two-col-grid {
+    grid-template-columns: 1fr;
+  }
+}

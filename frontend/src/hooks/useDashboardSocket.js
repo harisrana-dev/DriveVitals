@@ -1,67 +1,41 @@
 import { useEffect } from "react";
-
-import { dashboardSocket } 
-from "../services/websocket";
-
-import { useDashboard }
-from "../context/DashboardContext";
+import { useFleetContext } from "../context/FleetContext";
 
 
-
-export default function useDashboardSocket(){
-
+export function useDashboardSocket(){
 
     const {
-        updateVehicle,
-        updateRecentEvents,
-        updateFleetTrends
-    } = useDashboard();
-    
-
+        setDashboard
+    } = useFleetContext();
 
 
     useEffect(()=>{
 
+        const socket = new WebSocket(
+            "ws://localhost:8000/ws/dashboard"
+        );
 
-        dashboardSocket.connect();
+
+        socket.onmessage = (event)=>{
+
+            const message = JSON.parse(
+                event.data
+            );
 
 
-
-        const unsubscribe =
-        dashboardSocket.subscribe((message) => {
-
-            console.log("📩 Received WebSocket message:", message);
-
-            if (message.type === "dashboard_update") {
-
-                 console.log("🚗 Vehicle:", message.vehicle);
-                 console.log("📋 Recent Events:", message.recent_events);
-                 console.log(message.fleet_trends);
-
-                 updateVehicle(message.vehicle);
-                 updateRecentEvents(message.recent_events);
-                 updateFleetTrends(message.fleet_trends);
-
-            } else {
-
-                console.log("⚠️ Unknown message type:", message.type);
-
+            if(
+                message.type === "dashboard_snapshot"
+                && message.data
+            ){
+                setDashboard(message.data);
             }
-
-        });
-
-
-
-        return ()=>{
-
-            unsubscribe();
-
-            dashboardSocket.disconnect();
 
         };
 
 
-    },[]);
+        return ()=>socket.close();
 
+
+    },[setDashboard]);
 
 }

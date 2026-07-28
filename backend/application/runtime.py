@@ -57,6 +57,10 @@ from backend.streaming.snapshot_stream import (
     AnalyticsSnapshotStream,
 )
 
+from backend.dashboard.services.dashboard_builder import (
+    DashboardBuilder,
+)
+
 
 class DriveVitalsRuntime:
     """
@@ -144,6 +148,18 @@ class DriveVitalsRuntime:
         )
 
         # --------------------------------------------------------------
+        # Dashboard builder
+        # --------------------------------------------------------------
+
+        self._dashboard_builder = (
+            DashboardBuilder(
+                context_store=(
+                    self._context_store
+                )
+            )
+        )
+
+        # --------------------------------------------------------------
         # Analytics engine
         # --------------------------------------------------------------
 
@@ -180,6 +196,7 @@ class DriveVitalsRuntime:
         self._telemetry_pipeline.register(
             self._analytics_engine
         )
+
 
         # --------------------------------------------------------------
         # Load fleet configuration
@@ -278,6 +295,9 @@ class DriveVitalsRuntime:
                     ),
                     vehicle_year=(
                         vehicle.year
+                    ),
+                    driver_name=(
+                        driver.name
                     ),
                 )
             )
@@ -382,3 +402,7 @@ class DriveVitalsRuntime:
     ) -> FleetRunner:
 
         return self._fleet
+
+    @property
+    def dashboard_builder(self):
+        return self._dashboard_builder

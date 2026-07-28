@@ -27,10 +27,6 @@ export function getMaintenanceItems() {
   return mockMaintenance;
 }
 
-export function getDashboardSummary() {
-  return mockSummary;
-}
-
 export function getTelemetryData() {
   return mockTelemetry;
 }

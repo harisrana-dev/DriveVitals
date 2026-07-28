@@ -14,10 +14,18 @@ import GetStarted from './pages/Introductionpage';
 import Login from './pages/login';
 import Signup from './pages/signup';
 import NotFound from './pages/404page';
+import {
+ DashboardProvider
+} from "./context/DashboardContext";
+import {
+ FleetProvider
+} from "./context/FleetContext";
 
 function App() {
   return (
     <BrowserRouter>
+    <FleetProvider>
+    <DashboardProvider>
       <Routes>
         <Route path="/" element={<GetStarted />} />
         <Route path="/login" element={<Login />} />
@@ -36,6 +44,8 @@ function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
+    </DashboardProvider>
+    </FleetProvider>
     </BrowserRouter>
   );
 }

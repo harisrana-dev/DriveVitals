@@ -1,69 +1,32 @@
-import { createContext, useContext, useState } from "react";
+import {
+    createContext,
+    useContext,
+} from "react";
+
+import {
+    useDashboardSocket
+} from "../hooks/useDashboardSocket";
 
 
-const DashboardContext = createContext(null);
-
-
-
-export function DashboardProvider({ children }) {
-
-
-    const [vehicles, setVehicles] = useState({});
-    const [recentEvents, setRecentEvents] = useState([]);
-    const [fleetTrends, setFleetTrends] = useState([]);
-
-    const updateRecentEvents = (events) => {
-        setRecentEvents(events);
-    };
-
-    const updateVehicle = (vehicle) => {
-
-        setVehicles((previous) => ({
-
-            ...previous,
-
-            [vehicle.vehicle_id]: vehicle
-
-        }));
-
-    };
-
-    const updateFleetTrends = (trends) => {
-
-        const normalized = Array.isArray(trends[0])
-            ? trends.flat()
-            : trends;
-
-
-        setFleetTrends(normalized);
-
-    };
+const DashboardContext =
+createContext(null);
 
 
 
-    const clearVehicles = () => {
+export function DashboardProvider({
+    children
+}){
 
-        setVehicles({});
 
-    };
+    const dashboardData =
+        useDashboardSocket();
 
 
 
     return (
 
         <DashboardContext.Provider
-
-            value={{
-                vehicles,
-                recentEvents,
-                fleetTrends,
-
-                updateVehicle,
-                updateRecentEvents,
-                updateFleetTrends,
-
-                clearVehicles,
-            }}
+            value={dashboardData}
         >
 
             {children}
@@ -76,21 +39,10 @@ export function DashboardProvider({ children }) {
 
 
 
-export function useDashboard() {
+export function useDashboard(){
 
-
-    const context = useContext(DashboardContext);
-
-
-    if (!context) {
-
-        throw new Error(
-            "useDashboard must be used inside DashboardProvider"
-        );
-
-    }
-
-
-    return context;
+    return useContext(
+        DashboardContext
+    );
 
 }

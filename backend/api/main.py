@@ -25,6 +25,11 @@ runtime = (
     DriveVitalsRuntime()
 )
 
+snapshot_publisher = DashboardSnapshotPublisher(
+    queue=snapshot_queue,
+    builder=runtime.dashboard_builder,
+)
+
 runtime_task: asyncio.Task | None = None
 
 snapshot_worker_task: asyncio.Task | None = None
@@ -41,12 +46,6 @@ async def lifespan(
     # --------------------------------------------------------------
     # Connect analytics snapshot stream to dashboard queue
     # --------------------------------------------------------------
-
-    snapshot_publisher = (
-        DashboardSnapshotPublisher(
-            queue=snapshot_queue,
-        )
-    )
 
     runtime.snapshot_stream.subscribe(
         snapshot_publisher

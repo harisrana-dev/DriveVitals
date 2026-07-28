@@ -4,31 +4,32 @@ from backend.analytics.snapshot.analytics_snapshot import (
     AnalyticsSnapshot,
 )
 
+from backend.dashboard.schemas.dashboard_payload import (
+    DashboardSnapshot,
+)
+
 
 class DashboardSnapshotPublisher:
-    """
-    Adapts the synchronous AnalyticsSnapshotStream
-    to the asynchronous dashboard snapshot queue.
-    """
 
     def __init__(
         self,
-        queue: Queue[
-            AnalyticsSnapshot
-        ],
+        queue: Queue[DashboardSnapshot],
+        builder,
     ) -> None:
 
         self._queue = queue
+        self._builder = builder
+
 
     def publish(
         self,
         snapshot: AnalyticsSnapshot,
     ) -> None:
-        """
-        Receive an AnalyticsSnapshot and enqueue it
-        for asynchronous WebSocket broadcasting.
-        """
+
+        dashboard_snapshot = (
+            self._builder.update(snapshot)
+        )
 
         self._queue.put_nowait(
-            snapshot
+            dashboard_snapshot
         )

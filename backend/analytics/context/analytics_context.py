@@ -26,3 +26,5 @@ class AnalyticsContext:
     vehicle_make: str
     vehicle_model: str
     vehicle_year: int
+
+    driver_name: str = ""

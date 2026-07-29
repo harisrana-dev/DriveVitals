@@ -5,42 +5,40 @@ import { useSmoothValue } from '../../hooks/useSmoothValue';
 
 export const HealthKpiCards = memo(function HealthKpiCards() {
   const { fleetStats } = useVehicleHealth();
-
-  if (!fleetStats) return null;
-
-  const smoothAvg = useSmoothValue(fleetStats.avgScore);
+  const safeAvg = fleetStats?.avgScore ?? 0;
+  const smoothFleetHealth = useSmoothValue(safeAvg);
 
   const cards = [
     {
       label: 'Fleet Health Score',
-      value: smoothAvg,
+      value: smoothFleetHealth,
       icon: <HeartPulse size={18} strokeWidth={1.8} />,
-      color: smoothAvg >= 80 ? 'var(--color-green)' : smoothAvg >= 50 ? 'var(--color-amber)' : 'var(--color-red)',
-      bgColor: smoothAvg >= 80 ? 'var(--color-green-bg)' : smoothAvg >= 50 ? 'var(--color-amber-bg)' : 'var(--color-red-bg)',
+      color: smoothFleetHealth >= 80 ? 'var(--color-green)' : smoothFleetHealth >= 50 ? 'var(--color-amber)' : 'var(--color-red)',
+      bgColor: smoothFleetHealth >= 80 ? 'var(--color-green-bg)' : smoothFleetHealth >= 50 ? 'var(--color-amber-bg)' : 'var(--color-red-bg)',
       suffix: '%',
     },
     {
       label: 'Healthy Vehicles',
-      value: fleetStats.healthyCount,
+      value: fleetStats?.healthyCount ?? 0,
       icon: <Shield size={18} strokeWidth={1.8} />,
       color: 'var(--color-green)',
       bgColor: 'var(--color-green-bg)',
-      suffix: `/ ${fleetStats.total}`,
+      suffix: fleetStats ? `/ ${fleetStats.total}` : '',
     },
     {
       label: 'Attention Required',
-      value: fleetStats.warningCount,
+      value: fleetStats?.warningCount ?? 0,
       icon: <AlertTriangle size={18} strokeWidth={1.8} />,
-      color: fleetStats.warningCount > 0 ? 'var(--color-amber)' : 'var(--color-text-muted)',
-      bgColor: fleetStats.warningCount > 0 ? 'var(--color-amber-bg)' : 'var(--color-bg)',
+      color: (fleetStats?.warningCount ?? 0) > 0 ? 'var(--color-amber)' : 'var(--color-text-muted)',
+      bgColor: (fleetStats?.warningCount ?? 0) > 0 ? 'var(--color-amber-bg)' : 'var(--color-bg)',
       suffix: '',
     },
     {
       label: 'Critical Issues',
-      value: fleetStats.criticalCount,
+      value: fleetStats?.criticalCount ?? 0,
       icon: <Activity size={18} strokeWidth={1.8} />,
-      color: fleetStats.criticalCount > 0 ? 'var(--color-red)' : 'var(--color-text-muted)',
-      bgColor: fleetStats.criticalCount > 0 ? 'var(--color-red-bg)' : 'var(--color-bg)',
+      color: (fleetStats?.criticalCount ?? 0) > 0 ? 'var(--color-red)' : 'var(--color-text-muted)',
+      bgColor: (fleetStats?.criticalCount ?? 0) > 0 ? 'var(--color-red-bg)' : 'var(--color-bg)',
       suffix: '',
     },
   ];

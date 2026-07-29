@@ -37,14 +37,22 @@ function mapVehicles(raw) {
     status: mapStatus(v.operational_status),
     speed: v.speed_kmh ?? 0,
     rpm: v.rpm ?? 0,
+    throttle: v.throttle_position_percent ?? null,
+    brake: v.brake_pressure ?? null,
     fuelLevel: v.fuel_level_percent ?? 0,
     coolantTemp: v.coolant_temperature_c ?? 0,
+    engineLoad: v.engine_load_percent ?? null,
     healthScore: v.overall_health_score ?? 0,
     healthCategory: healthCategory(v.overall_health_score),
     odometer: v.odometer_km ?? 0,
-    lastUpdate: formatRelative(v.last_updated_at),
+    lastUpdate: v.last_updated_at,
     alertCount: v.active_alert_count ?? 0,
     activeAlert: v.active_alert_text || null,
+    activeEventTypes: v.active_event_types || [],
+    speeding: v.speeding ?? false,
+    aggressiveThrottle: v.aggressive_throttle ?? false,
+    harshBraking: v.harsh_braking ?? false,
+    highRpm: v.high_rpm ?? false,
   }));
 }
 

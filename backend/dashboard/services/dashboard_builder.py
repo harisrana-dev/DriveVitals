@@ -81,17 +81,31 @@ class DashboardBuilder:
             operational_status=status,
             speed_kmh=telemetry.speed_kmh,
             rpm=telemetry.rpm,
+            throttle_position_percent=(
+                telemetry.throttle_position_percent
+            ),
+            brake_pressure=telemetry.brake_pressure,
             fuel_level_percent=(
                 telemetry.fuel_level_percent
             ),
             coolant_temperature_c=(
                 telemetry.coolant_temperature_c
             ),
+            engine_load_percent=(
+                telemetry.engine_load_percent
+            ),
             overall_health_score=health_score,
             active_alert_count=len(
                 snapshot.active_event_types
             ),
             active_alert_text=active_alert_text,
+            active_event_types=snapshot.active_event_types,
+            speeding=snapshot.behaviour.speeding,
+            aggressive_throttle=(
+                snapshot.behaviour.aggressive_throttle
+            ),
+            harsh_braking=snapshot.behaviour.harsh_braking,
+            high_rpm=snapshot.behaviour.high_rpm,
             odometer_km=telemetry.odometer_km,
             last_updated_at=snapshot.timestamp,
         )

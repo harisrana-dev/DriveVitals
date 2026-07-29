@@ -16,8 +16,26 @@ from backend.api.websocket.dashboard import (
     snapshot_worker,
 )
 
+from backend.api.websocket.trips import (
+    router as trips_router,
+    trips_queue,
+    trips_worker,
+)
+
 from backend.api.websocket.snapshot_publisher import (
     DashboardSnapshotPublisher,
+)
+
+from backend.api.websocket.trip_publisher import (
+    TripSnapshotPublisher,
+)
+
+from backend.trips.store.trip_store import (
+    TripStore,
+)
+
+from backend.trips.services.trip_builder import (
+    TripBuilder,
 )
 
 
@@ -30,9 +48,21 @@ snapshot_publisher = DashboardSnapshotPublisher(
     builder=runtime.dashboard_builder,
 )
 
+trip_store = TripStore()
+
+trip_builder = TripBuilder()
+
+trip_publisher = TripSnapshotPublisher(
+    queue=trips_queue,
+    builder=trip_builder,
+    store=trip_store,
+)
+
 runtime_task: asyncio.Task | None = None
 
 snapshot_worker_task: asyncio.Task | None = None
+
+trips_worker_task: asyncio.Task | None = None
 
 
 @asynccontextmanager
@@ -42,6 +72,7 @@ async def lifespan(
 
     global runtime_task
     global snapshot_worker_task
+    global trips_worker_task
 
     # --------------------------------------------------------------
     # Connect analytics snapshot stream to dashboard queue
@@ -52,12 +83,26 @@ async def lifespan(
     )
 
     # --------------------------------------------------------------
-    # Start dashboard snapshot worker
+    # Register trip flush callback
+    # --------------------------------------------------------------
+
+    runtime.set_trip_flush_callback(
+        trip_publisher.publish
+    )
+
+    # --------------------------------------------------------------
+    # Start background workers
     # --------------------------------------------------------------
 
     snapshot_worker_task = (
         asyncio.create_task(
             snapshot_worker()
+        )
+    )
+
+    trips_worker_task = (
+        asyncio.create_task(
+            trips_worker()
         )
     )
 
@@ -96,7 +141,7 @@ async def lifespan(
             pass
 
     # --------------------------------------------------------------
-    # Stop snapshot worker
+    # Stop background workers
     # --------------------------------------------------------------
 
     if snapshot_worker_task is not None:
@@ -106,6 +151,18 @@ async def lifespan(
         try:
 
             await snapshot_worker_task
+
+        except asyncio.CancelledError:
+
+            pass
+
+    if trips_worker_task is not None:
+
+        trips_worker_task.cancel()
+
+        try:
+
+            await trips_worker_task
 
         except asyncio.CancelledError:
 
@@ -132,6 +189,10 @@ app = FastAPI(
 
 app.include_router(
     dashboard_router
+)
+
+app.include_router(
+    trips_router
 )
 
 

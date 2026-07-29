@@ -61,6 +61,11 @@ from backend.dashboard.services.dashboard_builder import (
     DashboardBuilder,
 )
 
+from typing import Any, Callable
+
+
+TripFlushCallback = Callable[[str, str, Any, Any, list], None]
+
 
 class DriveVitalsRuntime:
     """
@@ -204,6 +209,8 @@ class DriveVitalsRuntime:
 
         self._configure_fleet()
 
+        self._trip_flush_callback: TripFlushCallback | None = None
+
         self._running = False
 
     def _configure_fleet(
@@ -337,6 +344,12 @@ class DriveVitalsRuntime:
 
         now = start_time
 
+        pre_tick_vehicles = {
+            runner.vehicle.vehicle_id
+            for runner
+            in self._fleet.active_runners()
+        }
+
         while (
             self._running
             and self._fleet.active_runners()
@@ -353,6 +366,54 @@ class DriveVitalsRuntime:
                 self._telemetry_pipeline.publish(
                     sample
                 )
+
+            post_tick_vehicles = {
+                runner.vehicle.vehicle_id
+                for runner
+                in self._fleet.active_runners()
+            }
+
+            just_completed = (
+                pre_tick_vehicles
+                - post_tick_vehicles
+            )
+
+            for vehicle_id in just_completed:
+                all_events = (
+                    self._analytics_engine.flush_vehicle(
+                        vehicle_id=vehicle_id,
+                        timestamp=now,
+                    )
+                )
+                if self._trip_flush_callback is not None:
+                    summary = (
+                        self._analytics_engine.get_summary(
+                            vehicle_id
+                        )
+                    )
+                    context = (
+                        self._context_store.get(
+                            vehicle_id
+                        )
+                    )
+                    runtime_state = (
+                        self._runtime_store.get(
+                            vehicle_id
+                        )
+                    )
+                    if (
+                        summary is not None
+                        and context is not None
+                        and runtime_state is not None
+                    ):
+                        self._trip_flush_callback(
+                            summary,
+                            context,
+                            runtime_state,
+                            all_events,
+                        )
+
+            pre_tick_vehicles = post_tick_vehicles
 
             now += timedelta(
                 seconds=self._tick_seconds
@@ -406,3 +467,21 @@ class DriveVitalsRuntime:
     @property
     def dashboard_builder(self):
         return self._dashboard_builder
+
+    @property
+    def runtime_store(
+        self,
+    ) -> RuntimeStateStore:
+        return self._runtime_store
+
+    @property
+    def context_store(
+        self,
+    ) -> AnalyticsContextStore:
+        return self._context_store
+
+    def set_trip_flush_callback(
+        self,
+        callback: TripFlushCallback,
+    ) -> None:
+        self._trip_flush_callback = callback

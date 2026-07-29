@@ -20,11 +20,19 @@ import {
 import {
  FleetProvider
 } from "./context/FleetContext";
+import {
+ TripsProvider
+} from "./context/TripsContext";
+import {
+ TripDrawerProvider
+} from "./context/TripDrawerContext";
 
 function App() {
   return (
     <BrowserRouter>
     <FleetProvider>
+    <TripsProvider>
+    <TripDrawerProvider>
     <DashboardProvider>
       <Routes>
         <Route path="/" element={<GetStarted />} />
@@ -45,6 +53,8 @@ function App() {
         </Route>
       </Routes>
     </DashboardProvider>
+    </TripDrawerProvider>
+    </TripsProvider>
     </FleetProvider>
     </BrowserRouter>
   );

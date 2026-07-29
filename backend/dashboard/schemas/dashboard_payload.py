@@ -37,6 +37,10 @@ class VehicleDashboardSummary:
 
     overall_health_score: float | None
 
+    driver_safety_score: float
+
+    driver_risk_level: str
+
     active_alert_count: int
 
     active_alert_text: str | None

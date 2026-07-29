@@ -61,6 +61,14 @@ class DashboardBuilder:
             snapshot.active_event_types,
         )
 
+        driver_safety_score = self._compute_driver_safety(
+            snapshot.active_event_types,
+        )
+
+        driver_risk_level = self._compute_risk_level(
+            driver_safety_score,
+        )
+
         alert_texts = [
             _ALERT_LABELS.get(evt, evt)
             for evt in snapshot.active_event_types
@@ -95,6 +103,8 @@ class DashboardBuilder:
                 telemetry.engine_load_percent
             ),
             overall_health_score=health_score,
+            driver_safety_score=driver_safety_score,
+            driver_risk_level=driver_risk_level,
             active_alert_count=len(
                 snapshot.active_event_types
             ),
@@ -184,3 +194,31 @@ class DashboardBuilder:
         score -= len(active_events) * 8
 
         return max(0.0, min(100.0, round(score, 1)))
+
+    @staticmethod
+    def _compute_driver_safety(
+        active_events: tuple[str, ...],
+    ) -> float:
+        score = 100.0
+        score -= len(active_events) * 12
+        if "speeding" in active_events:
+            score -= 8
+        if "harsh_braking" in active_events:
+            score -= 10
+        if "aggressive_throttle" in active_events:
+            score -= 6
+        if "high_rpm" in active_events:
+            score -= 6
+        return max(0.0, min(100.0, round(score, 1)))
+
+    @staticmethod
+    def _compute_risk_level(
+        driver_safety_score: float,
+    ) -> str:
+        if driver_safety_score >= 90:
+            return "low"
+        if driver_safety_score >= 70:
+            return "moderate"
+        if driver_safety_score >= 50:
+            return "high"
+        return "critical"

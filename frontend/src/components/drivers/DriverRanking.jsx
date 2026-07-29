@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Crown } from 'lucide-react';
 import { useDriverRanking } from '../../hooks/useDrivers';
-import { TrendIndicator } from './TrendIndicator';
+import { getDriverTrend } from '../../utils/trend';
 
 export const DriverRanking = memo(function DriverRanking({ onDriverClick }) {
   const rankings = useDriverRanking();
@@ -76,10 +76,8 @@ export const DriverRanking = memo(function DriverRanking({ onDriverClick }) {
 });
 
 function RankingRow({ driver, rank, onClick }) {
-  const scoreColor =
-    driver.score >= 90 ? 'var(--color-green)' :
-    driver.score >= 70 ? 'var(--color-amber)' :
-    'var(--color-red)';
+  const trend = getDriverTrend(driver.score);
+  const TrendIcon = trend.Icon;
 
   return (
     <div
@@ -147,12 +145,12 @@ function RankingRow({ driver, rank, onClick }) {
           {driver.tripsCompleted} trips
         </div>
       </div>
-      <TrendIndicator trend={driver.scoreTrend} showPercent compact />
+      <TrendIcon size={14} strokeWidth={2} style={{ color: trend.color, flexShrink: 0 }} />
       <span
         style={{
           fontSize: 16,
           fontWeight: 700,
-          color: scoreColor,
+          color: trend.color,
           fontVariantNumeric: 'tabular-nums',
           minWidth: 32,
           textAlign: 'right',

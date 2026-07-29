@@ -2,8 +2,12 @@ import { useState, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { VehicleDrawerProvider } from '../../context/VehicleDrawerContext';
+import { VehicleDrawer } from '../fleet/VehicleDrawer';
+import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
 
-export function AppShell() {
+function AppShellInner() {
+  const { selectedVehicleId, closeDrawer } = useVehicleDrawer();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -55,6 +59,16 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      <VehicleDrawer vehicleId={selectedVehicleId} onClose={closeDrawer} />
     </>
+  );
+}
+
+export function AppShell() {
+  return (
+    <VehicleDrawerProvider>
+      <AppShellInner />
+    </VehicleDrawerProvider>
   );
 }

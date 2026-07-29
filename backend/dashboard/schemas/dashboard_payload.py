@@ -25,15 +25,31 @@ class VehicleDashboardSummary:
 
     rpm: float | None
 
+    throttle_position_percent: float | None
+
+    brake_pressure: float | None
+
     fuel_level_percent: float | None
 
     coolant_temperature_c: float | None
+
+    engine_load_percent: float | None
 
     overall_health_score: float | None
 
     active_alert_count: int
 
     active_alert_text: str | None
+
+    active_event_types: tuple[str, ...]
+
+    speeding: bool
+
+    aggressive_throttle: bool
+
+    harsh_braking: bool
+
+    high_rpm: bool
 
     odometer_km: float | None
 

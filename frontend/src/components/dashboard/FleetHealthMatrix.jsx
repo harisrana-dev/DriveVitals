@@ -1,4 +1,5 @@
 import { useVehicles } from '../../hooks/useFleetData';
+import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
 
 const categoryStyles = {
   healthy: { bg: 'var(--color-green-bg)', color: 'var(--color-green)', label: 'Healthy' },
@@ -9,6 +10,7 @@ const categoryStyles = {
 
 export function FleetHealthMatrix() {
   const vehicles = useVehicles();
+  const { openDrawer } = useVehicleDrawer();
 
   return (
     <div className="fade-in stagger-5" style={{
@@ -40,19 +42,24 @@ export function FleetHealthMatrix() {
           return (
             <div
               key={v.id}
+              onClick={() => openDrawer(v)}
               style={{
                 padding: '12px',
                 borderRadius: 8,
                 border: `1px solid ${v.healthCategory === 'attention' || v.healthCategory === 'critical' ? barColor : 'var(--color-border-light)'}`,
                 background: v.healthCategory === 'attention' || v.healthCategory === 'critical' ? `${barColor}08` : 'var(--color-bg)',
                 transition: 'all 0.15s ease',
-                cursor: 'default',
+                cursor: 'pointer',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = barColor;
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = 'var(--color-shadow-sm)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = v.healthCategory === 'attention' || v.healthCategory === 'critical' ? barColor : 'var(--color-border-light)';
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>

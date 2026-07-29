@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { ArrowRight, Wrench, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMaintenanceItems } from '../../hooks/useFleetData';
@@ -8,7 +9,7 @@ const priorityStyles = {
   monitor: { bg: 'var(--color-surface-hover)', color: 'var(--color-text-muted)', icon: <CheckCircle size={14} />, label: 'Monitor' },
 };
 
-export function MaintenanceQueue() {
+export const MaintenanceQueue = memo(function MaintenanceQueue() {
   const items = useMaintenanceItems();
 
   return (
@@ -117,4 +118,4 @@ export function MaintenanceQueue() {
       </div>
     </div>
   );
-}
+});

@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Crown } from 'lucide-react';
 import { useDriverRanking } from '../../hooks/useDrivers';
+import { useSmoothValue } from '../../hooks/useSmoothValue';
 import { getDriverTrend } from '../../utils/trend';
 
 export const DriverRanking = memo(function DriverRanking({ onDriverClick }) {
@@ -78,6 +79,7 @@ export const DriverRanking = memo(function DriverRanking({ onDriverClick }) {
 function RankingRow({ driver, rank, onClick }) {
   const trend = getDriverTrend(driver.score);
   const TrendIcon = trend.Icon;
+  const smoothScore = useSmoothValue(driver.score);
 
   return (
     <div
@@ -156,7 +158,7 @@ function RankingRow({ driver, rank, onClick }) {
           textAlign: 'right',
         }}
       >
-        {driver.score}
+        {Math.round(smoothScore)}
       </span>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import * as fleetService from '../services/fleetService';
 import { useFleetContext } from '../context/FleetContext';
 
@@ -56,11 +56,39 @@ function mapVehicles(raw) {
   }));
 }
 
+let _stableCache = null;
+
+function shallowEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const ka = Object.keys(a), kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) if (a[k] !== b[k]) return false;
+  return true;
+}
+
+function stableVehicles(raw) {
+  const mapped = mapVehicles(raw);
+  if (!mapped) return null;
+  if (_stableCache && _stableCache.length === mapped.length) {
+    let changed = false;
+    for (let i = 0; i < mapped.length; i++) {
+      if (!shallowEqual(mapped[i], _stableCache[i])) { changed = true; break; }
+    }
+    if (!changed) return _stableCache;
+  }
+  _stableCache = mapped;
+  return mapped;
+}
+
 export function useVehicles() {
   const { dashboard } = useFleetContext();
+  const fallbackRef = useRef(null);
   return useMemo(() => {
-    const mapped = mapVehicles(dashboard?.vehicles);
-    return mapped || fleetService.getVehicles();
+    const stable = stableVehicles(dashboard?.vehicles);
+    if (stable) return stable;
+    if (!fallbackRef.current) fallbackRef.current = fleetService.getVehicles();
+    return fallbackRef.current;
   }, [dashboard]);
 }
 
@@ -87,22 +115,12 @@ export function useMaintenanceItems() {
 
 export function useDashboardSummary() {
   const { dashboard } = useFleetContext();
-
-  if (!dashboard) {
-    return {
-      totalVehicles: 0,
-      activeVehicles: 0,
-      fleetHealthScore: 0,
-      attentionRequired: 0,
-    };
-  }
-
-  return {
-    totalVehicles: dashboard.total_fleet ?? 0,
-    activeVehicles: dashboard.active_vehicle_count ?? 0,
-    fleetHealthScore: dashboard.fleet_health_score ?? 0,
-    attentionRequired: dashboard.attention_required ?? 0,
-  };
+  return useMemo(() => ({
+    totalVehicles: dashboard?.total_fleet ?? 0,
+    activeVehicles: dashboard?.active_vehicle_count ?? 0,
+    fleetHealthScore: dashboard?.fleet_health_score ?? 0,
+    attentionRequired: dashboard?.attention_required ?? 0,
+  }), [dashboard]);
 }
 
 export function useTelemetryData() {

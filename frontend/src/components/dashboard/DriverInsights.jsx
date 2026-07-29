@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from 'lucide-react';
-import { useTopDrivers } from '../../hooks/useFleetData';
 import { Link } from 'react-router-dom';
+import { useDriverRanking } from '../../hooks/useDrivers';
 
 const trendIcons = {
   improving: <TrendingUp size={13} />,
@@ -14,8 +15,9 @@ const trendColors = {
   declining: 'var(--color-red)',
 };
 
-export function DriverInsights() {
-  const topDrivers = useTopDrivers(5);
+export const DriverInsights = memo(function DriverInsights() {
+  const rankings = useDriverRanking();
+  const topDrivers = rankings.slice(0, 5);
 
   return (
     <div className="fade-in stagger-5" style={{
@@ -91,7 +93,7 @@ export function DriverInsights() {
                 {driver.name}
               </div>
               <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                {driver.tripsCompleted} trips \u00b7 {driver.id}
+                {driver.tripsCompleted} trips · {driver.id}
               </div>
             </div>
 
@@ -99,22 +101,22 @@ export function DriverInsights() {
               <div style={{ width: 48 }}>
                 <div style={{ height: 4, borderRadius: 2, background: 'var(--color-border)', overflow: 'hidden' }}>
                   <div style={{
-                    width: `${driver.safetyScore}%`,
+                    width: `${driver.score}%`,
                     height: '100%',
                     borderRadius: 2,
-                    background: driver.safetyScore >= 90 ? 'var(--color-green)' : driver.safetyScore >= 75 ? 'var(--color-amber)' : 'var(--color-red)',
+                    background: driver.score >= 90 ? 'var(--color-green)' : driver.score >= 75 ? 'var(--color-amber)' : 'var(--color-red)',
                   }} />
                 </div>
               </div>
               <span style={{
                 fontSize: 13,
                 fontWeight: 600,
-                color: driver.safetyScore >= 90 ? 'var(--color-green)' : driver.safetyScore >= 75 ? 'var(--color-amber)' : 'var(--color-red)',
+                color: driver.score >= 90 ? 'var(--color-green)' : driver.score >= 75 ? 'var(--color-amber)' : 'var(--color-red)',
                 fontVariantNumeric: 'tabular-nums',
                 minWidth: 28,
                 textAlign: 'right',
               }}>
-                {driver.safetyScore}
+                {driver.score}
               </span>
               <span style={{ color: trendColors[driver.trend] }}>
                 {trendIcons[driver.trend]}
@@ -125,4 +127,4 @@ export function DriverInsights() {
       </div>
     </div>
   );
-}
+});

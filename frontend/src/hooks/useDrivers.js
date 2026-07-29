@@ -4,13 +4,39 @@ import { adaptVehiclesToDrivers, buildDriverRankings as buildRankingList } from 
 import { driverHistorical } from '../mocks/drivers';
 import { computeTrend } from '../utils/trend';
 
+let _stableCache = null;
+
+function shallowEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const ka = Object.keys(a), kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) if (a[k] !== b[k]) return false;
+  return true;
+}
+
+function stableDriverList(raw) {
+  const mapped = adaptVehiclesToDrivers(raw);
+  if (!mapped || mapped.length === 0) return null;
+  if (_stableCache && _stableCache.length === mapped.length) {
+    let changed = false;
+    for (let i = 0; i < mapped.length; i++) {
+      if (!shallowEqual(mapped[i], _stableCache[i])) { changed = true; break; }
+    }
+    if (!changed) return _stableCache;
+  }
+  _stableCache = mapped;
+  return mapped;
+}
+
 export function useDrivers() {
   const { dashboard } = useFleetContext();
   const prevScoresRef = useRef({});
 
   return useMemo(() => {
-    const live = adaptVehiclesToDrivers(dashboard?.vehicles);
-    const drivers = live.length > 0 ? live : buildFallbackDrivers();
+    const raw = dashboard?.vehicles;
+    const stable = stableDriverList(raw);
+    const drivers = stable && stable.length > 0 ? stable : buildFallbackDrivers();
 
     const prev = prevScoresRef.current;
 

@@ -1,6 +1,7 @@
 import { memo, useState } from 'react';
-import { Check, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Gauge, Activity, Check, AlertTriangle, ChevronRight } from 'lucide-react';
 import { useRelativeTime } from '../../hooks/useRelativeTime';
+import { useSmoothValue } from '../../hooks/useSmoothValue';
 import { DriverScoreRing } from './DriverScoreRing';
 import { DriverRiskBadge } from './DriverRiskBadge';
 
@@ -21,6 +22,8 @@ const BEHAVIOUR_INDICATORS = {
 export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
   const [hovered, setHovered] = useState(false);
   const relativeTime = useRelativeTime(driver.lastActive);
+  const smoothSpeed = useSmoothValue(driver.speed ?? 0);
+  const smoothRpm = useSmoothValue(driver.rpm ?? 0);
 
   const statusStyle = STATUS_MAP[driver.status] || STATUS_MAP.off_duty;
 
@@ -166,6 +169,25 @@ export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
 
       <div
         style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 6,
+        }}
+      >
+        <TelemetryItem
+          icon={<Gauge size={12} />}
+          label="Speed"
+          value={`${Math.round(smoothSpeed)} km/h`}
+        />
+        <TelemetryItem
+          icon={<Activity size={12} />}
+          label="RPM"
+          value={Math.round(smoothRpm).toLocaleString()}
+        />
+      </div>
+
+      <div
+        style={{
           display: 'flex',
           alignItems: 'center',
           gap: 6,
@@ -229,3 +251,39 @@ export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
     </div>
   );
 });
+
+function TelemetryItem({ icon, label, value }) {
+  return (
+    <div
+      style={{
+        padding: '6px 8px',
+        borderRadius: 6,
+        background: 'var(--color-bg)',
+        border: '1px solid var(--color-border-light)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          color: 'var(--color-text-muted)',
+          marginBottom: 2,
+        }}
+      >
+        {icon}
+        <span style={{ fontSize: 10 }}>{label}</span>
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: 'var(--color-text-primary)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}

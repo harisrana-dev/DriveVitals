@@ -1,7 +1,10 @@
 import {
   X, TrendingUp, TrendingDown, Minus,
+  Gauge, Thermometer, Fuel, Activity, AlertTriangle,
+  Zap, Cpu, Wind,
 } from 'lucide-react';
 import { useDriver, useDriverPerformance } from '../../hooks/useDrivers';
+import { useSmoothValue } from '../../hooks/useSmoothValue';
 import { useRelativeTime } from '../../hooks/useRelativeTime';
 import { DriverScoreRing } from './DriverScoreRing';
 import { DriverRiskBadge } from './DriverRiskBadge';
@@ -74,6 +77,17 @@ function DrawerContent({ driver, onClose }) {
   const trend = TREND_LABELS[driver.trend] || TREND_LABELS.stable;
   const TrendIcon = trend.icon;
 
+  const smoothSpeed = useSmoothValue(driver.speed ?? 0);
+  const smoothRpm = useSmoothValue(driver.rpm ?? 0);
+  const smoothThrottle = useSmoothValue(driver.throttle ?? 0);
+  const smoothBrake = useSmoothValue(driver.brake ?? 0);
+  const smoothFuel = useSmoothValue(driver.fuelLevel ?? 0);
+  const smoothCoolant = useSmoothValue(driver.coolantTemp ?? 0);
+  const smoothEngineLoad = useSmoothValue(driver.engineLoad ?? 0);
+  const smoothHealth = useSmoothValue(driver.healthScore ?? 0);
+
+  const activeEvents = driver.activeEventTypes || [];
+
   return (
     <>
       <Header driver={driver} onClose={onClose} statusStyle={statusStyle} />
@@ -88,7 +102,37 @@ function DrawerContent({ driver, onClose }) {
           gap: 20,
         }}
       >
-        <PerformanceOverview driver={driver} relativeTime={relativeTime} trend={trend} TrendIcon={TrendIcon} />
+        <PerformanceOverview
+          driver={driver}
+          relativeTime={relativeTime}
+          trend={trend}
+          TrendIcon={TrendIcon}
+          smoothHealth={smoothHealth}
+        />
+
+        <div>
+          <SectionTitle>Live Telemetry</SectionTitle>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 6,
+            }}
+          >
+            <LiveTelemetryItem icon={<Gauge size={13} />} label="Speed" value={`${Math.round(smoothSpeed)} km/h`} />
+            <LiveTelemetryItem icon={<Activity size={13} />} label="RPM" value={Math.round(smoothRpm).toLocaleString()} />
+            <LiveTelemetryItem icon={<Zap size={13} />} label="Throttle" value={`${Math.round(smoothThrottle)}%`} />
+            <LiveTelemetryItem icon={<Wind size={13} />} label="Brake" value={`${Math.round(smoothBrake)} kPa`} />
+            <LiveTelemetryItem icon={<Fuel size={13} />} label="Fuel" value={`${Math.round(smoothFuel)}%`} />
+            <LiveTelemetryItem icon={<Thermometer size={13} />} label="Coolant" value={driver.coolantTemp > 0 ? `${Math.round(smoothCoolant)}\u00b0C` : 'N/A'} />
+            <LiveTelemetryItem icon={<Cpu size={13} />} label="Engine Load" value={`${Math.round(smoothEngineLoad)}%`} />
+            <LiveTelemetryItem icon={<Activity size={13} />} label="Health" value={`${Math.round(smoothHealth)}%`} />
+          </div>
+        </div>
+
+        {activeEvents.length > 0 && (
+          <ActiveEventsSection events={activeEvents} />
+        )}
 
         <BehaviourSummary scoreBreakdown={driver.scoreBreakdown} />
 
@@ -226,7 +270,7 @@ function Header({ driver, onClose, statusStyle }) {
   );
 }
 
-function PerformanceOverview({ driver, relativeTime, trend, TrendIcon }) {
+function PerformanceOverview({ driver, relativeTime, trend, TrendIcon, smoothHealth }) {
   return (
     <div
       style={{
@@ -238,7 +282,7 @@ function PerformanceOverview({ driver, relativeTime, trend, TrendIcon }) {
         border: '1px solid var(--color-border-light)',
       }}
     >
-      <DriverScoreRing score={driver.safetyScore} size={88} />
+      <DriverScoreRing score={smoothHealth} size={88} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <DriverRiskBadge level={driver.riskLevel} />
@@ -266,6 +310,75 @@ function PerformanceOverview({ driver, relativeTime, trend, TrendIcon }) {
           <span style={{ margin: '0 4px', opacity: 0.4 }}>·</span>
           {relativeTime}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ActiveEventsSection({ events }) {
+  return (
+    <div
+      style={{
+        padding: '12px 14px',
+        borderRadius: 8,
+        background: 'var(--color-red-bg)',
+        border: '1px solid var(--color-red)',
+      }}
+    >
+      <SectionTitle>Active Events</SectionTitle>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {events.map((evt) => (
+          <div
+            key={evt}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: 'var(--color-red)',
+              fontWeight: 500,
+            }}
+          >
+            <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+            {evt.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LiveTelemetryItem({ icon, label, value }) {
+  return (
+    <div
+      style={{
+        padding: '8px 10px',
+        borderRadius: 8,
+        background: 'var(--color-bg)',
+        border: '1px solid var(--color-border-light)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          color: 'var(--color-text-muted)',
+          marginBottom: 3,
+        }}
+      >
+        {icon}
+        <span style={{ fontSize: 10 }}>{label}</span>
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: 'var(--color-text-primary)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
       </div>
     </div>
   );

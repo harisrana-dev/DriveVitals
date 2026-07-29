@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { Truck, Activity, HeartPulse, AlertTriangle } from 'lucide-react';
 import { useDashboardSummary } from '../../hooks/useFleetData';
 
-export function KpiCards() {
+export const KpiCards = memo(function KpiCards() {
   const summary = useDashboardSummary();
 
   const cards = [
@@ -96,4 +97,4 @@ export function KpiCards() {
       ))}
     </div>
   );
-}
+});

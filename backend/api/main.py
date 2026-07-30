@@ -30,6 +30,10 @@ from backend.api.websocket.trip_publisher import (
     TripSnapshotPublisher,
 )
 
+from backend.db.persistence_service import (
+    PersistenceService,
+)
+
 from backend.trips.store.trip_store import (
     TripStore,
 )
@@ -40,7 +44,9 @@ from backend.trips.services.trip_builder import (
 
 
 runtime = (
-    DriveVitalsRuntime()
+    DriveVitalsRuntime(
+        persistence_service=PersistenceService()
+    )
 )
 
 snapshot_publisher = DashboardSnapshotPublisher(

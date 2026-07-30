@@ -38,11 +38,16 @@ class VehicleRunner:
 
     runtime_state: RuntimeState = field(default_factory=RuntimeState)
     tick_seconds: float = 1.0
+    run_seed: int = 0
 
     _generator: OBDGenerator = field(init=False)
 
     def __post_init__(self) -> None:
-        self._generator = OBDGenerator(behavior_profile=self.driver.behavior_profile)
+        vehicle_seed = self.run_seed + hash(self.vehicle.vehicle_id) & 0xFFFFFFFF
+        self._generator = OBDGenerator(
+            behavior_profile=self.driver.behavior_profile,
+            seed=vehicle_seed,
+        )
 
     def start(self, now: Optional[datetime] = None) -> None:
         self.trip.start(starting_odometer_km=self.vehicle.odometer_km, at=now)

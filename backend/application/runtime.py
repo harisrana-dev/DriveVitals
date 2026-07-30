@@ -1,8 +1,14 @@
 import asyncio
+import logging
+import uuid
 
 from datetime import (
     datetime,
     timedelta,
+)
+
+from backend.analytics.behaviour.aggregation.summary import (
+    DriverBehaviourSummary,
 )
 
 from backend.analytics.behaviour.aggregation.summarizer import (
@@ -29,6 +35,10 @@ from backend.analytics.engine import (
     AnalyticsEngine,
 )
 
+from backend.analytics.snapshot.analytics_snapshot import (
+    AnalyticsSnapshot,
+)
+
 from backend.analytics.snapshot.snapshot_store import (
     AnalyticsSnapshotStore,
 )
@@ -37,7 +47,12 @@ from backend.analytics.state.runtime_state_store import (
     RuntimeStateStore,
 )
 
+from backend.db.persistence_service import (
+    PersistenceService,
+)
+
 from backend.fleet.config.fleet_factory import (
+    FleetConfiguration,
     FleetFactory,
 )
 
@@ -51,20 +66,39 @@ from backend.fleet.runtime.fleet_runner import (
 
 from backend.pipeline.telemetry_pipeline import (
     TelemetryPipeline,
+    TelemetryConsumer,
 )
 
 from backend.streaming.snapshot_stream import (
     AnalyticsSnapshotStream,
+    AnalyticsSnapshotSubscriber,
 )
 
 from backend.dashboard.services.dashboard_builder import (
     DashboardBuilder,
 )
 
+from backend.telemetry.models.telemetry_sample import (
+    TelemetrySample,
+)
+
 from typing import Any, Callable
 
 
 TripFlushCallback = Callable[[str, str, Any, Any, list], None]
+
+logger = logging.getLogger(__name__)
+
+
+def _compute_safety_score(summary: DriverBehaviourSummary) -> float:
+    score = 100.0
+    score -= summary.speeding_event_count * 5
+    score -= summary.harsh_braking_count * 4
+    score -= summary.aggressive_throttle_event_count * 4
+    score -= summary.high_rpm_event_count * 3
+    score -= summary.severe_event_count * 8
+    score -= summary.moderate_event_count * 4
+    return max(0.0, min(100.0, score))
 
 
 class DriveVitalsRuntime:
@@ -96,11 +130,15 @@ class DriveVitalsRuntime:
     def __init__(
         self,
         tick_seconds: float = 1.0,
+        persistence_service: PersistenceService | None = None,
     ) -> None:
 
         self._tick_seconds = (
             tick_seconds
         )
+
+        self._persistence_service = persistence_service
+        self._fleet_config: FleetConfiguration | None = None
 
         # --------------------------------------------------------------
         # Fleet runtime
@@ -211,7 +249,15 @@ class DriveVitalsRuntime:
 
         self._trip_flush_callback: TripFlushCallback | None = None
 
+        self._initial_fuel_levels: dict[str, float] = {}
+
         self._running = False
+
+        self._run_id: str = ""
+
+    @property
+    def run_id(self) -> str:
+        return self._run_id
 
     def _configure_fleet(
         self,
@@ -224,6 +270,9 @@ class DriveVitalsRuntime:
         configured_fleet = (
             FleetFactory.from_config()
         )
+
+        if self._persistence_service is not None:
+            self._fleet_config = configured_fleet
 
         for assignment in (
             configured_fleet.assignments
@@ -261,7 +310,7 @@ class DriveVitalsRuntime:
 
             trip = Trip(
                 trip_id=(
-                    f"T-{assignment.assignment_id}"
+                    str(uuid.uuid4())
                 ),
                 vehicle_id=(
                     vehicle.vehicle_id
@@ -336,11 +385,217 @@ class DriveVitalsRuntime:
 
         self._running = True
 
+        self._run_id = str(uuid.uuid4())
+        run_seed = hash(self._run_id) & 0x7FFFFFFF
+
         start_time = datetime.utcnow()
+
+        logger.info(
+            "Starting simulation run %s at %s",
+            self._run_id,
+            start_time.isoformat(),
+        )
+
+        # --------------------------------------------------------------
+        # Seed per-vehicle randomness for this run
+        # --------------------------------------------------------------
+
+        for runner in self._fleet._runners:
+            runner.run_seed = run_seed
+
+        # --------------------------------------------------------------
+        # Persist reference data (vehicles, drivers, routes)
+        # --------------------------------------------------------------
+
+        persistence = self._persistence_service
+
+        if persistence is not None and self._fleet_config is not None:
+            for vehicle in self._fleet_config.vehicles:
+                await persistence.persist_vehicle(vehicle)
+            for driver in self._fleet_config.drivers:
+                await persistence.persist_driver(driver)
+            for route in self._fleet_config.routes:
+                await persistence.persist_route(route)
+
+        # --------------------------------------------------------------
+        # Start all trips
+        # --------------------------------------------------------------
 
         self._fleet.start_all(
             now=start_time
         )
+
+        self._initial_fuel_levels = {
+            runner.vehicle.vehicle_id: runner.vehicle.fuel_level_percent
+            for runner in self._fleet._runners
+        }
+
+        # --------------------------------------------------------------
+        # Persist trip rows after start
+        # --------------------------------------------------------------
+
+        if persistence is not None:
+            for runner in self._fleet.active_runners():
+                await persistence.create_trip(
+                    trip_id=runner.trip.trip_id,
+                    vehicle_id=runner.vehicle.vehicle_id,
+                    driver_id=runner.driver.driver_id,
+                    route_id=runner.route.route_id,
+                    start_time=start_time,
+                )
+
+        # --------------------------------------------------------------
+        # Register persistence as telemetry consumer
+        # --------------------------------------------------------------
+
+        class _PersistenceTelemetryConsumer:
+            def __init__(self, svc: PersistenceService) -> None:
+                self._svc = svc
+            def consume(self, sample: TelemetrySample) -> None:
+                asyncio.ensure_future(
+                    self._svc.persist_telemetry(sample)
+                )
+
+        if persistence is not None:
+            self._telemetry_pipeline.register(
+                _PersistenceTelemetryConsumer(persistence)
+            )
+
+        # --------------------------------------------------------------
+        # Subscribe persistence to analytics snapshot stream
+        # --------------------------------------------------------------
+
+        class _PersistenceSnapshotSubscriber:
+            def __init__(self, svc: PersistenceService) -> None:
+                self._svc = svc
+            def publish(self, snapshot: AnalyticsSnapshot) -> None:
+                asyncio.ensure_future(
+                    self._svc.persist_behaviour_events(snapshot)
+                )
+
+        if persistence is not None:
+            self._snapshot_stream.subscribe(
+                _PersistenceSnapshotSubscriber(persistence)
+            )
+
+        # --------------------------------------------------------------
+        # Persist trip completion (hooks into existing callback)
+        # --------------------------------------------------------------
+
+        if persistence is not None:
+            existing_callback = self._trip_flush_callback
+
+            def _persist_trip_completion(
+                summary: Any,
+                context: Any,
+                runtime_state: Any,
+                all_events: list,
+            ) -> None:
+                if existing_callback is not None:
+                    existing_callback(
+                        summary, context, runtime_state, all_events
+                    )
+
+                vehicle_id = summary.vehicle_id
+                runner = next(
+                    (
+                        r
+                        for r in self._fleet._runners
+                        if r.vehicle.vehicle_id == vehicle_id
+                    ),
+                    None,
+                )
+
+                if runner is None:
+                    logger.warning(
+                        "No fleet runner found for completed vehicle %s, "
+                        "using default values for trip completion",
+                        vehicle_id,
+                    )
+                    asyncio.ensure_future(
+                        persistence.complete_trip(
+                            trip_id=summary.trip_id,
+                            end_time=datetime.utcnow(),
+                            distance_km=summary.total_distance_km,
+                            duration_seconds=0,
+                            fuel_used_liters=0.0,
+                            average_speed_kmh=0.0,
+                            maximum_speed_kmh=0.0,
+                            trip_score=0.0,
+                        )
+                    )
+                    return
+
+                trip_obj = runner.trip
+
+                duration_seconds = 0
+                if (
+                    trip_obj.started_at is not None
+                    and trip_obj.completed_at is not None
+                ):
+                    duration_seconds = int(
+                        (
+                            trip_obj.completed_at - trip_obj.started_at
+                        ).total_seconds()
+                    )
+
+                distance_km = trip_obj.distance_travelled_km
+
+                average_speed_kmh = 0.0
+                if duration_seconds > 0:
+                    average_speed_kmh = round(
+                        distance_km / (duration_seconds / 3600), 2
+                    )
+
+                maximum_speed_kmh = (
+                    context.speed_limit_kmh
+                    + summary.maximum_speed_excess_kmh
+                )
+
+                initial_fuel_pct = self._initial_fuel_levels.get(
+                    vehicle_id,
+                    runner.vehicle.fuel_level_percent,
+                )
+                final_fuel_pct = runner.vehicle.fuel_level_percent
+                fuel_used_pct = initial_fuel_pct - final_fuel_pct
+                tank_capacity_liters = 60.0
+                fuel_used_liters = round(
+                    (fuel_used_pct / 100.0) * tank_capacity_liters, 2
+                )
+
+                trip_score = round(
+                    _compute_safety_score(summary), 0
+                )
+
+                logger.info(
+                    "Completing trip %s: "
+                    "distance=%.1fkm "
+                    "fuel=%.1fL "
+                    "avg_speed=%.0fkm/h "
+                    "max_speed=%.0fkm/h "
+                    "score=%.0f",
+                    summary.trip_id,
+                    distance_km,
+                    fuel_used_liters,
+                    average_speed_kmh,
+                    maximum_speed_kmh,
+                    trip_score,
+                )
+
+                asyncio.ensure_future(
+                    persistence.complete_trip(
+                        trip_id=summary.trip_id,
+                        end_time=datetime.utcnow(),
+                        distance_km=distance_km,
+                        duration_seconds=duration_seconds,
+                        fuel_used_liters=fuel_used_liters,
+                        average_speed_kmh=average_speed_kmh,
+                        maximum_speed_kmh=maximum_speed_kmh,
+                        trip_score=trip_score,
+                    )
+                )
+
+            self._trip_flush_callback = _persist_trip_completion
 
         now = start_time
 
@@ -422,6 +677,9 @@ class DriveVitalsRuntime:
             await asyncio.sleep(
                 self._tick_seconds
             )
+
+        if persistence is not None:
+            await persistence.close()
 
     def stop(
         self,

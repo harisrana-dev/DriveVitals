@@ -5,6 +5,7 @@ import uuid
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 
 from backend.analytics.behaviour.aggregation.summary import (
@@ -253,11 +254,20 @@ class DriveVitalsRuntime:
 
         self._running = False
 
-        self._run_id: str = ""
+        self._simulation_run_id: str = str(uuid.uuid4())
+        self._simulation_start_time: datetime | None = None
 
     @property
     def run_id(self) -> str:
-        return self._run_id
+        return self._simulation_run_id
+
+    @property
+    def simulation_run_id(self) -> str:
+        return self._simulation_run_id
+
+    @property
+    def simulation_start_time(self) -> datetime | None:
+        return self._simulation_start_time
 
     def _configure_fleet(
         self,
@@ -385,14 +395,17 @@ class DriveVitalsRuntime:
 
         self._running = True
 
-        self._run_id = str(uuid.uuid4())
-        run_seed = hash(self._run_id) & 0x7FFFFFFF
+        self._simulation_run_id = str(uuid.uuid4())
+        self._simulation_start_time = datetime.now(timezone.utc)
+        run_seed = hash(self._simulation_run_id) & 0x7FFFFFFF
 
-        start_time = datetime.utcnow()
+        start_time = self._simulation_start_time
 
         logger.info(
-            "Starting simulation run %s at %s",
-            self._run_id,
+            "Simulation started  "
+            "run_id=%s  "
+            "start_time=%s",
+            self._simulation_run_id,
             start_time.isoformat(),
         )
 
@@ -418,6 +431,22 @@ class DriveVitalsRuntime:
                 await persistence.persist_route(route)
 
         # --------------------------------------------------------------
+        # Persist trip rows BEFORE starting fleet — DB rows must exist
+        # before any telemetry is produced, otherwise persist_telemetry
+        # will violate the telemetry_samples_trip_id_fkey constraint.
+        # --------------------------------------------------------------
+
+        if persistence is not None:
+            for runner in self._fleet._runners:
+                await persistence.create_trip(
+                    trip_id=runner.trip.trip_id,
+                    vehicle_id=runner.vehicle.vehicle_id,
+                    driver_id=runner.driver.driver_id,
+                    route_id=runner.route.route_id,
+                    start_time=start_time,
+                )
+
+        # --------------------------------------------------------------
         # Start all trips
         # --------------------------------------------------------------
 
@@ -430,19 +459,7 @@ class DriveVitalsRuntime:
             for runner in self._fleet._runners
         }
 
-        # --------------------------------------------------------------
-        # Persist trip rows after start
-        # --------------------------------------------------------------
-
-        if persistence is not None:
-            for runner in self._fleet.active_runners():
-                await persistence.create_trip(
-                    trip_id=runner.trip.trip_id,
-                    vehicle_id=runner.vehicle.vehicle_id,
-                    driver_id=runner.driver.driver_id,
-                    route_id=runner.route.route_id,
-                    start_time=start_time,
-                )
+        logger.info("Beginning telemetry stream...")
 
         # --------------------------------------------------------------
         # Register persistence as telemetry consumer
@@ -515,7 +532,7 @@ class DriveVitalsRuntime:
                     asyncio.ensure_future(
                         persistence.complete_trip(
                             trip_id=summary.trip_id,
-                            end_time=datetime.utcnow(),
+                            end_time=datetime.now(timezone.utc),
                             distance_km=summary.total_distance_km,
                             duration_seconds=0,
                             fuel_used_liters=0.0,
@@ -585,7 +602,7 @@ class DriveVitalsRuntime:
                 asyncio.ensure_future(
                     persistence.complete_trip(
                         trip_id=summary.trip_id,
-                        end_time=datetime.utcnow(),
+                        end_time=datetime.now(timezone.utc),
                         distance_km=distance_km,
                         duration_seconds=duration_seconds,
                         fuel_used_liters=fuel_used_liters,

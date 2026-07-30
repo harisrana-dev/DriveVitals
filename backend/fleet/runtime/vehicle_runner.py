@@ -13,7 +13,7 @@ state that belongs to the fleet/telemetry domain.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Callable, List, Optional
 
 from backend.fleet.models.driver import Driver
@@ -62,7 +62,7 @@ class VehicleRunner:
         if self.trip.status == TripStatus.COMPLETED:
             raise RuntimeError("Cannot tick a completed trip")
 
-        now = now or datetime.utcnow()
+        now = now or datetime.now(timezone.utc)
 
         sample, distance_km, fuel_used_percent = self._generator.step(
             now=now,
@@ -105,7 +105,7 @@ class VehicleRunner:
         or an API layer) since that concern doesn't belong here.
         """
         self.start(now=start_time)
-        now = start_time or datetime.utcnow()
+        now = start_time or datetime.now(timezone.utc)
         ticks = 0
 
         while not self.is_complete():

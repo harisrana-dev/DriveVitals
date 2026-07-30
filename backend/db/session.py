@@ -6,11 +6,11 @@ from backend.db.base import Base
 
 
 def _dsn() -> str:
-    user = os.getenv("POSTGRES_USER", "drivevitals")
+    user = os.getenv("POSTGRES_USER", "postgres")
     password = os.getenv("POSTGRES_PASSWORD", "drivevitals123")
     host = os.getenv("POSTGRES_HOST", "localhost")
     port = os.getenv("POSTGRES_PORT", "5432")
-    db = os.getenv("POSTGRES_DB", "drivevitals")
+    db = os.getenv("POSTGRES_DB", "drivevitals_dev")
     return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}"
 
 

@@ -23,7 +23,7 @@ This keeps the fleet runtime independent from downstream consumers.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Callable, List, Optional
 
 from backend.fleet.models.assignment import Assignment
@@ -99,7 +99,7 @@ class FleetRunner:
         Returns one TelemetrySample per active vehicle.
         """
 
-        now = now or datetime.utcnow()
+        now = now or datetime.now(timezone.utc)
 
         samples: List[TelemetrySample] = []
 
@@ -138,7 +138,7 @@ class FleetRunner:
 
         self.start_all(now=start_time)
 
-        now = start_time or datetime.utcnow()
+        now = start_time or datetime.now(timezone.utc)
         ticks = 0
 
         while self.active_runners():

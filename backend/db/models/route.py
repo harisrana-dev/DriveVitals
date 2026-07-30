@@ -3,10 +3,10 @@ from uuid import uuid4
 from sqlalchemy import Float, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.db.base import Base
+from backend.db.base import Base, TimestampMixin
 
 
-class Route(Base):
+class Route(TimestampMixin, Base):
     __tablename__ = "routes"
 
     route_id: Mapped[str] = mapped_column(

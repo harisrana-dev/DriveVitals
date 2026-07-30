@@ -82,26 +82,22 @@ class PersistenceService:
         route_id: str,
         start_time: datetime,
     ) -> None:
-        try:
-            async with async_session_factory() as session:
-                repo = TripRepository(session)
-                existing = await repo.get_by_id(trip_id)
-                if existing is not None:
-                    logger.info(
-                        "Trip %s already exists, skipping creation", trip_id
-                    )
-                    return
-                await repo.create(
-                    trip_id=trip_id,
-                    vehicle_id=vehicle_id,
-                    driver_id=driver_id,
-                    route_id=route_id,
-                    start_time=start_time,
-                    status="in_progress",
-                )
-                await session.commit()
-        except Exception:
-            logger.exception("Failed to create trip %s", trip_id)
+        async with async_session_factory() as session:
+            repo = TripRepository(session)
+            existing = await repo.get_by_id(trip_id)
+            if existing is not None:
+                logger.info("Trip %s already exists, skipping creation", trip_id)
+                return
+            await repo.create(
+                trip_id=trip_id,
+                vehicle_id=vehicle_id,
+                driver_id=driver_id,
+                route_id=route_id,
+                start_time=start_time,
+                status="in_progress",
+            )
+            await session.commit()
+            logger.info("Trip %s created", trip_id)
 
     async def complete_trip(
         self,

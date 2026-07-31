@@ -1,61 +1,37 @@
 """
 Cooling Maintenance Estimator.
 
-Estimates maintenance needs for the cooling component only.
+Estimates maintenance needs for the cooling subsystem only.
 """
 
-from collections.abc import Mapping
-
-from backend.analytics.vehicle_health.models.health_snapshot import (
-    HealthSnapshot,
+from backend.analytics.vehicle_health.models.subsystem_health import (
+    Subsystem,
 )
-from backend.maintenance.estimators.maintenance_estimator import (
-    MaintenanceEstimator,
+from backend.maintenance.estimators.component_estimator import (
+    ComponentEstimator,
 )
-from backend.maintenance.models.maintenance_recommendation import (
-    MaintenanceRecommendation,
-)
+from backend.maintenance.maintenance_config import ServiceProfile
 
 
-class CoolingEstimator(MaintenanceEstimator):
+class CoolingEstimator(ComponentEstimator):
     """
     Purpose:
         Estimate cooling maintenance from a HealthSnapshot.
     Inputs:
-        A HealthSnapshot (uses cooling_health).
+        A HealthSnapshot (uses cooling_health) and current odometer.
     Outputs:
-        A MaintenanceRecommendation for the cooling component.
-    TODO:
-        Define cooling-specific estimation rules once scoring is
-        defined.
+        A list of MaintenanceRecommendation objects for the cooling
+        system.
     """
 
-    def __init__(
-        self,
-        *,
-        thresholds: Mapping[str, float] | None = None,
-    ) -> None:
-        """
-        Parameters
-        ----------
-        thresholds:
-            Future estimator-specific thresholds. Intentionally left
-            undefined in this milestone so no values are guessed.
-        """
-        self._thresholds = thresholds
+    @property
+    def subsystem(self) -> Subsystem:
+        return Subsystem.COOLING
+
+    @property
+    def services(self) -> tuple[ServiceProfile, ...]:
+        return self._config.cooling_services
 
     @property
     def component(self) -> str:
         return "cooling"
-
-    def estimate(
-        self,
-        *,
-        health_snapshot: HealthSnapshot,
-    ) -> MaintenanceRecommendation:
-        """
-        Estimate cooling maintenance needs.
-
-        TODO: Implement. Uses health_snapshot.cooling_health.
-        """
-        raise NotImplementedError

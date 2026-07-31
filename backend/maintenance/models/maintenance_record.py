@@ -7,14 +7,8 @@ Represents a completed or scheduled maintenance event
 
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
 
-
-class MaintenanceType(str, Enum):
-    OIL_CHANGE = "oil_change"
-    BRAKE_PAD_REPLACEMENT = "brake_pad_replacement"
-    TIRE_REPLACEMENT = "tire_replacement"
-    OTHER = "other"
+from backend.maintenance.models.maintenance_type import MaintenanceType
 
 
 @dataclass

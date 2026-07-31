@@ -1,8 +1,9 @@
 """
 Maintenance estimator interface.
 
-Each estimator is responsible for exactly ONE component and derives a
-MaintenanceRecommendation from a HealthSnapshot.
+Each estimator is responsible for exactly ONE subsystem and derives a
+list of MaintenanceRecommendation objects from a HealthSnapshot, the
+vehicle's odometer and the latest telemetry sample.
 """
 
 from abc import ABC, abstractmethod
@@ -13,25 +14,24 @@ from backend.analytics.vehicle_health.models.health_snapshot import (
 from backend.maintenance.models.maintenance_recommendation import (
     MaintenanceRecommendation,
 )
+from backend.telemetry.models.telemetry_sample import TelemetrySample
 
 
 class MaintenanceEstimator(ABC):
     """
     Purpose:
-        Interface implemented by every component maintenance estimator.
+        Interface implemented by every subsystem maintenance estimator.
     Inputs:
-        A HealthSnapshot.
+        A HealthSnapshot, the current odometer reading and the latest
+        telemetry sample.
     Outputs:
-        A MaintenanceRecommendation for a single component.
-    TODO:
-        Decide whether estimators also need historical maintenance
-        context (e.g. last service odometer).
+        A list of MaintenanceRecommendation objects for one subsystem.
     """
 
     @property
     @abstractmethod
     def component(self) -> str:
-        """The component this estimator evaluates."""
+        """The subsystem this estimator evaluates."""
         raise NotImplementedError
 
     @abstractmethod
@@ -39,8 +39,10 @@ class MaintenanceEstimator(ABC):
         self,
         *,
         health_snapshot: HealthSnapshot,
-    ) -> MaintenanceRecommendation:
-        """Estimate maintenance needs for this estimator's component."""
+        odometer_km: float,
+        telemetry_sample: TelemetrySample | None = None,
+    ) -> list[MaintenanceRecommendation]:
+        """Estimate maintenance needs for this estimator's subsystem."""
         raise NotImplementedError
 
 

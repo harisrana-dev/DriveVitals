@@ -1,61 +1,37 @@
 """
 Transmission Maintenance Estimator.
 
-Estimates maintenance needs for the transmission component only.
+Estimates maintenance needs for the transmission subsystem only.
 """
 
-from collections.abc import Mapping
-
-from backend.analytics.vehicle_health.models.health_snapshot import (
-    HealthSnapshot,
+from backend.analytics.vehicle_health.models.subsystem_health import (
+    Subsystem,
 )
-from backend.maintenance.estimators.maintenance_estimator import (
-    MaintenanceEstimator,
+from backend.maintenance.estimators.component_estimator import (
+    ComponentEstimator,
 )
-from backend.maintenance.models.maintenance_recommendation import (
-    MaintenanceRecommendation,
-)
+from backend.maintenance.maintenance_config import ServiceProfile
 
 
-class TransmissionEstimator(MaintenanceEstimator):
+class TransmissionEstimator(ComponentEstimator):
     """
     Purpose:
         Estimate transmission maintenance from a HealthSnapshot.
     Inputs:
-        A HealthSnapshot (uses transmission_health).
+        A HealthSnapshot (uses transmission_health) and current odometer.
     Outputs:
-        A MaintenanceRecommendation for the transmission component.
-    TODO:
-        Define transmission-specific estimation rules once scoring is
-        defined.
+        A list of MaintenanceRecommendation objects for the
+        transmission.
     """
 
-    def __init__(
-        self,
-        *,
-        thresholds: Mapping[str, float] | None = None,
-    ) -> None:
-        """
-        Parameters
-        ----------
-        thresholds:
-            Future estimator-specific thresholds. Intentionally left
-            undefined in this milestone so no values are guessed.
-        """
-        self._thresholds = thresholds
+    @property
+    def subsystem(self) -> Subsystem:
+        return Subsystem.TRANSMISSION
+
+    @property
+    def services(self) -> tuple[ServiceProfile, ...]:
+        return self._config.transmission_services
 
     @property
     def component(self) -> str:
         return "transmission"
-
-    def estimate(
-        self,
-        *,
-        health_snapshot: HealthSnapshot,
-    ) -> MaintenanceRecommendation:
-        """
-        Estimate transmission maintenance needs.
-
-        TODO: Implement. Uses health_snapshot.transmission_health.
-        """
-        raise NotImplementedError

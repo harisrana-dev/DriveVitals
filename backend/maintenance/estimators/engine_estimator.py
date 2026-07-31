@@ -1,61 +1,59 @@
 """
 Engine Maintenance Estimator.
 
-Estimates maintenance needs for the engine component only.
+Estimates maintenance needs for the engine subsystem only.
+
+The estimator shortens engine service intervals when the latest
+telemetry shows the engine running under stress (overheating or above
+the redline), because oil and components degrade faster under those
+conditions.
 """
 
-from collections.abc import Mapping
-
-from backend.analytics.vehicle_health.models.health_snapshot import (
-    HealthSnapshot,
+from backend.analytics.vehicle_health.models.subsystem_health import (
+    Subsystem,
 )
-from backend.maintenance.estimators.maintenance_estimator import (
-    MaintenanceEstimator,
+from backend.maintenance.estimators.component_estimator import (
+    ComponentEstimator,
 )
-from backend.maintenance.models.maintenance_recommendation import (
-    MaintenanceRecommendation,
-)
+from backend.maintenance.maintenance_config import ServiceProfile
+from backend.telemetry.models.telemetry_sample import TelemetrySample
 
 
-class EngineEstimator(MaintenanceEstimator):
+class EngineEstimator(ComponentEstimator):
     """
     Purpose:
         Estimate engine maintenance from a HealthSnapshot.
     Inputs:
-        A HealthSnapshot (uses engine_health).
+        A HealthSnapshot (uses engine_health), current odometer and the
+        latest telemetry sample.
     Outputs:
-        A MaintenanceRecommendation for the engine component.
-    TODO:
-        Define engine-specific estimation rules once scoring is
-        defined.
+        A list of MaintenanceRecommendation objects for the engine.
     """
 
-    def __init__(
-        self,
-        *,
-        thresholds: Mapping[str, float] | None = None,
-    ) -> None:
-        """
-        Parameters
-        ----------
-        thresholds:
-            Future estimator-specific thresholds. Intentionally left
-            undefined in this milestone so no values are guessed.
-        """
-        self._thresholds = thresholds
+    @property
+    def subsystem(self) -> Subsystem:
+        return Subsystem.ENGINE
+
+    @property
+    def services(self) -> tuple[ServiceProfile, ...]:
+        return self._config.engine_services
 
     @property
     def component(self) -> str:
         return "engine"
 
-    def estimate(
+    def condition_factor(
         self,
-        *,
-        health_snapshot: HealthSnapshot,
-    ) -> MaintenanceRecommendation:
-        """
-        Estimate engine maintenance needs.
-
-        TODO: Implement. Uses health_snapshot.engine_health.
-        """
-        raise NotImplementedError
+        telemetry_sample: TelemetrySample | None,
+    ) -> float:
+        if telemetry_sample is None:
+            return 1.0
+        thresholds = self._config.engine
+        if (
+            telemetry_sample.coolant_temperature_c
+            >= thresholds.overheat_temp_c
+        ):
+            return thresholds.stress_factor
+        if telemetry_sample.rpm >= thresholds.redline_rpm:
+            return thresholds.stress_factor
+        return 1.0

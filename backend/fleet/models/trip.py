@@ -15,7 +15,7 @@ framework.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -49,7 +49,7 @@ class Trip:
         if self.status != TripStatus.ASSIGNED:
             raise ValueError(f"Cannot start a trip in status {self.status}")
         self.starting_odometer_km = starting_odometer_km
-        self.started_at = at or datetime.utcnow()
+        self.started_at = at or datetime.now(timezone.utc)
         self.status = TripStatus.STARTED
 
     def advance(self, delta_km: float) -> None:
@@ -69,5 +69,5 @@ class Trip:
         if self.status != TripStatus.IN_PROGRESS:
             raise ValueError(f"Cannot complete a trip in status {self.status}")
         self.ending_odometer_km = ending_odometer_km
-        self.completed_at = at or datetime.utcnow()
+        self.completed_at = at or datetime.now(timezone.utc)
         self.status = TripStatus.COMPLETED

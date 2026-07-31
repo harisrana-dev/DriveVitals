@@ -1,463 +1,315 @@
 # DriveVitals Database Schema
-**Version:** 2.0 (Analytics Snapshot Architecture)
+
+**Version:** 1.0
+**Status:** Frozen
 
 ---
 
-# Purpose
+## Entity Relationship Overview
 
-The DriveVitals database stores all historical telemetry, analytics, maintenance records, trips, alerts, and fleet intelligence.
-
-Unlike the Vehicle State Manager (which only stores the latest live state), PostgreSQL stores complete historical records for reporting, trend analysis, machine learning, and predictive maintenance.
-
----
-
-# Database Philosophy
-
-DriveVitals separates data into two categories:
-
-## 1. Raw Data (Facts)
-
-Raw vehicle data received from the simulator or OBD-II adapter.
-
-Examples
-
-- Speed
-- RPM
-- Gear
-- Throttle Position
-- Engine Load
-- Coolant Temperature
-- Fuel Rate
-
-Raw telemetry never changes.
-
----
-
-## 2. Analytics (Intelligence)
-
-Everything calculated by DriveVitals.
-
-Examples
-
-- Driver Score
-- Driver Behaviour
-- Fuel Efficiency
-- Vehicle Health
-- Trip Score
-- Risk Score
-- Maintenance Prediction
-
-Analytics may evolve as the algorithms improve.
-
----
-
-# System Architecture
-
-```
-Fleet
- │
- ├──────────────┐
- │              │
- ▼              ▼
-Vehicle       Driver
- │              │
- └──────┬───────┘
-        │
-        ▼
-      Trip
-        │
-        ▼
-    Telemetry
-        │
-        ▼
-Analytics Snapshot
-       │
- ┌─────┴──────────┐
- ▼                ▼
-Alerts      Maintenance Events
+```mermaid
+erDiagram
+    VEHICLES ||--o{ TRIPS : has
+    DRIVERS ||--o{ TRIPS : drives
+    ROUTES ||--o{ TRIPS : follows
+    TRIPS ||--o{ TELEMETRY_SAMPLES : contains
+    TRIPS ||--o{ BEHAVIOUR_EVENTS : contains
+    TRIPS ||--o{ ALERTS : raises
+    VEHICLES ||--o{ TELEMETRY_SAMPLES : produces
+    VEHICLES ||--o{ BEHAVIOUR_EVENTS : produces
+    VEHICLES ||--o{ ALERTS : raises
+    VEHICLES ||--o{ MAINTENANCE_RECORDS : requires
+    VEHICLES ||--|| VEHICLE_HEALTH : has
+    VEHICLES ||--|| VEHICLE_STATISTICS : has
+    DRIVERS ||--|| DRIVER_STATISTICS : has
 ```
 
 ---
 
-# Tables
+## Tables
+
+### vehicles
+
+**Primary Key:** `vehicle_id`
+
+| Column |
+|---|
+| vehicle_id |
+| registration_number |
+| vin |
+| manufacturer |
+| model |
+| year |
+| fuel_type |
+| status |
+| created_at |
+| updated_at |
+
+**Relationships:** 1 Vehicle → Many Trips, Many Alerts, Many Maintenance Records, Many Telemetry Samples, One Vehicle Health, One Vehicle Statistics
 
 ---
 
-# fleets
+### drivers
 
-Stores fleet information.
+**Primary Key:** `driver_id`
 
-| Column | Type |
-|----------|------|
-| fleet_id | UUID |
-| fleet_name | VARCHAR |
-| created_at | TIMESTAMP |
+| Column |
+|---|
+| driver_id |
+| first_name |
+| last_name |
+| license_number |
+| employment_status |
+| created_at |
+| updated_at |
 
-Relationship
-
-One Fleet
-
-↓
-
-Many Vehicles
-
-Many Drivers
+**Relationships:** 1 Driver → Many Trips, One Driver Statistics
 
 ---
 
-# vehicles
+### routes
 
-Stores vehicle information.
+**Primary Key:** `route_id`
 
-| Column | Type |
-|----------|------|
-| vehicle_id | VARCHAR |
-| fleet_id | UUID |
-| manufacturer | VARCHAR |
-| model | VARCHAR |
-| year | INTEGER |
-| vehicle_type | VARCHAR |
-| vin | VARCHAR |
-| created_at | TIMESTAMP |
+| Column |
+|---|
+| route_id |
+| name |
+| route_type |
+| origin |
+| destination |
+| estimated_distance_km |
+| created_at |
 
-Relationship
-
-One Vehicle
-
-↓
-
-Many Trips
-
-Many Telemetry Records
-
-Many Maintenance Events
+**Relationships:** 1 Route → Many Trips
 
 ---
 
-# drivers
+### trips
 
-Stores driver information.
+**Primary Key:** `trip_id`
+**Foreign Keys:** `vehicle_id`, `driver_id`, `route_id`
 
-| Column | Type |
-|----------|------|
-| driver_id | VARCHAR |
-| fleet_id | UUID |
-| full_name | VARCHAR |
-| license_number | VARCHAR |
-| hired_date | DATE |
+| Column |
+|---|
+| trip_id |
+| vehicle_id |
+| driver_id |
+| route_id |
+| start_time |
+| end_time |
+| distance_km |
+| duration_seconds |
+| fuel_used_liters |
+| average_speed_kmh |
+| maximum_speed_kmh |
+| trip_score |
+| status |
+| created_at |
 
-Relationship
-
-One Driver
-
-↓
-
-Many Trips
-
----
-
-# trips
-
-Represents one complete driving session.
-
-| Column | Type |
-|----------|------|
-| trip_id | UUID |
-| vehicle_id | VARCHAR |
-| driver_id | VARCHAR |
-| start_time | TIMESTAMP |
-| end_time | TIMESTAMP |
-| distance_km | FLOAT |
-| average_speed | FLOAT |
-| fuel_used | FLOAT |
-| trip_score | INTEGER |
-
-Relationship
-
-One Trip
-
-↓
-
-Many Telemetry Records
+**Relationships:** 1 Trip → Many Telemetry Samples, Many Behaviour Events, Many Alerts
 
 ---
 
-# telemetry
+### telemetry_samples
 
-Stores raw sensor values.
+**Primary Key:** `sample_id`
+**Foreign Keys:** `trip_id`, `vehicle_id`
 
-This is expected to become the largest table.
+| Column |
+|---|
+| sample_id |
+| trip_id |
+| vehicle_id |
+| timestamp |
+| speed_kmh |
+| rpm |
+| engine_load_percent |
+| throttle_percent |
+| brake_percent |
+| fuel_rate_lph |
+| fuel_level_percent |
+| coolant_temperature_c |
+| odometer_km |
 
-| Column | Type |
-|----------|------|
-| telemetry_id | BIGSERIAL |
-| trip_id | UUID |
-| timestamp | TIMESTAMP |
-| vehicle_id | VARCHAR |
-| driver_id | VARCHAR |
-| speed | FLOAT |
-| rpm | INTEGER |
-| gear | INTEGER |
-| throttle_position | FLOAT |
-| engine_load | FLOAT |
-| coolant_temperature | FLOAT |
-| fuel_rate | FLOAT |
-
-Indexes
-
-- timestamp
-- vehicle_id
-- driver_id
-- trip_id
-
-Purpose
-
-Only raw telemetry is stored here.
-
-No calculated values belong in this table.
+**Relationships:** Many Samples → One Trip
 
 ---
 
-# analytics_snapshots
+### behaviour_events
 
-Stores every calculated metric produced by the Analytics Engine.
+**Primary Key:** `event_id`
+**Foreign Keys:** `trip_id`, `vehicle_id`, `driver_id`
 
-One telemetry packet produces one analytics snapshot.
+| Column |
+|---|
+| event_id |
+| trip_id |
+| vehicle_id |
+| driver_id |
+| event_type |
+| severity |
+| started_at |
+| ended_at |
+| duration_seconds |
+| distance_km |
+| maximum_value |
+| average_value |
 
-| Column | Type |
-|----------|------|
-| snapshot_id | BIGSERIAL |
-| telemetry_id | BIGINT |
-| trip_id | UUID |
-| timestamp | TIMESTAMP |
-| driver_score | INTEGER |
-| driver_grade | VARCHAR |
-| driver_behaviour | VARCHAR |
-| fuel_efficiency | FLOAT |
-| fuel_rating | VARCHAR |
-| vehicle_health | VARCHAR |
-| engine_health_score | INTEGER |
-| maintenance_required | BOOLEAN |
-| trip_score | INTEGER |
-| risk_score | INTEGER |
-
-Future Columns
-
-- Brake Wear Index
-- Tire Wear Index
-- Clutch Wear Index
-- Battery Health
-- Engine Efficiency
-- Gear Shift Quality
-- Eco Driving Score
-- Safety Score
-
-Purpose
-
-Stores all analytics generated by DriveVitals.
-
-This is the primary source for dashboard trends.
+**Relationships:** Many Events → One Trip
 
 ---
 
-# alerts
+### alerts
 
-Stores engineering rule violations.
+**Primary Key:** `alert_id`
+**Foreign Keys:** `vehicle_id`, `driver_id`, `trip_id`
 
-| Column | Type |
-|----------|------|
-| alert_id | BIGSERIAL |
-| telemetry_id | BIGINT |
-| snapshot_id | BIGINT |
-| vehicle_id | VARCHAR |
-| driver_id | VARCHAR |
-| alert_type | VARCHAR |
-| severity | VARCHAR |
-| created_at | TIMESTAMP |
+| Column |
+|---|
+| alert_id |
+| vehicle_id |
+| driver_id |
+| trip_id |
+| alert_type |
+| severity |
+| status |
+| acknowledged |
+| created_at |
+| resolved_at |
 
-Examples
-
-- Overspeed
-- High RPM
-- High Engine Load
-- Excessive Idle
-- High Fuel Consumption
-
-Purpose
-
-Historical alert tracking.
+**Relationships:** Many Alerts → One Vehicle
 
 ---
 
-# maintenance_events
+### maintenance_records
 
-Stores maintenance recommendations.
+**Primary Key:** `maintenance_id`
+**Foreign Keys:** `vehicle_id`
 
-| Column | Type |
-|----------|------|
-| maintenance_id | BIGSERIAL |
-| snapshot_id | BIGINT |
-| vehicle_id | VARCHAR |
-| trip_id | UUID |
-| issue | VARCHAR |
-| severity | VARCHAR |
-| recommended_action | TEXT |
-| created_at | TIMESTAMP |
-| resolved | BOOLEAN |
+| Column |
+|---|
+| maintenance_id |
+| vehicle_id |
+| maintenance_type |
+| priority |
+| status |
+| due_odometer_km |
+| completed_odometer_km |
+| created_at |
+| completed_at |
 
-Examples
-
-- Oil Change
-- Brake Inspection
-- Coolant Inspection
-- Engine Inspection
-- Transmission Check
-
-Purpose
-
-Historical maintenance tracking.
+**Relationships:** Many Records → One Vehicle
 
 ---
 
-# Data Flow
+### vehicle_health
 
+**Primary Key:** `vehicle_id`
+**Foreign Keys:** `vehicle_id`
+
+| Column |
+|---|
+| vehicle_id |
+| overall_health_score |
+| engine_health |
+| brake_health |
+| transmission_health |
+| cooling_health |
+| fuel_system_health |
+| last_updated |
+
+**Relationships:** One Vehicle → One Health Record
+
+---
+
+### driver_statistics
+
+**Primary Key:** `driver_id`
+**Foreign Keys:** `driver_id`
+
+| Column |
+|---|
+| driver_id |
+| total_trips |
+| total_distance_km |
+| total_driving_time_seconds |
+| average_trip_score |
+| fuel_efficiency |
+| speeding_events |
+| harsh_braking_events |
+| aggressive_throttle_events |
+| high_rpm_events |
+| safety_score |
+| last_updated |
+
+**Relationships:** One Driver → One Statistics Record
+
+---
+
+### vehicle_statistics
+
+**Primary Key:** `vehicle_id`
+**Foreign Keys:** `vehicle_id`
+
+| Column |
+|---|
+| vehicle_id |
+| trip_count |
+| total_distance_km |
+| total_runtime_seconds |
+| fuel_consumed_liters |
+| average_fuel_efficiency |
+| lifetime_health_score |
+| utilization_percent |
+| last_updated |
+
+**Relationships:** One Vehicle → One Statistics Record
+
+---
+
+## Indexes
+
+| Table | Indexed Columns |
+|---|---|
+| vehicles | registration_number, vin |
+| drivers | license_number |
+| trips | vehicle_id, driver_id, start_time |
+| telemetry_samples | trip_id, timestamp, vehicle_id |
+| behaviour_events | trip_id, vehicle_id |
+| alerts | vehicle_id, status, severity |
+| maintenance_records | vehicle_id, status |
+
+---
+
+## Cardinality
+
+| Parent (1) | Child (Many / One) |
+|---|---|
+| Vehicle | Many Trips |
+| Driver | Many Trips |
+| Route | Many Trips |
+| Trip | Many Telemetry Samples |
+| Trip | Many Behaviour Events |
+| Trip | Many Alerts |
+| Vehicle | Many Alerts |
+| Vehicle | Many Maintenance Records |
+| Vehicle | One Vehicle Health |
+| Vehicle | One Vehicle Statistics |
+| Driver | One Driver Statistics |
+
+---
+
+## Source of Truth
+
+```mermaid
+flowchart TD
+    A[Telemetry Samples<br/>Historical Truth] --> B[Behaviour Events]
+    B --> C[Vehicle Wear]
+    C --> D[Vehicle Health]
+    D --> E[Maintenance]
+    E --> F[Alerts]
+    F --> G[Dashboard]
+    G --> H[Reports]
+    H --> I[Analytics]
 ```
-Simulator
-
-↓
-
-Telemetry Packet
-
-↓
-
-Telemetry Table
-
-↓
-
-Analytics Engine
-
-↓
-
-Analytics Snapshot
-
-↓
-
-Alerts
-
-↓
-
-Maintenance Events
-
-↓
-
-Dashboard
-```
-
----
-
-# Historical Dashboard
-
-Dashboard widgets will use Analytics Snapshots instead of live memory.
-
-Examples
-
-Fleet Trends
-
-```
-SELECT
-
-timestamp,
-
-fuel_efficiency,
-
-driver_score,
-
-vehicle_health,
-
-risk_score
-
-FROM analytics_snapshots
-```
-
-Driver History
-
-```
-SELECT
-
-driver_score,
-
-fuel_efficiency,
-
-trip_score
-
-FROM analytics_snapshots
-
-WHERE driver_id = ?
-```
-
-Vehicle Health Trend
-
-```
-SELECT
-
-timestamp,
-
-vehicle_health,
-
-engine_health_score
-
-FROM analytics_snapshots
-
-WHERE vehicle_id = ?
-```
-
----
-
-# Future Machine Learning
-
-Historical snapshots enable
-
-- Driver Behaviour Classification
-- Driver Risk Prediction
-- Predictive Maintenance
-- Fuel Consumption Prediction
-- Component Failure Prediction
-- Fleet Optimization
-- Driver Coaching
-- Eco Driving Recommendations
-
----
-
-# Development Roadmap
-
-## Phase 1
-
-- PostgreSQL
-- SQLAlchemy
-- Telemetry Storage
-- Analytics Snapshot Storage
-
-## Phase 2
-
-- Historical APIs
-- Fleet Trends
-- Driver History
-- Vehicle History
-
-## Phase 3
-
-- Machine Learning
-- Predictive Analytics
-- AI Fleet Intelligence
-
----
-
-# Design Principles
-
-- Telemetry stores immutable raw sensor data.
-- Analytics Snapshots store calculated intelligence.
-- Alerts store engineering rule violations.
-- Maintenance Events store actionable recommendations.
-- Dashboard trends are generated from Analytics Snapshots rather than live memory.
-
-This architecture keeps DriveVitals scalable, maintainable, and ready for future AI features.

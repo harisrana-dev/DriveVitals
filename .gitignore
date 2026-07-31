@@ -16,6 +16,7 @@ __pycache__/
 venv/
 env/
 ENV/
+.env/
 
 # Python Build
 build/
@@ -137,3 +138,7 @@ coverage/
 # ----------------------------
 *.sql
 *.dump
+
+# Environment variables
+.env
+.env.*

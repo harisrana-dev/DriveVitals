@@ -95,11 +95,23 @@ class OBDGenerator:
     """
 
     behavior_profile: BehaviorProfile = BehaviorProfile.STANDARD
+    seed: int = 0
     _rng: random.Random = None  # type: ignore
+
+    # Per-trip profile multipliers so the same driver profile produces
+    # different but realistic behaviour across trips/runs.
+    _fuel_intensity_mult: float = 1.0
+    _accel_mult: float = 1.0
+    _decel_mult: float = 1.0
+    _speed_factor_offset: float = 0.0
 
     def __post_init__(self) -> None:
         if self._rng is None:
-            self._rng = random.Random()
+            self._rng = random.Random(self.seed)
+        self._fuel_intensity_mult = self._rng.uniform(0.90, 1.10)
+        self._accel_mult = self._rng.uniform(0.95, 1.05)
+        self._decel_mult = self._rng.uniform(0.95, 1.05)
+        self._speed_factor_offset = self._rng.uniform(-0.05, 0.05)
 
     def step(
         self,
@@ -127,26 +139,32 @@ class OBDGenerator:
         """
         params = _PROFILE_PARAMS[self.behavior_profile]
 
-# --- Speed: generated from route context and driver behavior.
-#
-# The route does not provide a speed limit. It only provides
-# the type of driving environment being simulated.
+# Apply per-trip variation to profile params.
+        effective_max_accel = params["max_accel_kmh_s"] * self._accel_mult
+        effective_max_decel = params["max_decel_kmh_s"] * self._decel_mult
+        effective_fuel_intensity = params["fuel_intensity"] * self._fuel_intensity_mult
+
         route_params = _ROUTE_PARAMS[route.route_type]
 
         base_cruising_speed = route_params["cruising_speed_kmh"]
 
 # Driver behavior influences how the driver tends to operate
-# within that environment.
+# within that environment. Per-trip offset adds run-to-run variation.
         if self.behavior_profile == BehaviorProfile.AGGRESSIVE:
-            behavior_speed_factor = 1.15
+            behavior_speed_factor = 1.15 + self._speed_factor_offset
         elif self.behavior_profile == BehaviorProfile.ECO:
-            behavior_speed_factor = 0.90
+            behavior_speed_factor = 0.90 + self._speed_factor_offset
         elif self.behavior_profile == BehaviorProfile.CAUTIOUS:
-            behavior_speed_factor = 0.80
+            behavior_speed_factor = 0.80 + self._speed_factor_offset
         else:
-            behavior_speed_factor = 1.0
+            behavior_speed_factor = 1.0 + self._speed_factor_offset
 
         target_speed = base_cruising_speed * behavior_speed_factor
+
+# Traffic variation: random slowdown/stop events.
+        stop_probability = route_params["stop_probability"] * dt_seconds
+        if self._rng.random() < stop_probability:
+            target_speed *= self._rng.uniform(0.3, 0.7)
 
 # Natural variation in the target speed.
         target_speed += self._rng.uniform(
@@ -159,7 +177,7 @@ class OBDGenerator:
         current_speed = runtime_state.current_speed_kmh
         speed_gap = target_speed - current_speed
         max_delta = (
-            params["max_accel_kmh_s"] if speed_gap >= 0 else params["max_decel_kmh_s"]
+            effective_max_accel if speed_gap >= 0 else effective_max_decel
         ) * dt_seconds
         speed_delta = max(-max_delta, min(max_delta, speed_gap))
         new_speed = max(0.0, current_speed + speed_delta)
@@ -167,15 +185,19 @@ class OBDGenerator:
         # --- Brake pressure: proportional to how hard we're
         # decelerating relative to the profile's max deceleration.
         if speed_delta < 0:
-            brake_pressure = min(1.0, abs(speed_delta) / (params["max_decel_kmh_s"] * dt_seconds + 1e-6))
+            brake_pressure = min(1.0, abs(speed_delta) / (effective_max_decel * dt_seconds + 1e-6))
+            brake_pressure += self._rng.uniform(0.0, 0.05)  # braking noise
+            brake_pressure = min(1.0, brake_pressure)
         else:
-            brake_pressure = 0.0
+            brake_pressure = self._rng.uniform(0.0, 0.02) if new_speed > 0 else 0.0
 
         # --- Throttle: proportional to how hard we're accelerating.
         if speed_delta > 0:
-            throttle = min(100.0, 40.0 + 60.0 * (speed_delta / (params["max_accel_kmh_s"] * dt_seconds + 1e-6)))
+            throttle = min(100.0, 40.0 + 60.0 * (speed_delta / (effective_max_accel * dt_seconds + 1e-6)))
         else:
             throttle = 0.0 if new_speed == 0 else 15.0  # light throttle to hold cruise
+            throttle += self._rng.uniform(-3.0, 3.0)  # throttle noise
+            throttle = max(0.0, min(100.0, throttle))
 
         # --- RPM: simple gear-based estimate so RPM tracks speed
         # instead of being generated independently.
@@ -186,8 +208,8 @@ class OBDGenerator:
         engine_load = min(100.0, 0.6 * throttle + 0.4 * (rpm / 6000.0 * 100.0))
 
         # --- Fuel rate: baseline idle burn plus load-driven
-        # consumption, scaled by profile fuel intensity.
-        fuel_rate = (0.5 + (engine_load / 100.0) * 8.0) * params["fuel_intensity"]
+        # consumption, scaled by per-trip profile fuel intensity.
+        fuel_rate = (0.5 + (engine_load / 100.0) * 8.0) * effective_fuel_intensity
 
         # --- Coolant temperature: warms gradually toward operating
         # temperature, nudged slightly by engine load; never jumps.

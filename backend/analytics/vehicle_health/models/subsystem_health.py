@@ -21,6 +21,12 @@ class Subsystem(str, Enum):
     FUEL_SYSTEM = "fuel_system"
 
 
+class HealthStatus(str, Enum):
+    HEALTHY = "healthy"
+    WARNING = "warning"
+    CRITICAL = "critical"
+
+
 @dataclass(frozen=True, slots=True)
 class SubsystemHealth:
     """
@@ -31,12 +37,9 @@ class SubsystemHealth:
     Outputs:
         Consumed by the VehicleHealthEngine when assembling a
         HealthSnapshot.
-    TODO:
-        Decide whether `status` should become an enum and whether a
-        confidence value is needed.
     """
 
     subsystem: Subsystem
     score: float
-    status: str
+    status: HealthStatus
     reasons: tuple[str, ...] = ()

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from backend.analytics.vehicle_health.models.subsystem_health import (
+    HealthStatus,
     SubsystemHealth,
 )
 
@@ -24,14 +25,12 @@ class HealthSnapshot:
     Outputs:
         Consumed by maintenance estimators and health alert
         generators.
-    TODO:
-        Decide whether driver/trip context should be required and
-        whether odometer context is needed here.
     """
 
     vehicle_id: str
     timestamp: datetime
     overall_health_score: float
+    overall_status: HealthStatus
     engine_health: SubsystemHealth
     cooling_health: SubsystemHealth
     transmission_health: SubsystemHealth

@@ -34,9 +34,9 @@ class FleetAlert:
         Produced by an alert generator.
     Outputs:
         Consumed by persistence and, in the future, by dashboard APIs.
-    TODO:
-        Decide whether an optional context/payload field is needed for
-        alert details.
+    Note:
+        Alert details live in the message; no payload field is carried
+        so the model stays minimal.
     """
 
     alert_id: str

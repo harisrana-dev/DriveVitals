@@ -7,6 +7,9 @@ from backend.db.repositories.behaviour_repository import BehaviourRepository
 from backend.db.repositories.vehicle_health_repository import VehicleHealthRepository
 from backend.db.repositories.alert_repository import AlertRepository
 from backend.db.repositories.maintenance_repository import MaintenanceRepository
+from backend.db.repositories.driver_statistics_repository import (
+    DriverStatisticsRepository,
+)
 
 __all__ = [
     "VehicleRepository",
@@ -18,4 +21,5 @@ __all__ = [
     "VehicleHealthRepository",
     "AlertRepository",
     "MaintenanceRepository",
+    "DriverStatisticsRepository",
 ]

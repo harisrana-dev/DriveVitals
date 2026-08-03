@@ -19,13 +19,14 @@ class VehicleHealthRepository(BaseRepository):
         transmission_health: float | None = None,
         cooling_health: float | None = None,
         fuel_system_health: float | None = None,
+        last_updated: datetime | None = None,
     ) -> VehicleHealth:
         result = await self._session.execute(
             select(VehicleHealth).where(VehicleHealth.vehicle_id == vehicle_id)
         )
         existing = result.scalar_one_or_none()
 
-        now = datetime.now(timezone.utc)
+        now = last_updated or datetime.now(timezone.utc)
 
         if existing is not None:
             updates: dict[str, object] = {"last_updated": now}

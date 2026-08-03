@@ -14,8 +14,15 @@ import os
 import time
 from datetime import datetime, timedelta
 
-# Ensure backend/ is on sys.path.
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
+# Ensure the repository root is on sys.path so backend.* resolves.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+# The dashboard renders Unicode box-drawing characters which the Windows
+# console (cp1252) cannot encode. Force UTF-8 output when possible.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, ValueError):
+    pass
 
 from backend.fleet.models.assignment import Assignment
 from backend.fleet.models.driver import Driver, BehaviorProfile

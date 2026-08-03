@@ -1,0 +1,11 @@
+# DriveVitals backend dependencies.
+#
+# Install with:
+#     pip install -r backend/requirements.txt
+
+fastapi
+sqlalchemy
+asyncpg
+alembic
+python-dotenv
+uvicorn

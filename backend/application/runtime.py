@@ -32,6 +32,14 @@ from backend.analytics.context.context_store import (
     AnalyticsContextStore,
 )
 
+from backend.analytics.driver_statistics.aggregators.driver_score_calculator import (
+    DriverScoreCalculator,
+)
+
+from backend.analytics.driver_statistics.driver_statistics_engine import (
+    DriverStatisticsEngine,
+)
+
 from backend.analytics.engine import (
     AnalyticsEngine,
 )
@@ -46,6 +54,35 @@ from backend.analytics.snapshot.snapshot_store import (
 
 from backend.analytics.state.runtime_state_store import (
     RuntimeStateStore,
+)
+
+from backend.analytics.vehicle_health.analyzers.brake_health import (
+    BrakeHealthAnalyzer,
+)
+from backend.analytics.vehicle_health.analyzers.cooling_health import (
+    CoolingHealthAnalyzer,
+)
+from backend.analytics.vehicle_health.analyzers.engine_health import (
+    EngineHealthAnalyzer,
+)
+from backend.analytics.vehicle_health.analyzers.fuel_system_health import (
+    FuelSystemHealthAnalyzer,
+)
+from backend.analytics.vehicle_health.analyzers.transmission_health import (
+    TransmissionHealthAnalyzer,
+)
+from backend.analytics.vehicle_health.vehicle_health_engine import (
+    VehicleHealthEngine,
+)
+
+from backend.application.consumers.driver_statistics_consumer import (
+    DriverStatisticsConsumer,
+)
+from backend.application.consumers.vehicle_health_consumer import (
+    VehicleHealthConsumer,
+)
+from backend.application.intelligence_state import (
+    IntelligenceState,
 )
 
 from backend.db.persistence_service import (
@@ -239,6 +276,67 @@ class DriveVitalsRuntime:
 
         self._telemetry_pipeline.register(
             self._analytics_engine
+        )
+
+        # --------------------------------------------------------------
+        # Fleet intelligence (vehicle health + driver statistics)
+        #
+        # VehicleHealthConsumer is registered AFTER the analytics engine
+        # so the AnalyticsSnapshot for each sample is available before
+        # vehicle health is evaluated.
+        # --------------------------------------------------------------
+
+        self._intelligence_state = (
+            IntelligenceState()
+        )
+
+        self._vehicle_health_engine = (
+            VehicleHealthEngine(
+                analyzers=(
+                    EngineHealthAnalyzer(),
+                    BrakeHealthAnalyzer(),
+                    CoolingHealthAnalyzer(),
+                    TransmissionHealthAnalyzer(),
+                    FuelSystemHealthAnalyzer(),
+                )
+            )
+        )
+
+        self._vehicle_health_consumer = (
+            VehicleHealthConsumer(
+                engine=(
+                    self._vehicle_health_engine
+                ),
+                snapshot_store=(
+                    self._snapshot_store
+                ),
+                state=(
+                    self._intelligence_state
+                ),
+            )
+        )
+
+        self._telemetry_pipeline.register(
+            self._vehicle_health_consumer
+        )
+
+        self._driver_statistics_engine = (
+            DriverStatisticsEngine(
+                score_calculator=(
+                    DriverScoreCalculator()
+                )
+            )
+        )
+
+        self._driver_statistics_consumer = (
+            DriverStatisticsConsumer(
+                engine=(
+                    self._driver_statistics_engine
+                ),
+                state=(
+                    self._intelligence_state
+                ),
+            )
         )
 
 
@@ -657,6 +755,27 @@ class DriveVitalsRuntime:
                         timestamp=now,
                     )
                 )
+
+                # ------------------------------------------------------
+                # Feed the completed trip into driver statistics
+                # ------------------------------------------------------
+
+                runner = next(
+                    (
+                        r
+                        for r in self._fleet._runners
+                        if r.vehicle.vehicle_id == vehicle_id
+                    ),
+                    None,
+                )
+
+                if runner is not None:
+                    self._driver_statistics_consumer.record_trip(
+                        driver_id=runner.trip.driver_id,
+                        behaviour_events=all_events,
+                        trip=runner.trip,
+                    )
+
                 if self._trip_flush_callback is not None:
                     summary = (
                         self._analytics_engine.get_summary(
@@ -754,6 +873,36 @@ class DriveVitalsRuntime:
         self,
     ) -> AnalyticsContextStore:
         return self._context_store
+
+    @property
+    def intelligence_state(
+        self,
+    ) -> IntelligenceState:
+        return self._intelligence_state
+
+    @property
+    def vehicle_health_engine(
+        self,
+    ) -> VehicleHealthEngine:
+        return self._vehicle_health_engine
+
+    @property
+    def vehicle_health_consumer(
+        self,
+    ) -> VehicleHealthConsumer:
+        return self._vehicle_health_consumer
+
+    @property
+    def driver_statistics_engine(
+        self,
+    ) -> DriverStatisticsEngine:
+        return self._driver_statistics_engine
+
+    @property
+    def driver_statistics_consumer(
+        self,
+    ) -> DriverStatisticsConsumer:
+        return self._driver_statistics_consumer
 
     def set_trip_flush_callback(
         self,

@@ -75,6 +75,16 @@ from backend.analytics.vehicle_health.vehicle_health_engine import (
     VehicleHealthEngine,
 )
 
+from backend.alerts.alert_engine import (
+    AlertEngine,
+)
+from backend.alerts.generators import (
+    HealthAlertsGenerator,
+    MaintenanceAlertsGenerator,
+    TelemetryAlertsGenerator,
+    TripAlertsGenerator,
+)
+
 from backend.application.consumers.driver_statistics_consumer import (
     DriverStatisticsConsumer,
 )
@@ -100,6 +110,17 @@ from backend.fleet.models.trip import (
 
 from backend.fleet.runtime.fleet_runner import (
     FleetRunner,
+)
+
+from backend.maintenance.estimators import (
+    BrakeEstimator,
+    CoolingEstimator,
+    EngineEstimator,
+    FuelSystemEstimator,
+    TransmissionEstimator,
+)
+from backend.maintenance.maintenance_service import (
+    MaintenanceService,
 )
 
 from backend.pipeline.telemetry_pipeline import (
@@ -339,6 +360,33 @@ class DriveVitalsRuntime:
             )
         )
 
+        # --------------------------------------------------------------
+        # Fleet intelligence (maintenance + alerts)
+        # --------------------------------------------------------------
+
+        self._maintenance_service = (
+            MaintenanceService(
+                estimators=(
+                    EngineEstimator(),
+                    BrakeEstimator(),
+                    CoolingEstimator(),
+                    TransmissionEstimator(),
+                    FuelSystemEstimator(),
+                )
+            )
+        )
+
+        self._alert_engine = (
+            AlertEngine(
+                generators=(
+                    HealthAlertsGenerator(),
+                    TelemetryAlertsGenerator(),
+                    MaintenanceAlertsGenerator(),
+                    TripAlertsGenerator(),
+                )
+            )
+        )
+
 
         # --------------------------------------------------------------
         # Load fleet configuration
@@ -564,16 +612,47 @@ class DriveVitalsRuntime:
         # --------------------------------------------------------------
 
         class _PersistenceTelemetryConsumer:
-            def __init__(self, svc: PersistenceService) -> None:
+            def __init__(
+                self,
+                svc: PersistenceService,
+                engine: AlertEngine,
+                state: IntelligenceState,
+            ) -> None:
                 self._svc = svc
+                self._engine = engine
+                self._state = state
+
             def consume(self, sample: TelemetrySample) -> None:
                 asyncio.ensure_future(
                     self._svc.persist_telemetry(sample)
                 )
 
+                health = self._state.get_health_snapshot(
+                    sample.vehicle_id
+                )
+
+                if health is not None:
+                    asyncio.ensure_future(
+                        self._svc.persist_vehicle_health(health)
+                    )
+
+                alerts = self._engine.generate_alerts(
+                    health_snapshot=health,
+                    telemetry=(sample,),
+                )
+
+                if alerts:
+                    asyncio.ensure_future(
+                        self._svc.persist_alerts(alerts)
+                    )
+
         if persistence is not None:
             self._telemetry_pipeline.register(
-                _PersistenceTelemetryConsumer(persistence)
+                _PersistenceTelemetryConsumer(
+                    persistence,
+                    self._alert_engine,
+                    self._intelligence_state,
+                )
             )
 
         # --------------------------------------------------------------
@@ -720,6 +799,8 @@ class DriveVitalsRuntime:
             in self._fleet.active_runners()
         }
 
+        latest_samples: dict[str, TelemetrySample] = {}
+
         while (
             self._running
             and self._fleet.active_runners()
@@ -732,6 +813,10 @@ class DriveVitalsRuntime:
             )
 
             for sample in samples:
+
+                latest_samples[
+                    sample.vehicle_id
+                ] = sample
 
                 self._telemetry_pipeline.publish(
                     sample
@@ -770,11 +855,89 @@ class DriveVitalsRuntime:
                 )
 
                 if runner is not None:
-                    self._driver_statistics_consumer.record_trip(
-                        driver_id=runner.trip.driver_id,
-                        behaviour_events=all_events,
-                        trip=runner.trip,
+                    statistics = (
+                        self._driver_statistics_consumer.record_trip(
+                            driver_id=runner.trip.driver_id,
+                            behaviour_events=all_events,
+                            trip=runner.trip,
+                        )
                     )
+
+                    if persistence is not None:
+                        asyncio.ensure_future(
+                            persistence.persist_driver_statistics(
+                                statistics
+                            )
+                        )
+
+                        health = (
+                            self._intelligence_state.get_health_snapshot(
+                                vehicle_id
+                            )
+                        )
+
+                        recommendations = ()
+                        records = ()
+
+                        if health is not None:
+                            try:
+                                recommendations = (
+                                    self._maintenance_service
+                                    .estimate_maintenance(
+                                        health_snapshot=health,
+                                        vehicle=runner.vehicle,
+                                        telemetry_sample=(
+                                            latest_samples.get(
+                                                vehicle_id
+                                            )
+                                        ),
+                                        odometer_km=(
+                                            runner.vehicle.odometer_km
+                                        ),
+                                    )
+                                )
+                                records = (
+                                    self._maintenance_service
+                                    .build_records(
+                                        recommendations=(
+                                            recommendations
+                                        ),
+                                        odometer_km=(
+                                            runner.vehicle.odometer_km
+                                        ),
+                                    )
+                                )
+                            except Exception:
+                                logger.exception(
+                                    "Maintenance estimation failed for "
+                                    "vehicle %s",
+                                    vehicle_id,
+                                )
+                                recommendations = ()
+                                records = ()
+
+                        if records:
+                            asyncio.ensure_future(
+                                persistence.persist_maintenance_records(
+                                    records
+                                )
+                            )
+
+                        trip_alerts = (
+                            self._alert_engine.generate_alerts(
+                                recommendations=recommendations,
+                                health_snapshot=health,
+                                trip=runner.trip,
+                                behaviour_events=all_events,
+                            )
+                        )
+
+                        if trip_alerts:
+                            asyncio.ensure_future(
+                                persistence.persist_alerts(
+                                    trip_alerts
+                                )
+                            )
 
                 if self._trip_flush_callback is not None:
                     summary = (
@@ -903,6 +1066,18 @@ class DriveVitalsRuntime:
         self,
     ) -> DriverStatisticsConsumer:
         return self._driver_statistics_consumer
+
+    @property
+    def maintenance_service(
+        self,
+    ) -> MaintenanceService:
+        return self._maintenance_service
+
+    @property
+    def alert_engine(
+        self,
+    ) -> AlertEngine:
+        return self._alert_engine
 
     def set_trip_flush_callback(
         self,

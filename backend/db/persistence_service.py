@@ -1,11 +1,23 @@
 import logging
+from collections.abc import Sequence
 from datetime import datetime
+from uuid import NAMESPACE_OID, uuid5
 
+from backend.analytics.driver_statistics.models.driver_statistics import (
+    DriverStatistics,
+)
 from backend.analytics.snapshot.analytics_snapshot import AnalyticsSnapshot
+from backend.analytics.vehicle_health.models.health_snapshot import (
+    HealthSnapshot,
+)
 
+from backend.alerts.models.fleet_alert import (
+    FleetAlert,
+)
 from backend.fleet.models.driver import Driver as DomainDriver
 from backend.fleet.models.route import Route as DomainRoute
 from backend.fleet.models.vehicle import Vehicle as DomainVehicle
+from backend.maintenance.models.maintenance_record import MaintenanceRecord
 from backend.telemetry.models.telemetry_sample import TelemetrySample
 from backend.db.repositories import (
     VehicleRepository,
@@ -15,6 +27,9 @@ from backend.db.repositories import (
     TelemetryRepository,
     BehaviourRepository,
     VehicleHealthRepository,
+    DriverStatisticsRepository,
+    MaintenanceRepository,
+    AlertRepository,
 )
 from backend.db.session import async_session_factory
 
@@ -183,28 +198,128 @@ class PersistenceService:
 
     async def persist_vehicle_health(
         self,
-        vehicle_id: str,
-        overall_health_score: float | None = None,
-        engine_health: float | None = None,
-        brake_health: float | None = None,
-        transmission_health: float | None = None,
-        cooling_health: float | None = None,
-        fuel_system_health: float | None = None,
+        health_snapshot: HealthSnapshot,
     ) -> None:
         try:
             async with async_session_factory() as session:
                 repo = VehicleHealthRepository(session)
                 await repo.upsert(
-                    vehicle_id=vehicle_id,
-                    overall_health_score=overall_health_score,
-                    engine_health=engine_health,
-                    brake_health=brake_health,
-                    transmission_health=transmission_health,
-                    cooling_health=cooling_health,
-                    fuel_system_health=fuel_system_health,
+                    vehicle_id=health_snapshot.vehicle_id,
+                    overall_health_score=health_snapshot.overall_health_score,
+                    engine_health=health_snapshot.engine_health.score,
+                    brake_health=health_snapshot.brake_health.score,
+                    transmission_health=health_snapshot.transmission_health.score,
+                    cooling_health=health_snapshot.cooling_health.score,
+                    fuel_system_health=health_snapshot.fuel_system_health.score,
+                    last_updated=health_snapshot.timestamp,
                 )
                 await session.commit()
         except Exception:
             logger.exception(
-                "Failed to persist vehicle health for %s", vehicle_id
+                "Failed to persist vehicle health for %s",
+                health_snapshot.vehicle_id,
+            )
+
+    async def persist_driver_statistics(
+        self,
+        statistics: DriverStatistics,
+    ) -> None:
+        try:
+            async with async_session_factory() as session:
+                repo = DriverStatisticsRepository(session)
+                await repo.upsert(
+                    driver_id=statistics.driver_id,
+                    safety_score=statistics.safety_score,
+                    aggression_score=statistics.aggression_score,
+                    efficiency_score=statistics.efficiency_score,
+                    speeding_events=statistics.overspeed_count,
+                    harsh_braking_events=statistics.harsh_braking_count,
+                    aggressive_throttle_events=(
+                        statistics.harsh_acceleration_count
+                    ),
+                    high_rpm_events=max(
+                        0,
+                        statistics.total_events
+                        - statistics.harsh_braking_count
+                        - statistics.overspeed_count
+                        - statistics.harsh_acceleration_count,
+                    ),
+                    total_distance_km=statistics.total_distance,
+                    total_trips=statistics.total_trips,
+                )
+                await session.commit()
+        except Exception:
+            logger.exception(
+                "Failed to persist driver statistics for %s",
+                statistics.driver_id,
+            )
+
+    async def persist_maintenance_records(
+        self,
+        records: Sequence[MaintenanceRecord],
+    ) -> None:
+        try:
+            if not records:
+                return
+            async with async_session_factory() as session:
+                repo = MaintenanceRepository(session)
+                for record in records:
+                    await repo.insert(
+                        maintenance_id=str(
+                            uuid5(NAMESPACE_OID, record.maintenance_id)
+                        ),
+                        vehicle_id=record.vehicle_id,
+                        maintenance_type=(
+                            record.maintenance_type.value
+                            if hasattr(record.maintenance_type, "value")
+                            else str(record.maintenance_type)
+                        ),
+                        priority="medium",
+                        status="pending",
+                        due_odometer_km=record.odometer_km,
+                        created_at=record.performed_at,
+                    )
+                await session.commit()
+        except Exception:
+            logger.exception(
+                "Failed to persist %d maintenance record(s)",
+                len(records),
+            )
+
+    async def persist_alerts(
+        self,
+        alerts: Sequence[FleetAlert],
+    ) -> None:
+        try:
+            if not alerts:
+                return
+            async with async_session_factory() as session:
+                repo = AlertRepository(session)
+                for alert in alerts:
+                    alert_id = alert.alert_id
+                    if len(alert_id) > 36:
+                        alert_id = str(uuid5(NAMESPACE_OID, alert_id))
+                    await repo.insert(
+                        alert_id=alert_id,
+                        vehicle_id=alert.vehicle_id,
+                        alert_type=(
+                            alert.alert_type.value
+                            if hasattr(alert.alert_type, "value")
+                            else str(alert.alert_type)
+                        ),
+                        severity=(
+                            alert.severity.value
+                            if hasattr(alert.severity, "value")
+                            else str(alert.severity)
+                        ),
+                        message=alert.message,
+                        created_at=alert.created_at,
+                        driver_id=alert.driver_id,
+                        trip_id=alert.trip_id,
+                    )
+                await session.commit()
+        except Exception:
+            logger.exception(
+                "Failed to persist %d alert(s)",
+                len(alerts),
             )

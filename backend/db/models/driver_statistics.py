@@ -26,6 +26,8 @@ class DriverStatistics(Base):
     )
     high_rpm_events: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     safety_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    aggression_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    efficiency_score: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.now
     )

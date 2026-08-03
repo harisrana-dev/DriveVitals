@@ -10,12 +10,11 @@ maintenance records and fleet alerts into PostgreSQL:
     FleetAlert        ──► persist_alerts              ──► alerts
 
 Each flow produces its input through the real Phase 1 engine/consumer so
-the test covers the full analytics-to-persistence handoff. All work runs
-inside a single asyncio.run() so the SQLAlchemy engine is only ever used
-from one event loop.
+the test covers the full analytics-to-persistence handoff. The async test
+runs under pytest-asyncio so all database work stays on a single event
+loop.
 """
 
-import asyncio
 import os
 import sys
 from collections import Counter
@@ -469,5 +468,5 @@ async def _scenario() -> None:
 # ---------------------------------------------------------------------------
 
 class TestIntelligencePersistence:
-    def test_intelligence_outputs_are_persisted(self) -> None:
-        asyncio.run(_scenario())
+    async def test_intelligence_outputs_are_persisted(self) -> None:
+        await _scenario()

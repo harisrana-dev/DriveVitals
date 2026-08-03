@@ -1,0 +1,16 @@
+# DriveVitals full dependency list (runtime + development).
+#
+# Install with:
+#     pip install -r requirements.txt
+
+# Backend runtime (see also backend/requirements.txt)
+fastapi
+sqlalchemy
+asyncpg
+alembic
+python-dotenv
+uvicorn
+
+# Test tooling
+pytest
+pytest-asyncio

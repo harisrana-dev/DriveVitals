@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Bell, Menu, Search, ChevronDown, User, LogOut, Settings } from 'lucide-react';
-import ThemeToggle from '../ThemeToggle';
+import ThemeToggle from '../common/ThemeToggle';
 import { useUnacknowledgedAlertCount } from '../../hooks/useFleetData';
 
 const pageTitles = {

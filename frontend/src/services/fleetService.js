@@ -3,7 +3,6 @@ import {
   drivers as mockDrivers,
   alerts as mockAlerts,
   maintenanceItems as mockMaintenance,
-  dashboardSummary as mockSummary,
   telemetryData as mockTelemetry,
 } from '../mocks/data';
 

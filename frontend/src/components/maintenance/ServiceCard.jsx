@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { PriorityBadge } from './PriorityBadge';
 import { DueBadge } from './DueBadge';
-import { MaintenanceHealthBadge } from './MaintenanceHealthBadge';
 import { serviceIcon } from '../../utils/maintenance';
 import { HealthBar } from '../vehicleHealth/HealthBar';
 

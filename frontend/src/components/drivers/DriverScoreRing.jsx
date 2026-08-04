@@ -1,9 +1,5 @@
 import { memo } from 'react';
 
-const RADIUS = 36;
-const STROKE = 6;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-
 function scoreColor(score) {
   if (score >= 90) return 'var(--color-green)';
   if (score >= 70) return 'var(--color-amber)';

@@ -83,3 +83,100 @@ ul, ol {
   margin: 0 auto;
   padding: var(--space-6) var(--layout-padding-x);
 }
+
+/* ─── UI foundation primitives (skeleton / spinner / empty state) ─── */
+@keyframes ui-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes ui-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ui-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.ui-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  animation: ui-shimmer 1.5s infinite;
+}
+
+.ui-skeleton--text {
+  height: 1em;
+  border-radius: var(--radius-button);
+}
+
+.ui-skeleton--circle {
+  border-radius: var(--radius-pill);
+}
+
+.ui-spinner {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-accent);
+  animation: ui-spin 0.8s linear infinite;
+}
+
+.ui-spinner--sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.ui-spinner--lg {
+  width: 48px;
+  height: 48px;
+}
+
+.ui-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-12);
+  text-align: center;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background-color: var(--color-bg-secondary);
+}
+
+.ui-empty__title {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-card-title);
+  font-weight: 600;
+}
+
+.ui-empty__action {
+  margin-top: var(--space-2);
+}
+
+.ui-error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12);
+  text-align: center;
+  color: var(--color-status-critical);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background-color: var(--color-bg-card);
+}

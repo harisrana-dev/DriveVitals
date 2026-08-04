@@ -1,8 +1,6 @@
 import { X } from 'lucide-react';
 import { useMaintenanceVehicle } from '../../hooks/useMaintenance';
 import { HealthStatusBadge } from '../vehicleHealth/HealthStatusBadge';
-import { HealthBar } from '../vehicleHealth/HealthBar';
-import { PriorityBadge } from './PriorityBadge';
 import { DueBadge } from './DueBadge';
 import { healthColor } from '../../utils/health';
 

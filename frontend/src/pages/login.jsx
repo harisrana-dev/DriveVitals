@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/login.css";
-import ThemeToggle from "../components/ThemeToggle";
+import ThemeToggle from "../components/common/ThemeToggle";
 import AppLoader from "../components/common/AppLoader";
 
 /* ── Inline fleet SVG illustration ──────────────────────── */

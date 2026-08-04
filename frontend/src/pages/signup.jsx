@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/signup.css";
-import ThemeToggle from "../components/ThemeToggle";
+import ThemeToggle from "../components/common/ThemeToggle";
 
 /* ── Inline route/network SVG illustration ───────────────── */
 function RouteIllustration() {

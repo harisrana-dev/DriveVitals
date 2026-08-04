@@ -1,6 +1,6 @@
 import "../styles/Introductionpage.css";
 import { useNavigate } from "react-router-dom";
-import ThemeToggle from "../components/ThemeToggle";
+import ThemeToggle from "../components/common/ThemeToggle";
 
 function GetStarted() {
   const navigate = useNavigate();

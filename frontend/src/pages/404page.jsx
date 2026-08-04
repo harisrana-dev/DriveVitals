@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/404page.css";
-import ThemeToggle from "../components/ThemeToggle";
+import ThemeToggle from "../components/common/ThemeToggle";
 
 /* ── Lost truck SVG illustration ─────────────────────────── */
 function LostTruckIllustration() {

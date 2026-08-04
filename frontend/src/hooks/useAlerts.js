@@ -51,7 +51,7 @@ export function useAlerts() {
     return {
       incidents: merged,
       drivingEvents: timeline,
-      kpis: computeAlertKpis(merged, timeline),
+      kpis: computeAlertKpis(merged),
       distribution: computeSummaryDistribution(merged),
       categoryDist: computeCategoryDistribution(merged),
       timeline: buildAlertTimeline(merged),

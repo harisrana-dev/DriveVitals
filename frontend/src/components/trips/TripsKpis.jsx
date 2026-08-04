@@ -1,16 +1,13 @@
 import { memo } from 'react';
 import { Route, Map, Shield, Fuel } from 'lucide-react';
-import { useTripsSummary, useTrips } from '../../hooks/useTripsData';
+import { useTripsSummary } from '../../hooks/useTripsData';
 import { useSmoothValue } from '../../hooks/useSmoothValue';
 
 export const TripsKpis = memo(function TripsKpis() {
   const summary = useTripsSummary();
-  const trips = useTrips();
 
   const smoothDistance = useSmoothValue(summary.totalDistance);
   const smoothScore = useSmoothValue(summary.avgSafetyScore);
-
-  const completedTrips = trips.filter((t) => t.overallSeverity !== 'none').length;
 
   const cards = [
     {

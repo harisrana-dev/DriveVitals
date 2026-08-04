@@ -13,8 +13,6 @@ const EVENT_LABELS = {
   high_rpm: 'High RPM',
 };
 
-const STATUS_CACHE = new WeakMap();
-
 function getDisplayStatus(vehicle) {
   if (vehicle.status === 'active' && vehicle.alertCount > 0) return 'ALERT';
   if (vehicle.status === 'active') return 'ACTIVE';

@@ -45,8 +45,6 @@ export function useFleetFilters() {
         case 'fuelLevel':
           cmp = a.fuelLevel - b.fuelLevel;
           break;
-        default:
-          cmp = 0;
       }
       return sortAsc ? cmp : -cmp;
     });

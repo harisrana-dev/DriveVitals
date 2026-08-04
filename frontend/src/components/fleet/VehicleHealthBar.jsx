@@ -17,7 +17,7 @@ function getHealthColor(score) {
 }
 
 function getHealthLabel(vehicle) {
-  const { activeAlert, alertCount, rpm, activeEventTypes } = vehicle;
+  const { activeAlert, rpm, activeEventTypes } = vehicle;
   const events = activeEventTypes || [];
 
   if (events.length > 1) return 'Multiple Active Events';

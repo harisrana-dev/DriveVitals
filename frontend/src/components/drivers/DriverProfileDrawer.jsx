@@ -468,8 +468,6 @@ function PerformanceTrend({ performance }) {
   if (!performance || !performance.history || performance.history.length < 2) return null;
 
   const history = performance.history;
-  const maxScore = 100;
-  const minScore = 0;
   const width = 400;
   const height = 80;
   const padding = { top: 8, bottom: 16, left: 0, right: 0 };

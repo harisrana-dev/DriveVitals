@@ -67,7 +67,7 @@ export const DriverRanking = memo(function DriverRanking({ onDriverClick }) {
             gap: 4,
           }}
         >
-          {bottom3.map((d, i) => (
+          {bottom3.map((d) => (
             <RankingRow key={d.id} driver={d} rank={rankings.indexOf(d) + 1} onClick={onDriverClick} />
           ))}
         </div>

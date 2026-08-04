@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { RefreshCw, Radio } from 'lucide-react';
-import { useDashboardSocket } from '../hooks/useDashboardSocket';
 import { FleetSummary } from '../components/fleet/FleetSummary';
 import { FleetFilters } from '../components/fleet/FleetFilters';
 import { VehicleGrid } from '../components/fleet/VehicleGrid';
@@ -9,8 +8,6 @@ import { useFleetFilters } from '../hooks/useFleetFilters';
 import { useVehicleDrawer } from '../context/VehicleDrawerContext';
 
 export function FleetPage() {
-  useDashboardSocket();
-
   const {
     vehicles,
     search,

@@ -52,8 +52,6 @@ export function useTripsFilters() {
         case 'fuel':
           cmp = a.fuelConsumed - b.fuelConsumed;
           break;
-        default:
-          cmp = 0;
       }
       return sortAsc ? cmp : -cmp;
     });

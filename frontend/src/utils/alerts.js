@@ -268,7 +268,7 @@ export function severityLabel(severity) {
   }
 }
 
-export function computeAlertKpis(incidents, drivingEvents) {
+export function computeAlertKpis(incidents) {
   const critical = incidents.filter((a) => a.severity === 'critical').length;
   const active = incidents.length;
   const acknowledged = 0;

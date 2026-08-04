@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { RefreshCw, Radio } from 'lucide-react';
-import { useTripsSocket } from '../hooks/useTripsSocket';
 import { useTripsFilters } from '../hooks/useTripsFilters';
 import { useTripDrawer } from '../context/TripDrawerContext';
 import { TripsKpis } from '../components/trips/TripsKpis';
@@ -9,8 +8,6 @@ import { TripsTable } from '../components/trips/TripsTable';
 import { TripDrawer } from '../components/trips/TripDrawer';
 
 export function TripsPage() {
-  useTripsSocket();
-
   const {
     trips,
     search,

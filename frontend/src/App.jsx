@@ -13,10 +13,6 @@ import { SettingsPage } from './pages/Settings';
 import GetStarted from './pages/Introductionpage';
 import Login from './pages/login';
 import Signup from './pages/signup';
-import NotFound from './pages/404page';
-import {
- DashboardProvider
-} from "./context/DashboardContext";
 import {
  FleetProvider
 } from "./context/FleetContext";
@@ -26,14 +22,17 @@ import {
 import {
  TripDrawerProvider
 } from "./context/TripDrawerContext";
+import {
+ LiveDataProvider
+} from "./context/LiveDataContext";
 
 function App() {
   return (
     <BrowserRouter>
+    <LiveDataProvider>
     <FleetProvider>
     <TripsProvider>
     <TripDrawerProvider>
-    <DashboardProvider>
       <Routes>
         <Route path="/" element={<GetStarted />} />
         <Route path="/login" element={<Login />} />
@@ -52,10 +51,10 @@ function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
-    </DashboardProvider>
     </TripDrawerProvider>
     </TripsProvider>
     </FleetProvider>
+    </LiveDataProvider>
     </BrowserRouter>
   );
 }

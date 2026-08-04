@@ -1,18 +1,5 @@
-import { memo, useMemo } from 'react';
-import { Route, MapPin, Clock, Gauge, Fuel, Shield } from 'lucide-react';
+import { memo } from 'react';
 import { TripRow } from './TripRow';
-
-const COLUMNS = [
-  { key: 'trip', label: 'Trip / Vehicle', icon: null },
-  { key: 'driver', label: 'Driver', icon: null },
-  { key: 'route', label: 'Route', icon: MapPin },
-  { key: 'distance', label: 'Distance', icon: Route },
-  { key: 'duration', label: 'Duration', icon: Clock },
-  { key: 'speed', label: 'Avg Speed', icon: Gauge },
-  { key: 'fuel', label: 'Fuel', icon: Fuel },
-  { key: 'score', label: 'Safety', icon: Shield },
-  { key: '', label: '', icon: null },
-];
 
 export const TripsTable = memo(function TripsTable({ trips, onTripClick, selectedTripId }) {
   return (

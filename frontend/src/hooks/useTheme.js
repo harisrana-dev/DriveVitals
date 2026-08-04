@@ -17,6 +17,11 @@ function getStoredTheme() {
   return null;
 }
 
+export function applyInitialTheme() {
+  const theme = getStoredTheme() ?? getSystemPreference();
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
 export function useTheme() {
   const [theme, setThemeState] = useState(() => {
     return getStoredTheme() ?? getSystemPreference();

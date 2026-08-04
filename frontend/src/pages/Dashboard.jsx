@@ -7,11 +7,9 @@ import { FleetHealthMatrix } from '../components/dashboard/FleetHealthMatrix';
 import { DriverInsights } from '../components/dashboard/DriverInsights';
 import { MaintenanceQueue } from '../components/dashboard/MaintenanceQueue';
 import { FleetTrends } from '../components/dashboard/FleetTrends';
-import { useDashboardSocket } from "../hooks/useDashboardSocket";
 
 
 export function Dashboard() {
-  useDashboardSocket();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1400 }}>
       {/* Dashboard Header */}

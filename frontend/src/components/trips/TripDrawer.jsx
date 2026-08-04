@@ -1,17 +1,9 @@
-import { useMemo } from 'react';
 import {
-  X, Gauge, Clock, Route, Fuel, Shield, MapPin,
-  Zap, Wind, Activity, Thermometer, Cpu, AlertTriangle,
-  ChevronUp, ChevronDown, TrendingUp, Droplets,
+  X, Gauge, Clock, Route, Fuel,
+  Zap, Activity, Thermometer, Cpu, AlertTriangle,
+  Droplets,
 } from 'lucide-react';
 import { useSmoothValue } from '../../hooks/useSmoothValue';
-
-const EVENT_LABELS = {
-  speeding: 'Speeding',
-  harsh_braking: 'Harsh Braking',
-  aggressive_throttle: 'Aggressive Throttle',
-  high_rpm: 'High RPM',
-};
 
 const SEVERITY_COLORS = {
   severe: 'var(--color-red)',
@@ -88,15 +80,6 @@ function DrawerFrame({ onClose, children }) {
 }
 
 function DrawerContent({ trip, onClose }) {
-  const eventTypes = useMemo(() => {
-    const types = [];
-    if (trip.speedingCount > 0) types.push('speeding');
-    if (trip.harshBrakingCount > 0) types.push('harsh_braking');
-    if (trip.aggressiveThrottleCount > 0) types.push('aggressive_throttle');
-    if (trip.highRpmCount > 0) types.push('high_rpm');
-    return types;
-  }, [trip]);
-
   return (
     <>
       <Header trip={trip} onClose={onClose} />
@@ -112,7 +95,7 @@ function DrawerContent({ trip, onClose }) {
         }}
       >
         <TripSummarySection trip={trip} />
-        <TripBehaviourSection trip={trip} eventTypes={eventTypes} />
+        <TripBehaviourSection trip={trip} />
         <TripTimelineSection events={trip.events} />
         <TripWearPanel trip={trip} />
         <TripStatisticsSection trip={trip} />
@@ -331,7 +314,7 @@ function TripSummarySection({ trip }) {
   );
 }
 
-function TripBehaviourSection({ trip, eventTypes }) {
+function TripBehaviourSection({ trip }) {
   const events = [
     { key: 'speeding', label: 'Speeding', count: trip.speedingCount, duration: trip.speedingDuration },
     { key: 'harsh_braking', label: 'Harsh Braking', count: trip.harshBrakingCount, duration: 0 },

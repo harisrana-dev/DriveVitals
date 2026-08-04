@@ -148,8 +148,6 @@ export function buildKpiStats(vehicles) {
 
 export function buildUpcomingSchedule(vehicles) {
   if (!vehicles || vehicles.length === 0) return [];
-  const now = Date.now();
-  const day = 86400000;
 
   const groups = [
     { label: 'Today', range: [0, 1], items: [] },
@@ -208,7 +206,6 @@ export function buildServiceHistory(vehicles) {
 
   vehicles.forEach((v) => {
     const odometer = v.odometer_km ?? 0;
-    const intervals = [5000, 10000, 8000, 20000, 15000];
     const numServices = Math.min(3, Math.floor(odometer / 5000));
 
     for (let i = 0; i < numServices; i++) {

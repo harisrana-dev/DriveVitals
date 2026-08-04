@@ -1,16 +1,18 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
+import { useLiveData } from "./LiveDataContext";
 
 const FleetContext = createContext(null);
 
 export function FleetProvider({ children }) {
 
-    const [dashboard, setDashboard] = useState(null);
+    const {
+        dashboard
+    } = useLiveData();
 
     return (
         <FleetContext.Provider
             value={{
-                dashboard,
-                setDashboard
+                dashboard
             }}
         >
             {children}

@@ -22,6 +22,10 @@ from backend.api.websocket.trips import (
     trips_worker,
 )
 
+from backend.api.v1 import (
+    api_router,
+)
+
 from backend.api.websocket.snapshot_publisher import (
     DashboardSnapshotPublisher,
 )
@@ -199,6 +203,10 @@ app.include_router(
 
 app.include_router(
     trips_router
+)
+
+app.include_router(
+    api_router
 )
 
 

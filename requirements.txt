@@ -14,3 +14,4 @@ uvicorn
 # Test tooling
 pytest
 pytest-asyncio
+httpx

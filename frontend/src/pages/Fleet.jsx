@@ -1,11 +1,13 @@
 import { useCallback } from 'react';
-import { RefreshCw, Radio } from 'lucide-react';
 import { FleetSummary } from '../components/fleet/FleetSummary';
 import { FleetFilters } from '../components/fleet/FleetFilters';
 import { VehicleGrid } from '../components/fleet/VehicleGrid';
 import { FleetStatusRing } from '../components/fleet/FleetStatusRing';
+import { ConnectionBadge } from '../components/ui/ConnectionBadge';
+import { OfflineState } from '../components/ui/OfflineState';
 import { useFleetFilters } from '../hooks/useFleetFilters';
 import { useVehicleDrawer } from '../context/VehicleDrawerContext';
+import { useLiveData } from '../context/LiveDataContext';
 
 export function FleetPage() {
   const {
@@ -21,6 +23,7 @@ export function FleetPage() {
   } = useFleetFilters();
 
   const { openDrawer } = useVehicleDrawer();
+  const { overallStatus } = useLiveData();
 
   const handleVehicleClick = useCallback((vehicle) => {
     openDrawer(vehicle);
@@ -70,69 +73,45 @@ export function FleetPage() {
             gap: 12,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              color: 'var(--color-text-muted)',
-            }}
-          >
-            <Radio size={13} style={{ color: 'var(--color-green)' }} />
-            <span>Live</span>
-          </div>
-          <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-            Updated just now
-          </span>
-          <button
-            aria-label="Refresh data"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: '1px solid var(--color-border)',
-              background: 'var(--color-surface)',
-              color: 'var(--color-text-secondary)',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--color-surface-hover)';
-              e.currentTarget.style.color = 'var(--color-text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--color-surface)';
-              e.currentTarget.style.color = 'var(--color-text-secondary)';
-            }}
-          >
-            <RefreshCw size={15} strokeWidth={1.8} />
-          </button>
+          <ConnectionBadge status={overallStatus} />
+          {overallStatus === 'live' && (
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Updated just now
+            </span>
+          )}
+          {overallStatus === 'rest' && (
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Showing REST data
+            </span>
+          )}
         </div>
       </div>
 
-      <FleetSummary />
+      {overallStatus === 'offline' ? (
+        <OfflineState />
+      ) : (
+        <>
+          <FleetSummary />
 
-      <FleetFilters
-        search={search}
-        onSearchChange={setSearch}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        sortAsc={sortAsc}
-        onSortToggle={toggleSort}
-      />
+          <FleetFilters
+            search={search}
+            onSearchChange={setSearch}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            sortAsc={sortAsc}
+            onSortToggle={toggleSort}
+          />
 
-      <FleetStatusRing />
+          <FleetStatusRing />
 
-      <VehicleGrid
-        vehicles={vehicles}
-        onVehicleClick={handleVehicleClick}
-      />
+          <VehicleGrid
+            vehicles={vehicles}
+            onVehicleClick={handleVehicleClick}
+          />
+        </>
+      )}
     </div>
   );
 }

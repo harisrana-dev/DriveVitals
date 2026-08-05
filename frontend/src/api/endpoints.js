@@ -4,8 +4,13 @@ const endpoints = {
     vehicle: (id) => `/vehicles/${id}`,
     health: (id) => `/vehicles/${id}/health`,
   },
+  vehicleHealth: {
+    list: '/vehicle-health',
+    item: (id) => `/vehicle-health/${id}`,
+  },
   alerts: {
     list: '/alerts',
+    vehicle: (id) => `/alerts/${id}`,
     acknowledge: (id) => `/alerts/${id}/acknowledge`,
   },
   maintenance: {
@@ -14,10 +19,19 @@ const endpoints = {
   },
   trips: {
     list: '/trips',
+    item: (id) => `/trips/${id}`,
   },
   drivers: {
     list: '/drivers',
     driver: (id) => `/drivers/${id}`,
+  },
+  driverStatistics: {
+    list: '/driver-statistics',
+    driver: (id) => `/driver-statistics/${id}`,
+  },
+  telemetry: {
+    list: '/telemetry',
+    vehicle: (id) => `/telemetry/${id}`,
   },
   summary: {
     fleet: '/summary',
@@ -25,7 +39,9 @@ const endpoints = {
     vehicle: '/vehicle-summary',
   },
   health: {
-    check: '/health',
+    check: '/system/health',
+    status: '/system/status',
+    version: '/system/version',
   },
 };
 

@@ -1,7 +1,6 @@
 import logging
 from collections.abc import Sequence
 from datetime import datetime
-from uuid import NAMESPACE_OID, uuid5
 
 from backend.analytics.driver_statistics.models.driver_statistics import (
     DriverStatistics,
@@ -264,10 +263,8 @@ class PersistenceService:
             async with async_session_factory() as session:
                 repo = MaintenanceRepository(session)
                 for record in records:
-                    await repo.insert(
-                        maintenance_id=str(
-                            uuid5(NAMESPACE_OID, record.maintenance_id)
-                        ),
+                    await repo.upsert(
+                        maintenance_id=record.maintenance_id,
                         vehicle_id=record.vehicle_id,
                         maintenance_type=(
                             record.maintenance_type.value
@@ -296,11 +293,8 @@ class PersistenceService:
             async with async_session_factory() as session:
                 repo = AlertRepository(session)
                 for alert in alerts:
-                    alert_id = alert.alert_id
-                    if len(alert_id) > 36:
-                        alert_id = str(uuid5(NAMESPACE_OID, alert_id))
-                    await repo.insert(
-                        alert_id=alert_id,
+                    await repo.upsert(
+                        alert_id=alert.alert_id,
                         vehicle_id=alert.vehicle_id,
                         alert_type=(
                             alert.alert_type.value

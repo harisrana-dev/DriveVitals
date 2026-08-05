@@ -1,11 +1,13 @@
 import { useCallback } from 'react';
-import { RefreshCw, Radio } from 'lucide-react';
 import { useTripsFilters } from '../hooks/useTripsFilters';
 import { useTripDrawer } from '../context/TripDrawerContext';
 import { TripsKpis } from '../components/trips/TripsKpis';
 import { TripsFilters } from '../components/trips/TripsFilters';
 import { TripsTable } from '../components/trips/TripsTable';
 import { TripDrawer } from '../components/trips/TripDrawer';
+import { ConnectionBadge } from '../components/ui/ConnectionBadge';
+import { OfflineState } from '../components/ui/OfflineState';
+import { useLiveData } from '../context/LiveDataContext';
 
 export function TripsPage() {
   const {
@@ -23,6 +25,7 @@ export function TripsPage() {
   } = useTripsFilters();
 
   const { selectedTrip, openDrawer, closeDrawer } = useTripDrawer();
+  const { overallStatus } = useLiveData();
 
   const handleTripClick = useCallback((trip) => {
     openDrawer(trip);
@@ -72,70 +75,46 @@ export function TripsPage() {
             gap: 12,
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              color: 'var(--color-text-muted)',
-            }}
-          >
-            <Radio size={13} style={{ color: 'var(--color-green)' }} />
-            <span>Live</span>
-          </div>
-          <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-            Updated in real-time
-          </span>
-          <button
-            aria-label="Refresh data"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: '1px solid var(--color-border)',
-              background: 'var(--color-surface)',
-              color: 'var(--color-text-secondary)',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--color-surface-hover)';
-              e.currentTarget.style.color = 'var(--color-text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--color-surface)';
-              e.currentTarget.style.color = 'var(--color-text-secondary)';
-            }}
-          >
-            <RefreshCw size={15} strokeWidth={1.8} />
-          </button>
+          <ConnectionBadge status={overallStatus} />
+          {overallStatus === 'live' && (
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Updated in real-time
+            </span>
+          )}
+          {overallStatus === 'rest' && (
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Showing REST data
+            </span>
+          )}
         </div>
       </div>
 
-      <TripsKpis />
+      {overallStatus === 'offline' ? (
+        <OfflineState />
+      ) : (
+        <>
+          <TripsKpis />
 
-      <TripsFilters
-        search={search}
-        onSearchChange={setSearch}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        routeFilter={routeFilter}
-        onRouteChange={setRouteFilter}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        sortAsc={sortAsc}
-        onSortToggle={toggleSort}
-      />
+          <TripsFilters
+            search={search}
+            onSearchChange={setSearch}
+            statusFilter={statusFilter}
+            onStatusChange={setStatusFilter}
+            routeFilter={routeFilter}
+            onRouteChange={setRouteFilter}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            sortAsc={sortAsc}
+            onSortToggle={toggleSort}
+          />
 
-      <TripsTable
-        trips={trips}
-        onTripClick={handleTripClick}
-        selectedTripId={selectedTrip?.id}
-      />
+          <TripsTable
+            trips={trips}
+            onTripClick={handleTripClick}
+            selectedTripId={selectedTrip?.id}
+          />
+        </>
+      )}
 
       {selectedTrip && (
         <TripDrawer

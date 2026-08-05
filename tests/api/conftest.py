@@ -29,7 +29,13 @@ def _dsn() -> str:
     password = os.getenv("POSTGRES_PASSWORD", "drivevitals123")
     host = os.getenv("POSTGRES_HOST", "localhost")
     port = os.getenv("POSTGRES_PORT", "5432")
-    db = os.getenv("POSTGRES_DB", "drivevitals_dev")
+    db = os.getenv("POSTGRES_DB", "drivevitals_test")
+    if not db.endswith("_test"):
+        raise RuntimeError(
+            f"Refusing to run the API test suite against non-test database "
+            f"'{db}'. Tests drop and reseed their database, so POSTGRES_DB "
+            f"must point at a dedicated '*_test' database."
+        )
     return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}"
 
 

@@ -85,6 +85,7 @@ from backend.db.models.trip import Trip as DBTrip
 from backend.db.models.vehicle import Vehicle as DBVehicle
 from backend.db.models.vehicle_health import VehicleHealth
 from backend.db.persistence_service import PersistenceService
+from backend.db.repositories import AlertRepository, MaintenanceRepository
 from backend.db.session import async_session_factory, close_db, init_db
 from backend.fleet.models.driver import Driver as DomainDriver
 from backend.fleet.models.route import Route as DomainRoute
@@ -424,6 +425,27 @@ async def _scenario() -> None:
         }
         assert persisted_types == expected_types
 
+        # Replaying the same record set must be idempotent: the existing
+        # deterministic records are updated in place instead of inserted again.
+        # Replay runs through the repository directly so any compile/insert
+        # failure is surfaced instead of being swallowed by the service's
+        # logging.
+        async with async_session_factory() as session:
+            repo = MaintenanceRepository(session)
+            for record in records:
+                await repo.upsert(
+                    maintenance_id=record.maintenance_id,
+                    vehicle_id=record.vehicle_id,
+                    maintenance_type=record.maintenance_type.value,
+                    priority="medium",
+                    status="pending",
+                    due_odometer_km=record.odometer_km,
+                    created_at=record.performed_at,
+                )
+            await session.commit()
+        record_rows_after_replay = await _read_maintenance_records(vehicle_id)
+        assert len(record_rows_after_replay) == len(record_rows)
+
         # --------------------------------------------------------------
         # Flow 4 — AlertEngine ──► alerts
         # --------------------------------------------------------------
@@ -458,6 +480,27 @@ async def _scenario() -> None:
         assert persisted_signals == expected_signals
         for row in alert_rows:
             assert len(row.alert_id) <= 36
+
+        # Replaying the same alert set must be idempotent: the open alerts
+        # are updated in place instead of being inserted again. Replay runs
+        # through the repository directly so any compile/insert failure is
+        # surfaced instead of being swallowed by the service's logging.
+        async with async_session_factory() as session:
+            repo = AlertRepository(session)
+            for alert in alerts:
+                await repo.upsert(
+                    alert_id=alert.alert_id,
+                    vehicle_id=alert.vehicle_id,
+                    alert_type=alert.alert_type.value,
+                    severity=alert.severity.value,
+                    message=alert.message,
+                    created_at=alert.created_at,
+                    driver_id=alert.driver_id,
+                    trip_id=alert.trip_id,
+                )
+            await session.commit()
+        alert_rows_after_replay = await _read_alerts(vehicle_id)
+        assert len(alert_rows_after_replay) == len(alert_rows)
     finally:
         await _cleanup(vehicle_id, driver_id, route_id, trip_id)
         await close_db()

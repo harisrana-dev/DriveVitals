@@ -270,9 +270,9 @@ export function severityLabel(severity) {
 
 export function computeAlertKpis(incidents) {
   const critical = incidents.filter((a) => a.severity === 'critical').length;
-  const active = incidents.length;
-  const acknowledged = 0;
-  const responseTime = critical > 0 ? 4 + Math.round(Math.random() * 4) : 0;
+  const active = incidents.filter((a) => a.status !== 'resolved').length;
+  const acknowledged = incidents.filter((a) => a.acknowledged).length;
+  const responseTime = 0;
   return { critical, active, acknowledged, responseTime };
 }
 

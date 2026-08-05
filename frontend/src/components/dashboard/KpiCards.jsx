@@ -17,7 +17,7 @@ export const KpiCards = memo(function KpiCards() {
     {
       label: 'Active Now',
       value: summary.activeVehicles,
-      unit: `${Math.round((summary.activeVehicles / summary.totalVehicles) * 100)}% of fleet`,
+      unit: `${summary.totalVehicles > 0 ? Math.round((summary.activeVehicles / summary.totalVehicles) * 100) : 0}% of fleet`,
       icon: <Activity size={18} strokeWidth={1.8} />,
       color: 'var(--color-green)',
       bgColor: 'var(--color-green-bg)',

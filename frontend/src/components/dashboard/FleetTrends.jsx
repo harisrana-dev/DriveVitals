@@ -54,7 +54,7 @@ export function FleetTrends() {
             </defs>
             <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
             <XAxis dataKey="time" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} domain={[6, 10]} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} padding={{ top: 12, bottom: 8 }} />
             <Tooltip content={<CustomTooltip />} />
             <Area
               type="monotone"
@@ -85,7 +85,7 @@ export function FleetTrends() {
           <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" />
             <XAxis dataKey="time" tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} domain={[80, 95]} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} padding={{ top: 12, bottom: 8 }} />
             <Tooltip content={<CustomTooltip />} />
             <Line
               type="monotone"

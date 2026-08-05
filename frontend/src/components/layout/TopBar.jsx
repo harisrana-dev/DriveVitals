@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Bell, Menu, Search, ChevronDown, User, LogOut, Settings } from 'lucide-react';
 import ThemeToggle from '../common/ThemeToggle';
+import { ConnectionBadge } from '../ui/ConnectionBadge';
 import { useUnacknowledgedAlertCount } from '../../hooks/useFleetData';
+import { useLiveData } from '../../context/LiveDataContext';
 
 const pageTitles = {
   '/dashboard': 'Dashboard',
@@ -20,6 +22,7 @@ const pageTitles = {
 export function TopBar({ onMenuClick }) {
   const location = useLocation();
   const alertCount = useUnacknowledgedAlertCount();
+  const { overallStatus } = useLiveData();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
@@ -72,6 +75,8 @@ export function TopBar({ onMenuClick }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <ConnectionBadge status={overallStatus} />
+
         <div
           className="topbar-search"
           style={{

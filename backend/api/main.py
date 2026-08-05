@@ -6,6 +6,10 @@ from fastapi import (
     FastAPI,
 )
 
+from fastapi.middleware.cors import (
+    CORSMiddleware,
+)
+
 from backend.application.runtime import (
     DriveVitalsRuntime,
 )
@@ -194,6 +198,25 @@ async def lifespan(
 app = FastAPI(
     title="DriveVitals API",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+    ],
+    allow_credentials=False,
+    allow_methods=[
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS",
+    ],
+    allow_headers=[
+        "*",
+    ],
 )
 
 

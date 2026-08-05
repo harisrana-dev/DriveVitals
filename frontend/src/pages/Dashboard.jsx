@@ -1,4 +1,3 @@
-import { RefreshCw, Radio } from 'lucide-react';
 import { FleetPulse } from '../components/dashboard/FleetPulse';
 import { KpiCards } from '../components/dashboard/KpiCards';
 import { AttentionRequired } from '../components/dashboard/AttentionRequired';
@@ -7,9 +6,13 @@ import { FleetHealthMatrix } from '../components/dashboard/FleetHealthMatrix';
 import { DriverInsights } from '../components/dashboard/DriverInsights';
 import { MaintenanceQueue } from '../components/dashboard/MaintenanceQueue';
 import { FleetTrends } from '../components/dashboard/FleetTrends';
-
+import { ConnectionBadge } from '../components/ui/ConnectionBadge';
+import { OfflineState } from '../components/ui/OfflineState';
+import { useLiveData } from '../context/LiveDataContext';
 
 export function Dashboard() {
+  const { overallStatus } = useLiveData();
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1400 }}>
       {/* Dashboard Header */}
@@ -28,64 +31,49 @@ export function Dashboard() {
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--color-text-muted)' }}>
-            <Radio size={13} style={{ color: 'var(--color-green)' }} />
-            <span>Live</span>
-          </div>
-          <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-            Updated just now
-          </span>
-          <button
-            aria-label="Refresh data"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              border: '1px solid var(--color-border)',
-              background: 'var(--color-surface)',
-              color: 'var(--color-text-secondary)',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--color-surface-hover)';
-              e.currentTarget.style.color = 'var(--color-text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'var(--color-surface)';
-              e.currentTarget.style.color = 'var(--color-text-secondary)';
-            }}
-          >
-            <RefreshCw size={15} strokeWidth={1.8} />
-          </button>
+          <ConnectionBadge status={overallStatus} />
+          {overallStatus === 'live' && (
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Updated just now
+            </span>
+          )}
+          {overallStatus === 'rest' && (
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Showing REST data
+            </span>
+          )}
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <KpiCards />
+      {overallStatus === 'offline' ? (
+        <OfflineState />
+      ) : (
+        <>
+          {/* KPI Cards */}
+          <KpiCards />
 
-      {/* Fleet Pulse */}
-      <FleetPulse />
+          {/* Fleet Pulse */}
+          <FleetPulse />
 
-      {/* Two-column: Attention + Health Matrix */}
-      <div className="two-col-grid">
-        <AttentionRequired />
-        <FleetHealthMatrix />
-      </div>
+          {/* Two-column: Attention + Health Matrix */}
+          <div className="two-col-grid">
+            <AttentionRequired />
+            <FleetHealthMatrix />
+          </div>
 
-      {/* Live Fleet Activity */}
-      <LiveFleetActivity />
+          {/* Live Fleet Activity */}
+          <LiveFleetActivity />
 
-      {/* Fleet Trends */}
-      <FleetTrends />
+          {/* Fleet Trends */}
+          <FleetTrends />
 
-      {/* Two-column: Drivers + Maintenance */}
-      <div className="two-col-grid">
-        <DriverInsights />
-        <MaintenanceQueue />
-      </div>
+          {/* Two-column: Drivers + Maintenance */}
+          <div className="two-col-grid">
+            <DriverInsights />
+            <MaintenanceQueue />
+          </div>
+        </>
+      )}
     </div>
   );
 }

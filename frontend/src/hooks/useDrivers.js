@@ -1,62 +1,41 @@
-import { useMemo, useRef, useState } from 'react';
-import { useFleetContext } from '../context/FleetContext';
-import { adaptVehiclesToDrivers, buildDriverRankings as buildRankingList } from '../services/driverAdapter';
-import { driverHistorical } from '../mocks/drivers';
+import { useMemo, useState } from 'react';
+import { useLiveData } from '../context/LiveDataContext';
+import { adaptDrivers, buildDriverRankings as buildRankingList } from '../services/driverAdapter';
 import { computeTrend } from '../utils/trend';
 
-let _stableCache = null;
+const scoreCache = {};
 
-function shallowEqual(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  const ka = Object.keys(a), kb = Object.keys(b);
-  if (ka.length !== kb.length) return false;
-  for (const k of ka) if (a[k] !== b[k]) return false;
-  return true;
+function trendDirection(direction) {
+  if (direction === 'up') return 'improving';
+  if (direction === 'down' || direction === 'warning') return 'declining';
+  return 'stable';
 }
 
-function stableDriverList(raw) {
-  const mapped = adaptVehiclesToDrivers(raw);
-  if (!mapped || mapped.length === 0) return null;
-  if (_stableCache && _stableCache.length === mapped.length) {
-    let changed = false;
-    for (let i = 0; i < mapped.length; i++) {
-      if (!shallowEqual(mapped[i], _stableCache[i])) { changed = true; break; }
+function applyDriverTrends(mapped) {
+  for (const d of mapped) {
+    const prev = scoreCache[d.id];
+    const trend = computeTrend(d.safetyScore, prev?.score);
+    if (trend) {
+      d.trend = trendDirection(trend.direction);
+      d.scoreDelta = trend.delta;
+      d.scoreTrend = trend;
+    } else {
+      d.trend = 'stable';
+      d.scoreDelta = 0;
+      d.scoreTrend = null;
     }
-    if (!changed) return _stableCache;
+    scoreCache[d.id] = { score: d.safetyScore };
   }
-  _stableCache = mapped;
   return mapped;
 }
 
 export function useDrivers() {
-  const { dashboard } = useFleetContext();
-  const prevScoresRef = useRef({});
+  const { drivers, driverStatistics, dashboard } = useLiveData();
 
-  return useMemo(() => {
-    const raw = dashboard?.vehicles;
-    const stable = stableDriverList(raw);
-    const drivers = stable && stable.length > 0 ? stable : buildFallbackDrivers();
-
-    const prev = prevScoresRef.current;
-
-    for (const d of drivers) {
-      const prevEntry = prev[d.id];
-      const trend = computeTrend(d.safetyScore, prevEntry?.score);
-      if (trend) {
-        d.trend = trend.direction;
-        d.scoreDelta = trend.delta;
-        d.scoreTrend = trend;
-      } else {
-        d.trend = 'stable';
-        d.scoreDelta = 0;
-        d.scoreTrend = null;
-      }
-      prev[d.id] = { score: d.safetyScore, time: Date.now() };
-    }
-
-    return drivers;
-  }, [dashboard]);
+  return useMemo(
+    () => applyDriverTrends(adaptDrivers(drivers, driverStatistics, dashboard?.vehicles)),
+    [drivers, driverStatistics, dashboard]
+  );
 }
 
 export function useDriver(id) {
@@ -64,16 +43,8 @@ export function useDriver(id) {
   return useMemo(() => drivers.find((d) => d.id === id) || null, [drivers, id]);
 }
 
-export function useDriverPerformance(driverId) {
-  return useMemo(() => {
-    const hist = driverHistorical[driverId];
-    if (!hist) return null;
-    return {
-      history: hist.performanceHistory,
-      breakdown: { braking: 0, acceleration: 0, speed: 0, efficiency: 0, overall: 0 },
-      distribution: hist.behaviourDistribution,
-    };
-  }, [driverId]);
+export function useDriverPerformance() {
+  return null;
 }
 
 export function useDriverRanking() {
@@ -131,31 +102,4 @@ export function useDriversFilters() {
     riskFilter,
     setRiskFilter,
   };
-}
-
-function buildFallbackDrivers() {
-  return Object.entries(driverHistorical).map(([id, hist]) => ({
-    id,
-    name: id.replace('D-', 'Driver '),
-    initials: id.replace('D-', 'D'),
-    status: 'offline',
-    riskLevel: 'low',
-    behaviourState: 'stable',
-    trend: 'stable',
-    scoreDelta: 0,
-    scoreTrend: null,
-    vehicleId: '',
-    vehicleName: '',
-    safetyScore: 85,
-    scoreBreakdown: { braking: 85, acceleration: 85, speed: 85, efficiency: 85, overall: 85 },
-    activeEventTypes: [],
-    speed: 0, rpm: 0, throttle: 0, brake: 0,
-    fuelLevel: 0, engineLoad: 0, coolantTemp: 0, healthScore: 0,
-    harshBraking: { count: 0, trend: 'stable', severity: 'none', active: false },
-    aggressiveAcceleration: { count: 0, trend: 'stable', severity: 'none', active: false },
-    overspeedEvents: { count: 0, trend: 'stable', severity: 'none', active: false },
-    highRpmEvents: { count: 0, trend: 'stable', severity: 'none', active: false },
-    lastActive: null,
-    ...hist,
-  }));
 }

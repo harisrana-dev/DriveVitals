@@ -1,5 +1,3 @@
-import { driverHistorical } from '../mocks/drivers';
-
 function getInitials(name) {
   if (!name) return '--';
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -11,42 +9,34 @@ function mapStatus(opStatus) {
   return 'offline';
 }
 
-function buildBehaviourEvents(v) {
+function behaviourBlock(count, active) {
+  const countValue = count > 0 ? count : active ? 1 : 0;
   return {
-    harshBraking: {
-      count: v.harsh_braking ? 1 : 0,
-      trend: 'stable',
-      severity: v.harsh_braking ? 'moderate' : 'none',
-      active: !!v.harsh_braking,
-    },
-    aggressiveAcceleration: {
-      count: v.aggressive_throttle ? 1 : 0,
-      trend: 'stable',
-      severity: v.aggressive_throttle ? 'moderate' : 'none',
-      active: !!v.aggressive_throttle,
-    },
-    overspeedEvents: {
-      count: v.speeding ? 1 : 0,
-      trend: 'stable',
-      severity: v.speeding ? 'moderate' : 'none',
-      active: !!v.speeding,
-    },
-    highRpmEvents: {
-      count: v.high_rpm ? 1 : 0,
-      trend: 'stable',
-      severity: v.high_rpm ? 'moderate' : 'none',
-      active: !!v.high_rpm,
-    },
+    count: countValue,
+    trend: 'stable',
+    severity: count >= 5 ? 'severe' : countValue > 0 ? 'moderate' : 'none',
+    active: !!active,
   };
 }
 
-function buildScoreBreakdown(score, v) {
+function buildBehaviourEvents(stats, live) {
+  return {
+    harshBraking: behaviourBlock(stats?.harsh_braking_events ?? 0, live?.harsh_braking),
+    aggressiveAcceleration: behaviourBlock(stats?.aggressive_throttle_events ?? 0, live?.aggressive_throttle),
+    overspeedEvents: behaviourBlock(stats?.speeding_events ?? 0, live?.speeding),
+    highRpmEvents: behaviourBlock(stats?.high_rpm_events ?? 0, live?.high_rpm),
+  };
+}
+
+function buildScoreBreakdown(stats) {
+  const overall = stats?.safety_score ?? 100;
+  const aggression = stats?.aggression_score ?? 100;
   const b = {
-    braking: score - (v.harsh_braking ? 15 : 0),
-    acceleration: score - (v.aggressive_throttle ? 10 : 0),
-    speed: score - (v.speeding ? 12 : 0),
-    efficiency: Math.min(100, score + 5),
-    overall: score,
+    braking: overall,
+    acceleration: Math.max(0, Math.min(100, Math.round(overall - (100 - aggression) * 0.6))),
+    speed: overall,
+    efficiency: stats?.efficiency_score ?? 100,
+    overall,
   };
   for (const k of Object.keys(b)) {
     b[k] = Math.max(0, Math.min(100, Math.round(b[k])));
@@ -54,60 +44,85 @@ function buildScoreBreakdown(score, v) {
   return b;
 }
 
-export function adaptVehicleToDriver(v) {
-  const score = v.driver_safety_score ?? 100;
-  const activeEvents = v.active_event_types || [];
-  const hasBehaviour = activeEvents.length > 0;
-  const hist = driverHistorical[v.driver_id] || {};
+function riskFor(score, aggression) {
+  if (score == null) return 'low';
+  if (score < 60 || (aggression != null && aggression < 60)) return 'critical';
+  if (score < 75 || (aggression != null && aggression < 75)) return 'high';
+  if (score < 85) return 'moderate';
+  return 'low';
+}
 
-  const behaviour = buildBehaviourEvents(v);
-
+function buildBehaviourDistribution(stats) {
+  const harsh = stats?.harsh_braking_events ?? 0;
+  const overspeed = stats?.speeding_events ?? 0;
+  const aggressive = stats?.aggressive_throttle_events ?? 0;
+  const highRpm = stats?.high_rpm_events ?? 0;
+  const eventTotal = harsh + overspeed + aggressive + highRpm;
   return {
-    id: v.driver_id,
-    name: v.driver_name || v.driver_id,
-    initials: getInitials(v.driver_name),
-    status: mapStatus(v.operational_status),
-    riskLevel: v.driver_risk_level || 'low',
-    behaviourState: hasBehaviour ? 'declining' : (hist.behaviourState || 'stable'),
-    trend: hasBehaviour ? 'declining' : (hist.trend || 'stable'),
-    vehicleId: v.vehicle_id,
-    vehicleName: v.vehicle_name || v.vehicle_id,
-    safetyScore: score,
-    scoreBreakdown: buildScoreBreakdown(score, v),
-    activeEventTypes: activeEvents,
-
-    speed: v.speed_kmh,
-    rpm: v.rpm,
-    throttle: v.throttle_position_percent,
-    brake: v.brake_pressure,
-    fuelLevel: v.fuel_level_percent,
-    engineLoad: v.engine_load_percent,
-    coolantTemp: v.coolant_temperature_c,
-    healthScore: v.overall_health_score,
-
-    ...behaviour,
-    lastActive: v.last_updated_at,
-
-    totalDistanceKm: hist.totalDistanceKm ?? 0,
-    tripsCompleted: hist.tripsCompleted ?? 0,
-    averageSpeedKmh: hist.averageSpeedKmh ?? 0,
-    fuelEfficiencyKmPerL: hist.fuelEfficiencyKmPerL ?? 0,
-    drivingHours: hist.drivingHours ?? 0,
-    tripsToday: hist.tripsToday ?? 0,
-    performanceHistory: hist.performanceHistory ?? [],
-    behaviourDistribution: hist.behaviourDistribution ?? { smoothDriving: 100, harshEvents: 0, overspeed: 0, idle: 0 },
+    smoothDriving: Math.max(0, 100 - eventTotal * 5),
+    harshEvents: harsh,
+    overspeed,
+    idle: 0,
   };
 }
 
-export function adaptVehiclesToDrivers(vehicles) {
-  if (!vehicles || !Array.isArray(vehicles)) return [];
-  return vehicles.map(adaptVehicleToDriver);
+function adaptDriver(driver, stats, live) {
+  const name = `${driver.first_name || ''} ${driver.last_name || ''}`.trim() || driver.driver_id;
+  const score = stats?.safety_score ?? live?.driver_safety_score ?? 100;
+  const activeEvents = live?.active_event_types || [];
+  const behaviour = buildBehaviourEvents(stats, live);
+
+  return {
+    id: driver.driver_id,
+    name,
+    initials: getInitials(name),
+    status: mapStatus(live?.operational_status),
+    riskLevel: riskFor(score, stats?.aggression_score),
+    behaviourState: activeEvents.length > 0 ? 'declining' : 'stable',
+    trend: 'stable',
+    vehicleId: live?.vehicle_id ?? null,
+    vehicleName: live?.vehicle_name || null,
+    safetyScore: Math.round(score),
+    scoreBreakdown: buildScoreBreakdown(stats),
+    activeEventTypes: activeEvents,
+
+    speed: live?.speed_kmh ?? 0,
+    rpm: live?.rpm ?? 0,
+    throttle: live?.throttle_position_percent ?? 0,
+    brake: live?.brake_pressure ?? 0,
+    fuelLevel: live?.fuel_level_percent ?? 0,
+    engineLoad: live?.engine_load_percent ?? 0,
+    coolantTemp: live?.coolant_temperature_c ?? 0,
+    healthScore: live?.overall_health_score ?? 0,
+
+    ...behaviour,
+    lastActive: live?.last_updated_at ?? null,
+
+    totalDistanceKm: stats?.total_distance_km ?? 0,
+    tripsCompleted: stats?.total_trips ?? 0,
+    averageSpeedKmh:
+      stats && stats.total_driving_time_seconds > 0
+        ? Math.round(stats.total_distance_km / (stats.total_driving_time_seconds / 3600))
+        : 0,
+    fuelEfficiencyKmPerL: stats?.fuel_efficiency ?? 0,
+    drivingHours: stats ? stats.total_driving_time_seconds / 3600 : 0,
+    tripsToday: 0,
+    performanceHistory: [],
+    behaviourDistribution: buildBehaviourDistribution(stats),
+  };
+}
+
+export function adaptDrivers(drivers, statistics, liveVehicles) {
+  if (!Array.isArray(drivers)) return [];
+  const statsById = new Map((statistics || []).map((s) => [s.driver_id, s]));
+  const liveById = new Map((liveVehicles || []).map((v) => [v.driver_id, v]));
+  return drivers.map((d) => adaptDriver(d, statsById.get(d.driver_id), liveById.get(d.driver_id)));
 }
 
 export function buildDriverRankings(drivers) {
   return [...drivers]
     .sort((a, b) => b.safetyScore - a.safetyScore)
-    .map(d => ({
+    .map((d) => ({
       id: d.id,
       name: d.name,
       score: d.safetyScore,

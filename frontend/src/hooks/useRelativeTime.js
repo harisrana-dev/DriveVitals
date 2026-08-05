@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 function compute(iso) {
-  if (!iso) return 'Just now';
+  if (!iso) return '\u2014';
   const diff = Date.now() - new Date(iso).getTime();
   const sec = Math.floor(diff / 1000);
   if (sec < 3) return 'Just now';

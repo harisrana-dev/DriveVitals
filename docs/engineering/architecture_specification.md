@@ -447,10 +447,8 @@ placeholders — see §5):
   `useDrivers`, `useMaintenance`, `useTripsData`, `useVehicleHealth`, `useTripsFilters`,
   `useFleetFilters`, `useRelativeTime`, `useSmoothValue`, `useTheme`.
 - **Services**: `websocket.js` (native WebSocket client; dispatches on message `type`:
-  `"dashboard_snapshot"`, `"trips_snapshot"`), `fleetService.js`, `driverService.js`,
-  `driverAdapter.js`.
+  `"dashboard_snapshot"`, `"trips_snapshot"`), `driverService.js`, `driverAdapter.js`.
 - **Utils**: `alerts.js`, `health.js`, `maintenance.js`, `trend.js`.
-- **Mocks**: `mocks/data.js`, `mocks/drivers.js` (static pages).
 - **External flow**: opens `ws://localhost:8000/ws/dashboard` and `/ws/trips`; renders live
   snapshots; derives alerts/drivers client-side from the dashboard snapshot.
 
@@ -517,7 +515,7 @@ event-sourced-in-memory (live state kept in RAM; only events/trips/alerts are pe
 - **Hooks (logic)**: `hooks/*` (socket hooks, data hooks, filters, theme, time formatting).
 - **Services (I/O)**: `services/*` (native WebSocket client, fleet/driver services).
 - **Utilities**: `utils/*` (alert/health/maintenance/trend derivations).
-- **Assets/components**: `assets`, `components` (presentational components), `mocks`.
+- **Assets/components**: `assets`, `components` (presentational components).
 
 ### 5. What is the complete data flow?
 

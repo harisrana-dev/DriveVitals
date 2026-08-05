@@ -28,15 +28,13 @@ function buildBehaviourEvents(stats, live) {
   };
 }
 
-function buildScoreBreakdown(stats) {
-  const overall = stats?.safety_score ?? 100;
-  const aggression = stats?.aggression_score ?? 100;
+function buildScoreBreakdown(score, stats, live) {
   const b = {
-    braking: overall,
-    acceleration: Math.max(0, Math.min(100, Math.round(overall - (100 - aggression) * 0.6))),
-    speed: overall,
-    efficiency: stats?.efficiency_score ?? 100,
-    overall,
+    braking: score - (live?.harsh_braking ? 15 : 0),
+    acceleration: score - (live?.aggressive_throttle ? 10 : 0),
+    speed: score - (live?.speeding ? 12 : 0),
+    efficiency: stats?.efficiency_score ?? Math.min(100, score + 5),
+    overall: score,
   };
   for (const k of Object.keys(b)) {
     b[k] = Math.max(0, Math.min(100, Math.round(b[k])));
@@ -68,7 +66,7 @@ function buildBehaviourDistribution(stats) {
 
 function adaptDriver(driver, stats, live) {
   const name = `${driver.first_name || ''} ${driver.last_name || ''}`.trim() || driver.driver_id;
-  const score = stats?.safety_score ?? live?.driver_safety_score ?? 100;
+  const score = live?.driver_safety_score ?? stats?.safety_score ?? 100;
   const activeEvents = live?.active_event_types || [];
   const behaviour = buildBehaviourEvents(stats, live);
 
@@ -83,7 +81,7 @@ function adaptDriver(driver, stats, live) {
     vehicleId: live?.vehicle_id ?? null,
     vehicleName: live?.vehicle_name || null,
     safetyScore: Math.round(score),
-    scoreBreakdown: buildScoreBreakdown(stats),
+    scoreBreakdown: buildScoreBreakdown(score, stats, live),
     activeEventTypes: activeEvents,
 
     speed: live?.speed_kmh ?? 0,

@@ -17,13 +17,6 @@ const EVENT_LABELS = {
   high_rpm: 'High RPM',
 };
 
-function getDisplayStatus(vehicle) {
-  if (vehicle.status === 'active' && vehicle.alertCount > 0) return 'ALERT';
-  if (vehicle.status === 'active') return 'ACTIVE';
-  if (vehicle.status === 'idle') return 'IDLE';
-  return vehicle.status.toUpperCase();
-}
-
 export function VehicleDrawer({ vehicleId, onClose }) {
   const vehicle = useVehicle(vehicleId);
   const [expandedEvents, setExpandedEvents] = useState(false);
@@ -79,7 +72,7 @@ function DrawerContent({
     expandedEvents,
     onToggleEvents,
 }) {
-  const status = getDisplayStatus(vehicle);
+  const status = vehicle.displayStatus || 'OFFLINE';
   const smoothSpeed = useSmoothValue(vehicle.speed);
   const smoothRpm = useSmoothValue(vehicle.rpm);
   const smoothFuel = useSmoothValue(vehicle.fuelLevel);

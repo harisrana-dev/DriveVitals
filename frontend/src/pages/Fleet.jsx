@@ -3,11 +3,8 @@ import { FleetSummary } from '../components/fleet/FleetSummary';
 import { FleetFilters } from '../components/fleet/FleetFilters';
 import { VehicleGrid } from '../components/fleet/VehicleGrid';
 import { FleetStatusRing } from '../components/fleet/FleetStatusRing';
-import { ConnectionBadge } from '../components/ui/ConnectionBadge';
-import { OfflineState } from '../components/ui/OfflineState';
 import { useFleetFilters } from '../hooks/useFleetFilters';
 import { useVehicleDrawer } from '../context/VehicleDrawerContext';
-import { useLiveData } from '../context/LiveDataContext';
 
 export function FleetPage() {
   const {
@@ -23,7 +20,6 @@ export function FleetPage() {
   } = useFleetFilters();
 
   const { openDrawer } = useVehicleDrawer();
-  const { overallStatus } = useLiveData();
 
   const handleVehicleClick = useCallback((vehicle) => {
     openDrawer(vehicle);
@@ -66,52 +62,27 @@ export function FleetPage() {
             Live vehicle management and operational status
           </p>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <ConnectionBadge status={overallStatus} />
-          {overallStatus === 'live' && (
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-              Updated just now
-            </span>
-          )}
-          {overallStatus === 'rest' && (
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-              Showing REST data
-            </span>
-          )}
-        </div>
       </div>
 
-      {overallStatus === 'offline' ? (
-        <OfflineState />
-      ) : (
-        <>
-          <FleetSummary />
+      <FleetSummary />
 
-          <FleetFilters
-            search={search}
-            onSearchChange={setSearch}
-            statusFilter={statusFilter}
-            onStatusChange={setStatusFilter}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            sortAsc={sortAsc}
-            onSortToggle={toggleSort}
-          />
+      <FleetFilters
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        sortAsc={sortAsc}
+        onSortToggle={toggleSort}
+      />
 
-          <FleetStatusRing />
+      <FleetStatusRing />
 
-          <VehicleGrid
-            vehicles={vehicles}
-            onVehicleClick={handleVehicleClick}
-          />
-        </>
-      )}
+      <VehicleGrid
+        vehicles={vehicles}
+        onVehicleClick={handleVehicleClick}
+      />
     </div>
   );
 }

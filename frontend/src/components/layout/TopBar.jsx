@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, Menu, Search, ChevronDown, User, LogOut, Settings } from 'lucide-react';
+import { Bell, Menu, Search, ChevronDown, User, LogOut, Settings, RefreshCw } from 'lucide-react';
 import ThemeToggle from '../common/ThemeToggle';
 import { ConnectionBadge } from '../ui/ConnectionBadge';
 import { useUnacknowledgedAlertCount } from '../../hooks/useFleetData';
@@ -19,10 +19,15 @@ const pageTitles = {
   '/settings': 'Settings',
 };
 
+function formatTime(timestamp) {
+  if (!timestamp) return '--:--:--';
+  return new Date(timestamp).toLocaleTimeString([], { hour12: false });
+}
+
 export function TopBar({ onMenuClick }) {
   const location = useLocation();
   const alertCount = useUnacknowledgedAlertCount();
-  const { overallStatus } = useLiveData();
+  const { connectionStatus, lastUpdate, syncing, sync } = useLiveData();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 
@@ -75,7 +80,54 @@ export function TopBar({ onMenuClick }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <ConnectionBadge status={overallStatus} />
+        <ConnectionBadge status={connectionStatus} />
+
+        <span
+          style={{
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+            whiteSpace: 'nowrap',
+          }}
+          title="Time of the most recent telemetry update"
+        >
+          Last Update: {formatTime(lastUpdate)}
+        </span>
+
+        <button
+          onClick={sync}
+          disabled={syncing}
+          aria-label="Sync data"
+          title="Reconnect and re-fetch all data"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-surface)',
+            color: 'var(--color-text-secondary)',
+            cursor: syncing ? 'default' : 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!syncing) {
+              e.currentTarget.style.background = 'var(--color-surface-hover)';
+              e.currentTarget.style.color = 'var(--color-text-primary)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'var(--color-surface)';
+            e.currentTarget.style.color = 'var(--color-text-secondary)';
+          }}
+        >
+          <RefreshCw
+            size={15}
+            strokeWidth={1.8}
+            style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }}
+          />
+        </button>
 
         <div
           className="topbar-search"

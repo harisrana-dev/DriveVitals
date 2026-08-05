@@ -1,7 +1,8 @@
 const STATUS_META = {
   live: { label: 'LIVE', color: 'var(--color-green)' },
-  rest: { label: 'REST', color: 'var(--color-amber)' },
+  connecting: { label: 'CONNECTING', color: 'var(--color-amber)' },
   offline: { label: 'OFFLINE', color: 'var(--color-red)' },
+  syncing: { label: 'SYNCING', color: 'var(--color-blue)' },
 };
 
 export function ConnectionBadge({ status }) {
@@ -22,6 +23,7 @@ export function ConnectionBadge({ status }) {
         fontWeight: 700,
         letterSpacing: '0.5px',
         color: 'var(--color-text-secondary)',
+        whiteSpace: 'nowrap',
       }}
     >
       <span style={{

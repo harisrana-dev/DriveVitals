@@ -87,6 +87,7 @@ class DashboardBuilder:
             vehicle_name=vehicle_name,
             driver_name=driver_name,
             operational_status=status,
+            trip_status="active",
             speed_kmh=telemetry.speed_kmh,
             rpm=telemetry.rpm,
             throttle_position_percent=(
@@ -149,6 +150,93 @@ class DashboardBuilder:
 
         return DashboardSnapshot(
             timestamp=snapshot.timestamp,
+            total_fleet=len(vehicles),
+            active_vehicle_count=sum(
+                1
+                for v in vehicles
+                if v.operational_status == "ACTIVE"
+            ),
+            fleet_health_score=fleet_health_score,
+            attention_required=attention_required,
+            vehicles=vehicles,
+        )
+
+    def mark_trip_completed(
+        self,
+        vehicle_id: str,
+        completed_at,
+    ) -> DashboardSnapshot | None:
+        """
+        Surface a completed trip lifecycle state for one vehicle.
+
+        Runtime synchronization only: no analytics are computed here.
+        The cached summary for the vehicle is re-labelled as
+        TRIP COMPLETED (stationary) so the frontend can render the
+        ACTIVE -> TRIP COMPLETED -> OFFLINE lifecycle. Returns a fresh
+        snapshot for the current fleet, or None if the vehicle has not
+        been seen by the builder yet.
+        """
+
+        vehicle = self._latest.get(vehicle_id)
+
+        if vehicle is None:
+            return None
+
+        completed = VehicleDashboardSummary(
+            vehicle_id=vehicle.vehicle_id,
+            driver_id=vehicle.driver_id,
+            vehicle_name=vehicle.vehicle_name,
+            driver_name=vehicle.driver_name,
+            operational_status="TRIP COMPLETED",
+            trip_status="completed",
+            speed_kmh=0.0,
+            rpm=0.0,
+            throttle_position_percent=None,
+            brake_pressure=None,
+            fuel_level_percent=vehicle.fuel_level_percent,
+            coolant_temperature_c=vehicle.coolant_temperature_c,
+            engine_load_percent=None,
+            overall_health_score=vehicle.overall_health_score,
+            driver_safety_score=vehicle.driver_safety_score,
+            driver_risk_level=vehicle.driver_risk_level,
+            active_alert_count=0,
+            active_alert_text=None,
+            active_event_types=(),
+            speeding=False,
+            aggressive_throttle=False,
+            harsh_braking=False,
+            high_rpm=False,
+            odometer_km=vehicle.odometer_km,
+            last_updated_at=completed_at,
+        )
+
+        self._latest[vehicle_id] = completed
+
+        vehicles = tuple(self._latest.values())
+
+        health_scores = [
+            v.overall_health_score
+            for v in vehicles
+            if v.overall_health_score is not None
+        ]
+
+        fleet_health_score = (
+            round(
+                sum(health_scores) / len(health_scores),
+                1,
+            )
+            if health_scores
+            else 0.0
+        )
+
+        attention_required = sum(
+            1
+            for v in vehicles
+            if v.active_alert_count > 0
+        )
+
+        return DashboardSnapshot(
+            timestamp=completed_at,
             total_fleet=len(vehicles),
             active_vehicle_count=sum(
                 1

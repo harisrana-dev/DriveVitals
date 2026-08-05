@@ -3,10 +3,12 @@ import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
 import { AlertTriangle, Fuel, Thermometer } from 'lucide-react';
 
 const statusStyles = {
-  active: { bg: 'var(--color-green-bg)', color: 'var(--color-green)', label: 'Active' },
-  idle: { bg: 'var(--color-amber-bg)', color: 'var(--color-amber)', label: 'Idle' },
-  warning: { bg: 'var(--color-red-bg)', color: 'var(--color-red)', label: 'Warning' },
-  offline: { bg: 'var(--color-surface-hover)', color: 'var(--color-text-muted)', label: 'Offline' },
+  ACTIVE: { bg: 'var(--color-green-bg)', color: 'var(--color-green)', label: 'Active' },
+  IDLE: { bg: 'var(--color-amber-bg)', color: 'var(--color-amber)', label: 'Idle' },
+  ALERT: { bg: 'var(--color-red-bg)', color: 'var(--color-red)', label: 'Alert' },
+  MAINTENANCE: { bg: 'var(--color-blue-bg)', color: 'var(--color-blue)', label: 'Maintenance' },
+  TRIP_COMPLETED: { bg: 'var(--color-purple-bg)', color: 'var(--color-purple)', label: 'Trip Completed' },
+  OFFLINE: { bg: 'var(--color-surface-hover)', color: 'var(--color-text-muted)', label: 'Offline' },
 };
 
 export function LiveFleetActivity() {
@@ -51,7 +53,7 @@ export function LiveFleetActivity() {
           </thead>
           <tbody>
             {vehicles.map((v) => {
-              const st = statusStyles[v.status];
+              const st = statusStyles[v.displayStatus] || statusStyles.OFFLINE;
               return (
                 <tr
                   key={v.id}
@@ -81,8 +83,8 @@ export function LiveFleetActivity() {
                       fontSize: 12,
                       fontWeight: 500,
                     }}>
-                      {v.status === 'active' && <span style={{ width: 5, height: 5, borderRadius: 3, background: st.color }} />}
-                      {v.status === 'warning' && <AlertTriangle size={10} />}
+                      {v.displayStatus === 'ACTIVE' && <span style={{ width: 5, height: 5, borderRadius: 3, background: st.color }} />}
+                      {v.displayStatus === 'ALERT' && <AlertTriangle size={10} />}
                       {st.label}
                     </span>
                   </td>

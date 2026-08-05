@@ -24,10 +24,8 @@ export function useFleetFilters() {
     }
 
     if (statusFilter) {
-      result = result.filter((v) => {
-        if (statusFilter === 'alert') return v.alertCount > 0;
-        return v.status === statusFilter;
-      });
+      const target = statusFilter.toUpperCase();
+      result = result.filter((v) => v.displayStatus === target);
     }
 
     result.sort((a, b) => {

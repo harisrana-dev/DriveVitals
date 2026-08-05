@@ -4,6 +4,7 @@ import { useLiveData } from '../context/LiveDataContext';
 function mapStatus(s) {
   if (s === 'ACTIVE') return 'active';
   if (s === 'IDLE') return 'idle';
+  if (s === 'TRIP COMPLETED') return 'trip_completed';
   return 'offline';
 }
 
@@ -15,6 +16,35 @@ function healthCategory(score) {
   return 'critical';
 }
 
+const DISPLAY_STATUS_DEBOUNCE_MS = 2000;
+const _statusMemory = new Map();
+
+function computeRawDisplayStatus(v) {
+  if (v.activeEventTypes && v.activeEventTypes.length > 0) return 'ALERT';
+  if (v.maintenanceDue) return 'MAINTENANCE';
+  if (v.status === 'active') return 'ACTIVE';
+  if (v.status === 'trip_completed') return 'TRIP_COMPLETED';
+  if (v.status === 'idle') return 'IDLE';
+  return 'OFFLINE';
+}
+
+function resolveDisplayStatus(vehicleId, raw, now) {
+  const prev = _statusMemory.get(vehicleId);
+  if (!prev) {
+    _statusMemory.set(vehicleId, { current: raw, target: raw, since: now });
+    return raw;
+  }
+  if (prev.target === raw) {
+    if (prev.current !== raw && now - prev.since >= DISPLAY_STATUS_DEBOUNCE_MS) {
+      prev.current = raw;
+    }
+    return prev.current;
+  }
+  prev.target = raw;
+  prev.since = now;
+  return prev.current;
+}
+
 function mapVehicles(raw) {
   if (!raw || !Array.isArray(raw)) return null;
   return raw.map((v) => ({
@@ -23,6 +53,8 @@ function mapVehicles(raw) {
     driver: v.driver_name || v.driver_id || '—',
     driverId: v.driver_id,
     status: mapStatus(v.operational_status),
+    tripStatus: v.trip_status || 'active',
+    maintenanceDue: !!v.maintenance_due,
     speed: v.speed_kmh ?? 0,
     rpm: v.rpm ?? 0,
     throttle: v.throttle_position_percent ?? null,
@@ -58,6 +90,10 @@ function shallowEqual(a, b) {
 function stableVehicles(raw) {
   const mapped = mapVehicles(raw);
   if (!mapped) return null;
+  const now = Date.now();
+  for (const v of mapped) {
+    v.displayStatus = resolveDisplayStatus(v.id, computeRawDisplayStatus(v), now);
+  }
   if (_stableCache && _stableCache.length === mapped.length) {
     let changed = false;
     for (let i = 0; i < mapped.length; i++) {

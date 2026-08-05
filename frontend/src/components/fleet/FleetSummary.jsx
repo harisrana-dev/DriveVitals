@@ -7,7 +7,7 @@ export const FleetSummary = memo(function FleetSummary() {
   const summary = useDashboardSummary();
   const vehicles = useVehicles();
 
-  const idleCount = vehicles.filter((v) => v.status === 'idle').length;
+  const idleCount = vehicles.filter((v) => v.displayStatus === 'IDLE').length;
 
   const cards = [
     {

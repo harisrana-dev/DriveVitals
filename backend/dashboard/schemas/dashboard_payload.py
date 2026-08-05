@@ -59,6 +59,8 @@ class VehicleDashboardSummary:
 
     last_updated_at: datetime
 
+    trip_status: str = "active"
+
 
 @dataclass(frozen=True, slots=True)
 class DashboardSnapshot:

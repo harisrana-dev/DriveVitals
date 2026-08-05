@@ -31,17 +31,27 @@ function createChannel(url) {
     heartbeatTimer = null;
   }
 
-  function scheduleReconnect() {
-    const delay = withJitter(
-      Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttempts, RECONNECT_MAX_MS),
-    );
-    reconnectAttempts += 1;
-    clearTimeout(reconnectTimer);
-    setState('reconnecting');
-    reconnectTimer = setTimeout(() => openSocket(), delay);
+  function startHeartbeat() {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+    heartbeatTimer = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        } catch {
+          // ignore
+        }
+      }
+      if (Date.now() - lastActivity > STALE_AFTER_MS) {
+        handleStaleConnection();
+      }
+    }, HEARTBEAT_INTERVAL_MS);
   }
 
-  function forceReconnect() {
+  function handleStaleConnection() {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+    setState('offline');
     if (ws) {
       ws.onclose = null;
       try {
@@ -51,9 +61,34 @@ function createChannel(url) {
       }
       ws = null;
     }
+    scheduleReconnect();
+  }
+
+  function scheduleReconnect() {
+    const delay = withJitter(
+      Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttempts, RECONNECT_MAX_MS),
+    );
+    reconnectAttempts += 1;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => openSocket(), delay);
+  }
+
+  function forceReconnect() {
     clearInterval(heartbeatTimer);
     heartbeatTimer = null;
-    scheduleReconnect();
+    if (ws) {
+      ws.onclose = null;
+      try {
+        ws.close();
+      } catch {
+        // ignore
+      }
+      ws = null;
+    }
+    reconnectAttempts = 0;
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+    openSocket();
   }
 
   function openSocket() {
@@ -67,7 +102,7 @@ function createChannel(url) {
       }
       ws = null;
     }
-    setState(reconnectAttempts === 0 ? 'connecting' : 'reconnecting');
+    setState('connecting');
 
     try {
       ws = new WebSocket(url);
@@ -79,20 +114,13 @@ function createChannel(url) {
     ws.onopen = () => {
       reconnectAttempts = 0;
       lastActivity = Date.now();
-      setState('connected');
-      clearInterval(heartbeatTimer);
-      heartbeatTimer = setInterval(() => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'ping' }));
-        }
-        if (Date.now() - lastActivity > STALE_AFTER_MS) {
-          forceReconnect();
-        }
-      }, HEARTBEAT_INTERVAL_MS);
+      setState('live');
+      startHeartbeat();
     };
 
     ws.onmessage = (event) => {
       lastActivity = Date.now();
+      setState('live');
       let message;
       try {
         message = JSON.parse(event.data);
@@ -109,11 +137,14 @@ function createChannel(url) {
         setState('offline');
         return;
       }
+      // A live socket dropping shows a brief CONNECTING window while the first
+      // reconnect is scheduled; once attempts start failing, stay OFFLINE.
+      setState(state === 'live' ? 'connecting' : 'offline');
       scheduleReconnect();
     };
 
     ws.onerror = () => {
-      // onerror is always followed by onclose, which schedules the reconnect.
+      setState('offline');
     };
   }
 
@@ -157,7 +188,7 @@ function createChannel(url) {
     return state;
   }
 
-  return { subscribe, close, getState };
+  return { subscribe, close, getState, forceReconnect };
 }
 
 const channels = new Map();
@@ -176,4 +207,8 @@ function getChannelState(url) {
   return channel ? channel.getState() : 'offline';
 }
 
-export { subscribeToUrl, getChannelState };
+function reconnectAll() {
+  channels.forEach((channel) => channel.forceReconnect());
+}
+
+export { subscribeToUrl, getChannelState, reconnectAll };

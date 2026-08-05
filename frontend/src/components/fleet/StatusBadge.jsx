@@ -17,6 +17,24 @@ const VARIANTS = {
     dot: false,
     label: 'ALERT',
   },
+  MAINTENANCE: {
+    bg: 'var(--color-blue-bg)',
+    color: 'var(--color-blue)',
+    dot: true,
+    label: 'MAINTENANCE',
+  },
+  TRIP_COMPLETED: {
+    bg: 'var(--color-purple-bg)',
+    color: 'var(--color-purple)',
+    dot: true,
+    label: 'TRIP COMPLETED',
+  },
+  OFFLINE: {
+    bg: 'var(--color-surface-hover)',
+    color: 'var(--color-text-muted)',
+    dot: true,
+    label: 'OFFLINE',
+  },
 };
 
 export function StatusBadge({ status, size = 'md' }) {

@@ -5,9 +5,6 @@ import { TripsKpis } from '../components/trips/TripsKpis';
 import { TripsFilters } from '../components/trips/TripsFilters';
 import { TripsTable } from '../components/trips/TripsTable';
 import { TripDrawer } from '../components/trips/TripDrawer';
-import { ConnectionBadge } from '../components/ui/ConnectionBadge';
-import { OfflineState } from '../components/ui/OfflineState';
-import { useLiveData } from '../context/LiveDataContext';
 
 export function TripsPage() {
   const {
@@ -25,7 +22,6 @@ export function TripsPage() {
   } = useTripsFilters();
 
   const { selectedTrip, openDrawer, closeDrawer } = useTripDrawer();
-  const { overallStatus } = useLiveData();
 
   const handleTripClick = useCallback((trip) => {
     openDrawer(trip);
@@ -68,53 +64,28 @@ export function TripsPage() {
             Historical trip intelligence and route analytics
           </p>
         </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <ConnectionBadge status={overallStatus} />
-          {overallStatus === 'live' && (
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-              Updated in real-time
-            </span>
-          )}
-          {overallStatus === 'rest' && (
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-              Showing REST data
-            </span>
-          )}
-        </div>
       </div>
 
-      {overallStatus === 'offline' ? (
-        <OfflineState />
-      ) : (
-        <>
-          <TripsKpis />
+      <TripsKpis />
 
-          <TripsFilters
-            search={search}
-            onSearchChange={setSearch}
-            statusFilter={statusFilter}
-            onStatusChange={setStatusFilter}
-            routeFilter={routeFilter}
-            onRouteChange={setRouteFilter}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            sortAsc={sortAsc}
-            onSortToggle={toggleSort}
-          />
+      <TripsFilters
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        routeFilter={routeFilter}
+        onRouteChange={setRouteFilter}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        sortAsc={sortAsc}
+        onSortToggle={toggleSort}
+      />
 
-          <TripsTable
-            trips={trips}
-            onTripClick={handleTripClick}
-            selectedTripId={selectedTrip?.id}
-          />
-        </>
-      )}
+      <TripsTable
+        trips={trips}
+        onTripClick={handleTripClick}
+        selectedTripId={selectedTrip?.id}
+      />
 
       {selectedTrip && (
         <TripDrawer

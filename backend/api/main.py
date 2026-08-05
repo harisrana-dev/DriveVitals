@@ -2,6 +2,11 @@ import asyncio
 
 from contextlib import asynccontextmanager
 
+from datetime import (
+    datetime,
+    timezone,
+)
+
 from fastapi import (
     FastAPI,
 )
@@ -100,8 +105,42 @@ async def lifespan(
     # Register trip flush callback
     # --------------------------------------------------------------
 
+    def _dashboard_trip_completed(
+        summary,
+        context,
+        runtime_state,
+        all_events,
+    ) -> None:
+        """
+        Runtime synchronization: re-label the completed vehicle as
+        TRIP COMPLETED in the dashboard snapshot stream so the
+        frontend can render the ACTIVE -> TRIP COMPLETED -> OFFLINE
+        lifecycle. No analytics are computed here.
+        """
+
+        snapshot = runtime.dashboard_builder.mark_trip_completed(
+            vehicle_id=summary.vehicle_id,
+            completed_at=datetime.now(timezone.utc),
+        )
+
+        if snapshot is not None:
+            snapshot_queue.put_nowait(snapshot)
+
+    def _trip_flush(
+        summary,
+        context,
+        runtime_state,
+        all_events,
+    ) -> None:
+        trip_publisher.publish(
+            summary, context, runtime_state, all_events
+        )
+        _dashboard_trip_completed(
+            summary, context, runtime_state, all_events
+        )
+
     runtime.set_trip_flush_callback(
-        trip_publisher.publish
+        _trip_flush
     )
 
     # --------------------------------------------------------------

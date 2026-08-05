@@ -1,5 +1,5 @@
 import { WS_BASE } from '../api/config';
-import { subscribeToUrl, getChannelState } from './connectionManager';
+import { subscribeToUrl, getChannelState, reconnectAll } from './connectionManager';
 
 const channels = {
   dashboard: `${WS_BASE}/ws/dashboard`,
@@ -21,4 +21,4 @@ function getState(channelName) {
   return getChannelState(url);
 }
 
-export { subscribeToChannel, getState, channels };
+export { subscribeToChannel, getState, channels, reconnectAll };

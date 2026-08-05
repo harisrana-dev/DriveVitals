@@ -4,8 +4,11 @@ import { Search, ArrowUpDown } from 'lucide-react';
 const statusOptions = [
   { value: '', label: 'All Statuses' },
   { value: 'active', label: 'Active' },
-  { value: 'idle', label: 'Idle' },
   { value: 'alert', label: 'Alert' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'trip_completed', label: 'Trip Completed' },
+  { value: 'idle', label: 'Idle' },
+  { value: 'offline', label: 'Offline' },
 ];
 
 const sortOptions = [

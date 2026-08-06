@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from backend.maintenance.models.maintenance_type import MaintenanceType
+from backend.maintenance.models.maintenance_recommendation import (
+    MaintenancePriority,
+)
 
 
 @dataclass
@@ -18,3 +21,4 @@ class MaintenanceRecord:
     maintenance_type: MaintenanceType
     odometer_km: float
     performed_at: datetime
+    priority: MaintenancePriority = MaintenancePriority.MEDIUM

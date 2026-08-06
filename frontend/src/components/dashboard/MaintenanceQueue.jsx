@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { ArrowRight, Wrench, AlertTriangle, Clock, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMaintenanceItems } from '../../hooks/useFleetData';
@@ -9,8 +9,23 @@ const priorityStyles = {
   monitor: { bg: 'var(--color-surface-hover)', color: 'var(--color-text-muted)', icon: <CheckCircle size={14} />, label: 'Monitor' },
 };
 
+const LIST_HEIGHT = 360;
+
+// Dashboard shows only items that are genuinely actionable: overdue, due
+// within this window, or critical with an unknown due point. Far-future and
+// low-priority items remain on the maintenance page.
+const DASHBOARD_MAINTENANCE_WINDOW_KM = 2000;
+
 export const MaintenanceQueue = memo(function MaintenanceQueue() {
   const items = useMaintenanceItems();
+
+  const visibleItems = useMemo(
+    () => items.filter((item) => {
+      if (item.dueDistance === undefined) return item.priority === 'critical';
+      return item.dueDistance <= DASHBOARD_MAINTENANCE_WINDOW_KM;
+    }),
+    [items],
+  );
 
   return (
     <div className="fade-in stagger-6" style={{
@@ -31,7 +46,7 @@ export const MaintenanceQueue = memo(function MaintenanceQueue() {
             Maintenance Queue
           </h3>
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-            {items.length} items requiring attention
+            {visibleItems.length} items requiring attention
           </p>
         </div>
         <Link
@@ -53,8 +68,8 @@ export const MaintenanceQueue = memo(function MaintenanceQueue() {
         </Link>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        {items.map((item, i) => {
+      <div style={{ height: LIST_HEIGHT, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {visibleItems.map((item, i) => {
           const ps = priorityStyles[item.priority];
           return (
             <div
@@ -64,7 +79,7 @@ export const MaintenanceQueue = memo(function MaintenanceQueue() {
                 alignItems: 'center',
                 gap: 12,
                 padding: '14px 20px',
-                borderBottom: i < items.length - 1 ? '1px solid var(--color-border-light)' : 'none',
+                borderBottom: i < visibleItems.length - 1 ? '1px solid var(--color-border-light)' : 'none',
               }}
             >
               <div style={{
@@ -115,6 +130,11 @@ export const MaintenanceQueue = memo(function MaintenanceQueue() {
             </div>
           );
         })}
+        {visibleItems.length === 0 && (
+          <div style={{ padding: '24px 20px', textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)' }}>
+            No maintenance due right now
+          </div>
+        )}
       </div>
     </div>
   );

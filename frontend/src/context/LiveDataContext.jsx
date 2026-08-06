@@ -3,7 +3,7 @@ import { subscribeToChannel, reconnectAll, getState } from "../websocket";
 import { listVehicles, listVehicleHealth } from "../services/api/vehicleApi";
 import { listDrivers, listDriverStatistics } from "../services/api/driverApi";
 import { listMaintenance } from "../services/api/maintenanceApi";
-import { listAlerts } from "../services/api/alertApi";
+import { listAlerts, acknowledgeAlert, resolveAlert } from "../services/api/alertApi";
 import { listTelemetry } from "../services/api/telemetryApi";
 
 const LiveDataContext = createContext(null);
@@ -229,6 +229,34 @@ export function LiveDataProvider({ children }) {
 
   const fleetMeta = useMemo(() => buildFleetMeta(mergedFleet), [mergedFleet]);
 
+  const patchAlert = useCallback((alertId, patch) => {
+    setAlerts((prev) =>
+      (prev || []).map((a) =>
+        a.alert_id === alertId ? { ...a, ...patch } : a
+      )
+    );
+  }, []);
+
+  const handleAcknowledgeAlert = useCallback(async (alertId) => {
+    try {
+      const result = await acknowledgeAlert(alertId);
+      if (result?.data) patchAlert(alertId, result.data);
+      else patchAlert(alertId, { acknowledged: true });
+    } catch (error) {
+      console.error("[alerts] acknowledge failed", alertId, error);
+    }
+  }, [patchAlert]);
+
+  const handleResolveAlert = useCallback(async (alertId) => {
+    try {
+      const result = await resolveAlert(alertId);
+      if (result?.data) patchAlert(alertId, result.data);
+      else patchAlert(alertId, { status: "resolved", acknowledged: true, resolved_at: new Date().toISOString() });
+    } catch (error) {
+      console.error("[alerts] resolve failed", alertId, error);
+    }
+  }, [patchAlert]);
+
   const value = {
     dashboard,
     trips,
@@ -245,6 +273,8 @@ export function LiveDataProvider({ children }) {
     sync,
     mergedFleet,
     fleetMeta,
+    acknowledgeAlert: handleAcknowledgeAlert,
+    resolveAlert: handleResolveAlert,
   };
 
   return (

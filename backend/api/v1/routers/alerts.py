@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.api.v1.dependencies import (
     get_alert_service,
@@ -110,3 +110,44 @@ async def list_vehicle_alerts(
         data=[AlertRead.model_validate(alert) for alert in alerts],
         count=count,
     )
+
+
+@router.post(
+    "/{alert_id}/acknowledge",
+    response_model=AlertRead,
+    summary="Acknowledge an alert",
+    description=(
+        "Mark an alert as acknowledged. Acknowledged alerts stay visible "
+        "until their condition clears (auto-resolve) or they are manually "
+        "resolved."
+    ),
+    tags=["Alerts"],
+)
+async def acknowledge_alert(
+    alert_id: str,
+    service: AlertService = Depends(get_alert_service),
+) -> AlertRead:
+    alert = await service.acknowledge(alert_id)
+    if alert is None:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return AlertRead.model_validate(alert)
+
+
+@router.post(
+    "/{alert_id}/resolve",
+    response_model=AlertRead,
+    summary="Resolve an alert",
+    description=(
+        "Mark an alert as resolved. The alert is preserved in history and "
+        "no longer surfaces as active."
+    ),
+    tags=["Alerts"],
+)
+async def resolve_alert(
+    alert_id: str,
+    service: AlertService = Depends(get_alert_service),
+) -> AlertRead:
+    alert = await service.resolve(alert_id)
+    if alert is None:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return AlertRead.model_validate(alert)

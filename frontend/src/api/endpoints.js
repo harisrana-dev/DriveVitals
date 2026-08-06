@@ -12,6 +12,7 @@ const endpoints = {
     list: '/alerts',
     vehicle: (id) => `/alerts/${id}`,
     acknowledge: (id) => `/alerts/${id}/acknowledge`,
+    resolve: (id) => `/alerts/${id}/resolve`,
   },
   maintenance: {
     list: '/maintenance',

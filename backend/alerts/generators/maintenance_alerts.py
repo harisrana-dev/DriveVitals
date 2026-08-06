@@ -18,11 +18,33 @@ from backend.alerts.generators import (
     AlertGenerator,
     make_alert,
 )
+from backend.maintenance.models.maintenance_recommendation import (
+    MaintenanceRecommendation,
+)
+
 from backend.alerts.models.fleet_alert import (
     AlertSeverity,
     AlertType,
     FleetAlert,
 )
+
+
+def _slugify(value: str) -> str:
+    """Lowercase a component name into an alert id slug."""
+    return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+
+
+def maintenance_alert_id(component: str, maintenance_type) -> str:
+    """Canonical alert key for one maintenance recommendation.
+
+    Shared by the generator (which emits alerts) and the runtime (which
+    computes the currently-active set for stale resolution).
+    """
+    return (
+        "maintenance_"
+        f"{_slugify(component)}_"
+        f"{maintenance_type.value}"
+    )
 
 
 class MaintenanceAlertsGenerator(AlertGenerator):
@@ -74,10 +96,9 @@ class MaintenanceAlertsGenerator(AlertGenerator):
             )
             alerts.append(
                 make_alert(
-                    alert_id=(
-                        "maintenance_"
-                        f"{self._slugify(recommendation.component)}_"
-                        f"{recommendation.maintenance_type.value}"
+                    alert_id=maintenance_alert_id(
+                        recommendation.component,
+                        recommendation.maintenance_type,
                     ),
                     vehicle_id=recommendation.vehicle_id,
                     alert_type=self.alert_type,
@@ -90,8 +111,3 @@ class MaintenanceAlertsGenerator(AlertGenerator):
                 )
             )
         return tuple(alerts)
-
-    @staticmethod
-    def _slugify(value: str) -> str:
-        """Lowercase a component name into an alert id slug."""
-        return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")

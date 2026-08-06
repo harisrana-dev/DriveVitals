@@ -80,16 +80,52 @@ function mapRestAlerts(alerts, fleetMeta) {
   return alerts.map((a) => mapRestAlert(a, fleetMeta?.[a.vehicle_id]));
 }
 
+const REST_CONDITION_KEYS = {
+  telemetry_engine_overheating: 'engine_overheat',
+  telemetry_coolant_critical: 'coolant_warning',
+  telemetry_fuel_critical: 'fuel_critical',
+  telemetry_rpm_redline: 'high_rpm',
+  health_overall_critical: 'health_critical',
+  health_overall_warning: 'health_warning',
+  health_engine_critical: 'health_critical',
+  health_engine_warning: 'health_warning',
+  health_cooling_critical: 'health_critical',
+  health_cooling_warning: 'health_warning',
+  health_transmission_critical: 'health_critical',
+  health_transmission_warning: 'health_warning',
+  health_brakes_critical: 'health_critical',
+  health_brakes_warning: 'health_warning',
+  health_fuel_system_critical: 'health_critical',
+  health_fuel_system_warning: 'health_warning',
+};
+
+function restConditionKey(a) {
+  const canonical = String(a.alert_id || '').split(':')[0];
+  return REST_CONDITION_KEYS[canonical] || null;
+}
+
 export function useAlerts() {
   const { dashboard, alerts: restAlerts, fleetMeta } = useLiveData();
   const vehicles = dashboard?.vehicles;
 
   const incidents = useMemo(() => {
-    const fresh = deriveIncidents(vehicles).map((inc) => ({
-      ...inc,
-      started_at: inc.started_at || new Date().toISOString(),
-    }));
-    return [...fresh, ...mapRestAlerts(restAlerts, fleetMeta)];
+    const rest = mapRestAlerts(restAlerts, fleetMeta);
+
+    const activeRestKeys = new Set();
+    for (const a of rest) {
+      if (a.status === 'resolved') continue;
+      const condition = restConditionKey(a);
+      if (condition) activeRestKeys.add(`${a.vehicle_id}:${condition}`);
+    }
+
+    const fresh = deriveIncidents(vehicles)
+      .filter((inc) => !activeRestKeys.has(`${inc.vehicle_id}:${inc.event_type}`))
+      .map((inc) => ({
+        ...inc,
+        started_at: inc.started_at || new Date().toISOString(),
+      }));
+
+    return [...fresh, ...rest];
   }, [vehicles, restAlerts, fleetMeta]);
 
   const drivingEvents = useMemo(() => deriveDrivingEvents(vehicles), [vehicles]);

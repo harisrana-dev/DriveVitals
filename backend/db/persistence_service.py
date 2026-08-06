@@ -271,7 +271,11 @@ class PersistenceService:
                             if hasattr(record.maintenance_type, "value")
                             else str(record.maintenance_type)
                         ),
-                        priority="medium",
+                        priority=(
+                            record.priority.value
+                            if hasattr(record.priority, "value")
+                            else str(record.priority)
+                        ),
                         status="pending",
                         due_odometer_km=record.odometer_km,
                         created_at=record.performed_at,
@@ -317,3 +321,39 @@ class PersistenceService:
                 "Failed to persist %d alert(s)",
                 len(alerts),
             )
+
+    async def resolve_cleared_alerts(
+        self,
+        vehicle_id: str,
+        categories: Sequence[str],
+        active_alert_ids: Sequence[str] = (),
+    ) -> int:
+        """Resolve open alerts whose condition is no longer active.
+
+        ``active_alert_ids`` are the canonical condition keys currently
+        triggered for the vehicle (evaluated before duplicate suppression).
+        Open alerts in ``categories`` that are not in that set transition to
+        ``resolved``; history is preserved.
+        """
+        try:
+            async with async_session_factory() as session:
+                repo = AlertRepository(session)
+                resolved = await repo.resolve_stale(
+                    vehicle_id=vehicle_id,
+                    categories=categories,
+                    active_alert_ids=active_alert_ids,
+                )
+                if resolved:
+                    await session.commit()
+                    logger.info(
+                        "Resolved %d cleared alert(s) for vehicle %s",
+                        resolved,
+                        vehicle_id,
+                    )
+                return resolved
+        except Exception:
+            logger.exception(
+                "Failed to resolve cleared alerts for vehicle %s",
+                vehicle_id,
+            )
+            return 0

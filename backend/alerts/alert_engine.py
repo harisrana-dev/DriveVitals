@@ -78,20 +78,40 @@ class AlertEngine:
         and returned sorted by severity (critical first) and then by
         timestamp (newest first).
         """
-        context = AlertContext(
-            recommendations=tuple(recommendations),
+        alerts = self._collect(self._build_context(
+            recommendations=recommendations,
             health_snapshot=health_snapshot,
-            telemetry=tuple(telemetry),
+            telemetry=telemetry,
             trip=trip,
-            behaviour_events=tuple(behaviour_events),
-        )
-
-        alerts: list[FleetAlert] = []
-        for generator in self._generators:
-            alerts.extend(generator.generate(context=context))
-
+            behaviour_events=behaviour_events,
+        ))
         deduplicated = self._deduplicator.filter(alerts)
         return tuple(sorted(deduplicated, key=self._sort_key))
+
+    def active_alert_keys(
+        self,
+        *,
+        recommendations: Iterable[MaintenanceRecommendation] = (),
+        health_snapshot: HealthSnapshot | None = None,
+        telemetry: Iterable[TelemetrySample] = (),
+        trip: Trip | None = None,
+        behaviour_events: Iterable[BehaviourEvent] = (),
+    ) -> frozenset[tuple[str, str]]:
+        """Canonical (vehicle_id, alert_id) keys currently triggered.
+
+        Unlike ``generate_alerts`` this is evaluated before duplicate
+        suppression, so a persistent condition still reports its key while
+        the cooldown window suppresses re-emission. Used by the runtime to
+        resolve alerts whose condition has genuinely cleared.
+        """
+        alerts = self._collect(self._build_context(
+            recommendations=recommendations,
+            health_snapshot=health_snapshot,
+            telemetry=telemetry,
+            trip=trip,
+            behaviour_events=behaviour_events,
+        ))
+        return frozenset((alert.vehicle_id, alert.alert_id) for alert in alerts)
 
     def reset_deduplication(self) -> None:
         """Forget all remembered alert emission times."""
@@ -115,3 +135,29 @@ class AlertEngine:
             -alert.created_at.timestamp(),
             alert.alert_id,
         )
+
+    @staticmethod
+    def _build_context(
+        *,
+        recommendations: Iterable[MaintenanceRecommendation],
+        health_snapshot: HealthSnapshot | None,
+        telemetry: Iterable[TelemetrySample],
+        trip: Trip | None,
+        behaviour_events: Iterable[BehaviourEvent],
+    ) -> AlertContext:
+        return AlertContext(
+            recommendations=tuple(recommendations),
+            health_snapshot=health_snapshot,
+            telemetry=tuple(telemetry),
+            trip=trip,
+            behaviour_events=tuple(behaviour_events),
+        )
+
+    def _collect(
+        self,
+        context: AlertContext,
+    ) -> list[FleetAlert]:
+        alerts: list[FleetAlert] = []
+        for generator in self._generators:
+            alerts.extend(generator.generate(context=context))
+        return alerts

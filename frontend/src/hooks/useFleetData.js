@@ -283,7 +283,10 @@ function mapLegacyAlert(a, meta) {
     value: null,
     threshold: null,
     timestamp: relativeTime(a.created_at),
+    createdAt: a.created_at,
     acknowledged: !!a.acknowledged,
+    status: a.status === 'resolved' ? 'resolved' : 'active',
+    resolvedAt: a.resolved_at || null,
     actionLabel: 'View Vehicle',
   };
 }

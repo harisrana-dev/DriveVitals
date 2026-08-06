@@ -84,6 +84,9 @@ from backend.alerts.generators import (
     TelemetryAlertsGenerator,
     TripAlertsGenerator,
 )
+from backend.alerts.models.fleet_alert import (
+    AlertType,
+)
 
 from backend.application.consumers.driver_statistics_consumer import (
     DriverStatisticsConsumer,
@@ -646,6 +649,24 @@ class DriveVitalsRuntime:
                         self._svc.persist_alerts(alerts)
                     )
 
+                # Resolve telemetry/health alerts whose condition has
+                # cleared. Evaluated pre-dedup so persistent conditions that
+                # are inside the cooldown window are not resolved.
+                active_keys = self._engine.active_alert_keys(
+                    health_snapshot=health,
+                    telemetry=(sample,),
+                )
+                asyncio.ensure_future(
+                    self._svc.resolve_cleared_alerts(
+                        sample.vehicle_id,
+                        (
+                            AlertType.HEALTH.value,
+                            AlertType.TELEMETRY.value,
+                        ),
+                        [key for _, key in active_keys],
+                    )
+                )
+
         if persistence is not None:
             self._telemetry_pipeline.register(
                 _PersistenceTelemetryConsumer(
@@ -938,6 +959,26 @@ class DriveVitalsRuntime:
                                     trip_alerts
                                 )
                             )
+
+                        # Resolve trip/maintenance alerts for the vehicle that
+                        # are no longer triggered by this trip's behaviour or
+                        # the latest maintenance recommendations.
+                        active_keys = [
+                            alert.alert_id
+                            for alert in trip_alerts
+                            if alert.alert_type
+                            in (AlertType.TRIP, AlertType.MAINTENANCE)
+                        ]
+                        asyncio.ensure_future(
+                            persistence.resolve_cleared_alerts(
+                                vehicle_id,
+                                (
+                                    AlertType.TRIP.value,
+                                    AlertType.MAINTENANCE.value,
+                                ),
+                                active_keys,
+                            )
+                        )
 
                 if self._trip_flush_callback is not None:
                     summary = (

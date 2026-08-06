@@ -150,6 +150,7 @@ class MaintenanceService:
                     maintenance_type=recommendation.maintenance_type,
                     odometer_km=projected_odometer,
                     performed_at=recommendation.estimated_due_date,
+                    priority=recommendation.priority,
                 )
             )
         return tuple(records)

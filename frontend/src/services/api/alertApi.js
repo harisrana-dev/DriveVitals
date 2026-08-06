@@ -8,3 +8,11 @@ export async function listAlerts(params = {}) {
 export async function listVehicleAlerts(vehicleId, params = {}) {
   return apiClient.get(endpoints.alerts.vehicle(vehicleId), { params: { limit: 100, ...params } });
 }
+
+export async function acknowledgeAlert(alertId) {
+  return apiClient.post(endpoints.alerts.acknowledge(alertId));
+}
+
+export async function resolveAlert(alertId) {
+  return apiClient.post(endpoints.alerts.resolve(alertId));
+}

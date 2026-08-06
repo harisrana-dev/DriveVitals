@@ -42,3 +42,15 @@ class AlertService:
         query = query.order_by(Alert.created_at.desc())
 
         return await paginate(self._session, query, limit, offset)
+
+    async def acknowledge(self, alert_id: str) -> Alert | None:
+        alert = await self._repository.acknowledge(alert_id)
+        if alert is not None:
+            await self._session.commit()
+        return alert
+
+    async def resolve(self, alert_id: str) -> Alert | None:
+        alert = await self._repository.resolve(alert_id)
+        if alert is not None:
+            await self._session.commit()
+        return alert

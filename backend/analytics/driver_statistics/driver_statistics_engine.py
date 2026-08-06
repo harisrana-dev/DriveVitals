@@ -16,6 +16,7 @@ from backend.analytics.driver_statistics.aggregators.driver_score_calculator imp
 from backend.analytics.driver_statistics.config import (
     EVENT_TYPE_AGGRESSIVE_THROTTLE,
     EVENT_TYPE_HARSH_BRAKING,
+    EVENT_TYPE_HIGH_RPM,
     EVENT_TYPE_SPEEDING,
     KNOWN_EVENT_TYPES,
     KNOWN_SEVERITIES,
@@ -36,6 +37,7 @@ class _EventCounters:
     harsh_braking_count: int
     overspeed_count: int
     harsh_acceleration_count: int
+    high_rpm_count: int
 
 
 class DriverStatisticsEngine:
@@ -93,6 +95,7 @@ class DriverStatisticsEngine:
             harsh_braking_count=counters.harsh_braking_count,
             overspeed_count=counters.overspeed_count,
             harsh_acceleration_count=counters.harsh_acceleration_count,
+            high_rpm_count=counters.high_rpm_count,
             total_distance=total_distance,
             total_trips=total_trips,
         )
@@ -169,6 +172,10 @@ class DriverStatisticsEngine:
             ),
             harsh_acceleration_count=sum(
                 event.event_type == EVENT_TYPE_AGGRESSIVE_THROTTLE
+                for event in events
+            ),
+            high_rpm_count=sum(
+                event.event_type == EVENT_TYPE_HIGH_RPM
                 for event in events
             ),
         )

@@ -45,6 +45,10 @@ class Trip:
     # lifetime odometer — see RuntimeState for the distinction).
     distance_travelled_km: float = field(default=0.0)
 
+    # Fuel consumed during this trip in litres. Set when the trip is
+    # finalised (currently derived from the vehicle's fuel-level drop).
+    fuel_used_liters: float = field(default=0.0)
+
     def start(self, starting_odometer_km: float, at: Optional[datetime] = None) -> None:
         if self.status != TripStatus.ASSIGNED:
             raise ValueError(f"Cannot start a trip in status {self.status}")

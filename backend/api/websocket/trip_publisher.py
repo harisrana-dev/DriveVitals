@@ -26,12 +26,14 @@ class TripSnapshotPublisher:
         context,
         runtime_state,
         events: list,
+        trip,
     ) -> None:
         trip_snapshot = self._builder.build(
             summary=summary,
             context=context,
             runtime_state=runtime_state,
             events=events,
+            trip=trip,
         )
         self._store.add(trip_snapshot)
         trips = self._store.all()

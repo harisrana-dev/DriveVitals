@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from backend.analytics.behaviour.aggregation.summary import (
     DriverBehaviourSummary,
 )
@@ -9,8 +7,14 @@ from backend.analytics.behaviour.events.event import (
 from backend.analytics.context.analytics_context import (
     AnalyticsContext,
 )
+from backend.analytics.driver_statistics.safety import (
+    compute_safety_score_for_summary,
+)
 from backend.analytics.state.runtime_state import (
     RuntimeAnalyticsState,
+)
+from backend.fleet.models.trip import (
+    Trip,
 )
 from backend.trips.schemas.trip_payload import (
     TripSnapshot,
@@ -29,19 +33,6 @@ def _compute_grade(
     if score >= 60:
         return "D"
     return "F"
-
-
-def _compute_safety_score(
-    summary: DriverBehaviourSummary,
-) -> float:
-    score = 100.0
-    score -= summary.speeding_event_count * 5
-    score -= summary.harsh_braking_count * 4
-    score -= summary.aggressive_throttle_event_count * 4
-    score -= summary.high_rpm_event_count * 3
-    score -= summary.severe_event_count * 8
-    score -= summary.moderate_event_count * 4
-    return max(0.0, min(100.0, score))
 
 
 _EVENT_TYPE_LABELS = {
@@ -80,6 +71,7 @@ class TripBuilder:
         context: AnalyticsContext,
         runtime_state: RuntimeAnalyticsState,
         events: list[BehaviourEvent],
+        trip: Trip | None = None,
     ) -> TripSnapshot:
         vehicle_name = (
             f"{context.vehicle_year} "
@@ -87,20 +79,59 @@ class TripBuilder:
             f"{context.vehicle_model}"
         )
 
-        safety_score = _compute_safety_score(summary)
+        # --------------------------------------------------------------
+        # Trip totals.
+        #
+        # The completed Trip object is the authoritative source for
+        # distance and duration. Never fall back to the lifetime
+        # odometer held in runtime_state/summary for distance.
+        # --------------------------------------------------------------
+
+        distance_km = (
+            trip.distance_travelled_km
+            if trip is not None
+            else summary.total_distance_km
+        )
+
+        duration_seconds = 0.0
+        if (
+            trip is not None
+            and trip.started_at is not None
+            and trip.completed_at is not None
+        ):
+            duration_seconds = (
+                trip.completed_at - trip.started_at
+            ).total_seconds()
 
         average_speed_kmh = 0.0
-        duration_seconds = 0.0
-        maximum_speed_kmh = 0.0
-        fuel_consumed_liters = 0.0
-        average_fuel_rate_lph = 0.0
+        if duration_seconds > 0:
+            average_speed_kmh = round(
+                distance_km / (duration_seconds / 3600),
+                2,
+            )
 
-        if summary.total_distance_km > 0:
-            average_speed_kmh = runtime_state.speed_kmh
-            maximum_speed_kmh = runtime_state.speed_kmh
-            duration_seconds = runtime_state.odometer_km / max(average_speed_kmh, 1.0) * 3600 if average_speed_kmh > 0 else 0.0
-            fuel_consumed_liters = runtime_state.fuel_rate_lph * (duration_seconds / 3600) if average_speed_kmh > 0 else 0.0
-            average_fuel_rate_lph = runtime_state.fuel_rate_lph
+        maximum_speed_kmh = (
+            context.speed_limit_kmh
+            + summary.maximum_speed_excess_kmh
+        )
+
+        fuel_consumed_liters = (
+            trip.fuel_used_liters
+            if trip is not None
+            else 0.0
+        )
+
+        average_fuel_rate_lph = 0.0
+        if duration_seconds > 0:
+            average_fuel_rate_lph = round(
+                fuel_consumed_liters / (duration_seconds / 3600),
+                2,
+            )
+
+        safety_score = compute_safety_score_for_summary(
+            summary,
+            distance_km=distance_km,
+        )
 
         event_dicts = tuple(
             _build_event_dict(evt)
@@ -115,7 +146,7 @@ class TripBuilder:
             driver_name=context.driver_name or None,
             route_id=context.route_id,
             route_type=context.route_type,
-            distance_km=summary.total_distance_km,
+            distance_km=distance_km,
             duration_seconds=duration_seconds,
             average_speed_kmh=average_speed_kmh,
             maximum_speed_kmh=maximum_speed_kmh,
@@ -123,8 +154,16 @@ class TripBuilder:
             average_fuel_rate_lph=average_fuel_rate_lph,
             safety_score=safety_score,
             overall_grade=_compute_grade(safety_score),
-            started_at=None,
-            completed_at=runtime_state.timestamp,
+            started_at=(
+                trip.started_at
+                if trip is not None
+                else None
+            ),
+            completed_at=(
+                trip.completed_at
+                if trip is not None
+                else runtime_state.timestamp
+            ),
             speeding_event_count=summary.speeding_event_count,
             speeding_duration_seconds=summary.speeding_duration_seconds,
             harsh_braking_count=summary.harsh_braking_count,

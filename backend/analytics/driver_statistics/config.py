@@ -47,10 +47,19 @@ KNOWN_SEVERITIES: frozenset[str] = frozenset(
 # Safety score
 # ---------------------------------------------------------------------------
 
+# Baseline for a driver with no misbehaviour.
 SAFETY_START = 100.0
-SAFETY_HARD_BRAKE_PENALTY = 2.0
-SAFETY_HARD_ACCELERATION_PENALTY = 1.5
-SAFETY_OVERSPEED_PENALTY = 3.0
+
+# Relative weight of each behaviour type when computing weighted
+# misbehaviour density.
+SAFETY_WEIGHT_HARD_BRAKE = 2.0
+SAFETY_WEIGHT_HARD_ACCELERATION = 1.5
+SAFETY_WEIGHT_OVERSPEED = 3.0
+SAFETY_WEIGHT_HIGH_RPM = 1.0
+
+# Scales weighted misbehaviour density into a score deduction. Higher
+# values make the score fall faster for the same density.
+SAFETY_DENSITY_SENSITIVITY = 2.0
 
 # ---------------------------------------------------------------------------
 # Aggression score
@@ -107,9 +116,11 @@ __all__ = [
     "SEVERITY_SEVERE",
     "KNOWN_SEVERITIES",
     "SAFETY_START",
-    "SAFETY_HARD_BRAKE_PENALTY",
-    "SAFETY_HARD_ACCELERATION_PENALTY",
-    "SAFETY_OVERSPEED_PENALTY",
+    "SAFETY_WEIGHT_HARD_BRAKE",
+    "SAFETY_WEIGHT_HARD_ACCELERATION",
+    "SAFETY_WEIGHT_OVERSPEED",
+    "SAFETY_WEIGHT_HIGH_RPM",
+    "SAFETY_DENSITY_SENSITIVITY",
     "AGGRESSION_MAX_DENSITY",
     "AGGRESSION_WEIGHT_HARD_BRAKE",
     "AGGRESSION_WEIGHT_HARD_ACCELERATION",

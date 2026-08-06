@@ -131,9 +131,10 @@ async def lifespan(
         context,
         runtime_state,
         all_events,
+        trip,
     ) -> None:
         trip_publisher.publish(
-            summary, context, runtime_state, all_events
+            summary, context, runtime_state, all_events, trip
         )
         _dashboard_trip_completed(
             summary, context, runtime_state, all_events

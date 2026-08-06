@@ -15,12 +15,11 @@ from backend.analytics.driver_statistics.config import (
     AGGRESSION_WEIGHT_HARD_BRAKE,
     AGGRESSION_WEIGHT_OVERSPEED,
     EFFICIENCY_MAX_EVENTS_PER_KM,
-    SAFETY_HARD_ACCELERATION_PENALTY,
-    SAFETY_HARD_BRAKE_PENALTY,
-    SAFETY_OVERSPEED_PENALTY,
-    SAFETY_START,
     clamp_score,
     events_per_km,
+)
+from backend.analytics.driver_statistics.safety import (
+    compute_safety_score,
 )
 
 
@@ -53,8 +52,11 @@ class DriverScoreCalculator:
     Scoring model
     -------------
     Safety:
-        Starts at 100 and deducts a fixed penalty per hard brake, hard
-        acceleration, and overspeed event.
+        Starts at 100 and decays with the density of weighted hard
+        brakes, hard accelerations, overspeeds, and high-RPM events per
+        kilometre. Density normalisation means short trips are judged
+        more strictly than long ones, and clean driving recovers the
+        score over time.
     Aggression:
         Rises with the weighted density of aggressive events per
         kilometre. The more aggressive events per distance, the higher
@@ -85,6 +87,7 @@ class DriverScoreCalculator:
         harsh_braking_count: int,
         overspeed_count: int,
         harsh_acceleration_count: int,
+        high_rpm_count: int = 0,
         total_distance: float,
         total_trips: int,
     ) -> DriverScores:
@@ -101,6 +104,7 @@ class DriverScoreCalculator:
             harsh_braking_count=harsh_braking_count,
             overspeed_count=overspeed_count,
             harsh_acceleration_count=harsh_acceleration_count,
+            high_rpm_count=high_rpm_count,
             total_distance=total_distance,
             total_trips=total_trips,
         )
@@ -109,6 +113,8 @@ class DriverScoreCalculator:
             harsh_braking_count=harsh_braking_count,
             harsh_acceleration_count=harsh_acceleration_count,
             overspeed_count=overspeed_count,
+            high_rpm_count=high_rpm_count,
+            total_distance=total_distance,
         )
         aggression_score = self._aggression_score(
             harsh_braking_count=harsh_braking_count,
@@ -134,6 +140,7 @@ class DriverScoreCalculator:
         harsh_braking_count: int,
         overspeed_count: int,
         harsh_acceleration_count: int,
+        high_rpm_count: int,
         total_distance: float,
         total_trips: int,
     ) -> None:
@@ -142,6 +149,7 @@ class DriverScoreCalculator:
             harsh_braking_count,
             overspeed_count,
             harsh_acceleration_count,
+            high_rpm_count,
             total_trips,
         )
         if any(count < 0 for count in counts):
@@ -155,13 +163,16 @@ class DriverScoreCalculator:
         harsh_braking_count: int,
         harsh_acceleration_count: int,
         overspeed_count: int,
+        high_rpm_count: int,
+        total_distance: float,
     ) -> float:
-        deductions = (
-            harsh_braking_count * SAFETY_HARD_BRAKE_PENALTY
-            + harsh_acceleration_count * SAFETY_HARD_ACCELERATION_PENALTY
-            + overspeed_count * SAFETY_OVERSPEED_PENALTY
+        return compute_safety_score(
+            harsh_braking_count=harsh_braking_count,
+            harsh_acceleration_count=harsh_acceleration_count,
+            overspeed_count=overspeed_count,
+            high_rpm_count=high_rpm_count,
+            distance_km=total_distance,
         )
-        return clamp_score(SAFETY_START - deductions)
 
     @staticmethod
     def _aggression_score(

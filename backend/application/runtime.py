@@ -36,6 +36,10 @@ from backend.analytics.driver_statistics.aggregators.driver_score_calculator imp
     DriverScoreCalculator,
 )
 
+from backend.analytics.driver_statistics.safety import (
+    compute_safety_score_for_summary,
+)
+
 from backend.analytics.driver_statistics.driver_statistics_engine import (
     DriverStatisticsEngine,
 )
@@ -147,20 +151,22 @@ from backend.telemetry.models.telemetry_sample import (
 from typing import Any, Callable
 
 
-TripFlushCallback = Callable[[str, str, Any, Any, list], None]
+TripFlushCallback = Callable[
+    [Any, Any, Any, list, Trip],
+    None,
+]
 
 logger = logging.getLogger(__name__)
 
 
-def _compute_safety_score(summary: DriverBehaviourSummary) -> float:
-    score = 100.0
-    score -= summary.speeding_event_count * 5
-    score -= summary.harsh_braking_count * 4
-    score -= summary.aggressive_throttle_event_count * 4
-    score -= summary.high_rpm_event_count * 3
-    score -= summary.severe_event_count * 8
-    score -= summary.moderate_event_count * 4
-    return max(0.0, min(100.0, score))
+def _compute_safety_score(
+    summary: DriverBehaviourSummary,
+    distance_km: float,
+) -> float:
+    return compute_safety_score_for_summary(
+        summary,
+        distance_km=distance_km,
+    )
 
 
 class DriveVitalsRuntime:
@@ -706,11 +712,6 @@ class DriveVitalsRuntime:
                 runtime_state: Any,
                 all_events: list,
             ) -> None:
-                if existing_callback is not None:
-                    existing_callback(
-                        summary, context, runtime_state, all_events
-                    )
-
                 vehicle_id = summary.vehicle_id
                 runner = next(
                     (
@@ -727,6 +728,14 @@ class DriveVitalsRuntime:
                         "using default values for trip completion",
                         vehicle_id,
                     )
+                    if existing_callback is not None:
+                        existing_callback(
+                            summary,
+                            context,
+                            runtime_state,
+                            all_events,
+                            None,
+                        )
                     asyncio.ensure_future(
                         persistence.complete_trip(
                             trip_id=summary.trip_id,
@@ -736,7 +745,13 @@ class DriveVitalsRuntime:
                             fuel_used_liters=0.0,
                             average_speed_kmh=0.0,
                             maximum_speed_kmh=0.0,
-                            trip_score=0.0,
+                            trip_score=round(
+                                _compute_safety_score(
+                                    summary,
+                                    summary.total_distance_km,
+                                ),
+                                0,
+                            ),
                         )
                     )
                     return
@@ -778,8 +793,17 @@ class DriveVitalsRuntime:
                     (fuel_used_pct / 100.0) * tank_capacity_liters, 2
                 )
 
+                # Expose the final fuel total on the completed trip so
+                # the WebSocket path and the DB path report the same
+                # value.
+                trip_obj.fuel_used_liters = fuel_used_liters
+
                 trip_score = round(
-                    _compute_safety_score(summary), 0
+                    _compute_safety_score(
+                        summary,
+                        distance_km=distance_km,
+                    ),
+                    0,
                 )
 
                 logger.info(
@@ -796,6 +820,15 @@ class DriveVitalsRuntime:
                     maximum_speed_kmh,
                     trip_score,
                 )
+
+                if existing_callback is not None:
+                    existing_callback(
+                        summary,
+                        context,
+                        runtime_state,
+                        all_events,
+                        trip_obj,
+                    )
 
                 asyncio.ensure_future(
                     persistence.complete_trip(
@@ -1006,6 +1039,11 @@ class DriveVitalsRuntime:
                             context,
                             runtime_state,
                             all_events,
+                            (
+                                runner.trip
+                                if runner is not None
+                                else None
+                            ),
                         )
 
             pre_tick_vehicles = post_tick_vehicles

@@ -33,6 +33,7 @@ class BehaviourEventTracker:
         "speeding",
         "aggressive_throttle",
         "high_rpm",
+        "harsh_braking",
     )
 
     def __init__(self) -> None:
@@ -125,27 +126,11 @@ class BehaviourEventTracker:
         # --------------------------------------------------------------
         # HARSH BRAKING
         #
-        # This is currently a discrete event. It exists only for the
-        # current telemetry observation, so its duration and distance
-        # are both zero.
+        # Harsh braking is coalesced like any other continuous event:
+        # one episode of sustained brake pressure produces exactly one
+        # BehaviourEvent with a real duration and distance, instead of a
+        # zero-duration event per telemetry tick.
         # --------------------------------------------------------------
-
-        if analysis.harsh_braking:
-
-            completed_events.append(
-                BehaviourEvent(
-                    vehicle_id=analysis.vehicle_id,
-                    driver_id=analysis.driver_id,
-                    trip_id=analysis.trip_id,
-                    event_type="harsh_braking",
-                    started_at=timestamp,
-                    ended_at=timestamp,
-                    duration_seconds=0.0,
-                    distance_km=0.0,
-                    max_speed_excess_kmh=analysis.speed_excess_kmh,
-                    severity=analysis.severity,
-                )
-            )
 
         return completed_events
 

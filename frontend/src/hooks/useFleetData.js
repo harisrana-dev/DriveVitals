@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLiveData } from '../context/LiveDataContext';
 
 function mapStatus(s) {
@@ -17,11 +17,13 @@ function healthCategory(score) {
 }
 
 const DISPLAY_STATUS_DEBOUNCE_MS = 2000;
+const OFFLINE_AFTER_MS = 60000;
 const _statusMemory = new Map();
 
-function computeRawDisplayStatus(v) {
-  if (v.activeEventTypes && v.activeEventTypes.length > 0) return 'ALERT';
-  if (v.maintenanceDue) return 'MAINTENANCE';
+function computeRawDisplayStatus(v, now) {
+  const lastUpdate = v.lastUpdate ? new Date(v.lastUpdate).getTime() : 0;
+  const stale = !lastUpdate || now - lastUpdate > OFFLINE_AFTER_MS;
+  if (stale) return 'OFFLINE';
   if (v.status === 'active') return 'ACTIVE';
   if (v.status === 'trip_completed') return 'TRIP_COMPLETED';
   if (v.status === 'idle') return 'IDLE';
@@ -87,12 +89,11 @@ function shallowEqual(a, b) {
   return true;
 }
 
-function stableVehicles(raw) {
+function stableVehicles(raw, now) {
   const mapped = mapVehicles(raw);
   if (!mapped) return null;
-  const now = Date.now();
   for (const v of mapped) {
-    v.displayStatus = resolveDisplayStatus(v.id, computeRawDisplayStatus(v), now);
+    v.displayStatus = resolveDisplayStatus(v.id, computeRawDisplayStatus(v, now), now);
   }
   if (_stableCache && _stableCache.length === mapped.length) {
     let changed = false;
@@ -107,7 +108,12 @@ function stableVehicles(raw) {
 
 export function useVehicles() {
   const { mergedFleet } = useLiveData();
-  return useMemo(() => stableVehicles(mergedFleet) || [], [mergedFleet]);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, []);
+  return useMemo(() => stableVehicles(mergedFleet, now) || [], [mergedFleet, now]);
 }
 
 export function useVehicle(id) {

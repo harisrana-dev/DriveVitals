@@ -3,8 +3,6 @@ import { useVehicles } from '../../hooks/useFleetData';
 
 const SEGMENTS = [
   { key: 'ACTIVE', color: '#22C55E', label: 'Active' },
-  { key: 'ALERT', color: '#EF4444', label: 'Alert' },
-  { key: 'MAINTENANCE', color: '#3B82F6', label: 'Maintenance' },
   { key: 'TRIP_COMPLETED', color: '#A855F7', label: 'Trip Completed' },
   { key: 'IDLE', color: '#FACC15', label: 'Idle' },
   { key: 'OFFLINE', color: '#6B7280', label: 'Offline' },
@@ -18,7 +16,7 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 export const FleetStatusRing = memo(function FleetStatusRing() {
   const vehicles = useVehicles();
 
-  const counts = { ACTIVE: 0, ALERT: 0, MAINTENANCE: 0, TRIP_COMPLETED: 0, IDLE: 0, OFFLINE: 0 };
+  const counts = { ACTIVE: 0, TRIP_COMPLETED: 0, IDLE: 0, OFFLINE: 0 };
   vehicles.forEach((v) => {
     counts[v.displayStatus] = (counts[v.displayStatus] || 0) + 1;
   });

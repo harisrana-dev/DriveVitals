@@ -92,7 +92,6 @@ class AlertRepository(BaseRepository):
                 .where(Alert.alert_id == existing_row.alert_id)
                 .values(
                     severity=severity,
-                    message=message,
                     driver_id=driver_id,
                     trip_id=trip_id,
                     status=status,

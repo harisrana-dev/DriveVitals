@@ -1,12 +1,10 @@
 import { useVehicles } from '../../hooks/useFleetData';
 import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
-import { AlertTriangle, Fuel, Thermometer } from 'lucide-react';
+import { Fuel, Thermometer } from 'lucide-react';
 
 const statusStyles = {
   ACTIVE: { bg: 'var(--color-green-bg)', color: 'var(--color-green)', label: 'Active' },
   IDLE: { bg: 'var(--color-amber-bg)', color: 'var(--color-amber)', label: 'Idle' },
-  ALERT: { bg: 'var(--color-red-bg)', color: 'var(--color-red)', label: 'Alert' },
-  MAINTENANCE: { bg: 'var(--color-blue-bg)', color: 'var(--color-blue)', label: 'Maintenance' },
   TRIP_COMPLETED: { bg: 'var(--color-purple-bg)', color: 'var(--color-purple)', label: 'Trip Completed' },
   OFFLINE: { bg: 'var(--color-surface-hover)', color: 'var(--color-text-muted)', label: 'Offline' },
 };
@@ -84,7 +82,6 @@ export function LiveFleetActivity() {
                       fontWeight: 500,
                     }}>
                       {v.displayStatus === 'ACTIVE' && <span style={{ width: 5, height: 5, borderRadius: 3, background: st.color }} />}
-                      {v.displayStatus === 'ALERT' && <AlertTriangle size={10} />}
                       {st.label}
                     </span>
                   </td>

@@ -11,18 +11,6 @@ const VARIANTS = {
     dot: true,
     label: 'IDLE',
   },
-  ALERT: {
-    bg: 'var(--color-red-bg)',
-    color: 'var(--color-red)',
-    dot: false,
-    label: 'ALERT',
-  },
-  MAINTENANCE: {
-    bg: 'var(--color-blue-bg)',
-    color: 'var(--color-blue)',
-    dot: true,
-    label: 'MAINTENANCE',
-  },
   TRIP_COMPLETED: {
     bg: 'var(--color-purple-bg)',
     color: 'var(--color-purple)',

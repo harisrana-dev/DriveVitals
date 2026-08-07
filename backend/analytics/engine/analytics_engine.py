@@ -310,11 +310,18 @@ class AnalyticsEngine:
         self,
         vehicle_id: str,
         timestamp: datetime,
+        *,
+        total_distance_km: float | None = None,
     ) -> list[BehaviourEvent]:
         """
         Flush active behaviour events for one vehicle.
 
         Called when that vehicle's trip ends.
+
+        ``total_distance_km`` must be the completed trip's distance,
+        not the vehicle's lifetime odometer, so the behaviour summary
+        (and any safety scoring derived from it) reflects the trip
+        only.
 
         Events from other vehicles remain active and are not affected.
         """
@@ -384,13 +391,18 @@ class AnalyticsEngine:
 
         if analysis_input is not None:
 
-            runtime_state = (
-                analysis_input.runtime_state
-            )
-
             context = (
                 analysis_input.context
             )
+
+            # ----------------------------------------------------------
+            # Build the trip summary from the completed trip's distance.
+            #
+            # The lifetime odometer is intentionally NOT used here: a
+            # vehicle's total odometer is a lifetime value and would
+            # break every distance-normalised metric (average speed,
+            # fuel, safety density) for a single trip.
+            # ----------------------------------------------------------
 
             summary = (
                 self._behaviour_summarizer.summarize(
@@ -398,7 +410,9 @@ class AnalyticsEngine:
                     driver_id=context.driver_id,
                     trip_id=context.trip_id,
                     total_distance_km=(
-                        runtime_state.odometer_km
+                        total_distance_km
+                        if total_distance_km is not None
+                        else 0.0
                     ),
                     events=all_events,
                 )

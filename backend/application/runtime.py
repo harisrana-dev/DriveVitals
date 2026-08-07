@@ -888,17 +888,6 @@ class DriveVitalsRuntime:
             )
 
             for vehicle_id in just_completed:
-                all_events = (
-                    self._analytics_engine.flush_vehicle(
-                        vehicle_id=vehicle_id,
-                        timestamp=now,
-                    )
-                )
-
-                # ------------------------------------------------------
-                # Feed the completed trip into driver statistics
-                # ------------------------------------------------------
-
                 runner = next(
                     (
                         r
@@ -907,6 +896,22 @@ class DriveVitalsRuntime:
                     ),
                     None,
                 )
+
+                all_events = (
+                    self._analytics_engine.flush_vehicle(
+                        vehicle_id=vehicle_id,
+                        timestamp=now,
+                        total_distance_km=(
+                            runner.trip.distance_travelled_km
+                            if runner is not None
+                            else None
+                        ),
+                    )
+                )
+
+                # ------------------------------------------------------
+                # Feed the completed trip into driver statistics
+                # ------------------------------------------------------
 
                 if runner is not None:
                     statistics = (
@@ -1055,9 +1060,6 @@ class DriveVitalsRuntime:
             await asyncio.sleep(
                 self._tick_seconds
             )
-
-        if persistence is not None:
-            await persistence.close()
 
     def stop(
         self,

@@ -59,7 +59,12 @@ SAFETY_WEIGHT_HIGH_RPM = 1.0
 
 # Scales weighted misbehaviour density into a score deduction. Higher
 # values make the score fall faster for the same density.
-SAFETY_DENSITY_SENSITIVITY = 2.0
+#
+# The score decays exponentially with density. At this sensitivity a
+# normal 3-6 km trip with 1-3 events lands in Good/Average, while a
+# genuinely bad trip (density >= ~3 weighted events/km) reaches
+# Poor/Critical.
+SAFETY_DENSITY_SENSITIVITY = 0.35
 
 # ---------------------------------------------------------------------------
 # Aggression score

@@ -34,6 +34,8 @@ class TripSnapshot:
     overall_severity: str
     events: tuple[dict, ...]
 
+    route_name: str | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class TripsSnapshot:

@@ -83,6 +83,13 @@ _ROUTE_PARAMS = {
 _OPERATING_COOLANT_TEMP_C = 90.0
 _AMBIENT_COOLANT_TEMP_C = 20.0
 
+# Brake pressure is reported relative to a single fixed reference
+# deceleration, NOT the driver's profile maximum. This keeps the value
+# comparable across drivers: a gentle 2.5 km/h/s stop reads ~0.3 while a
+# genuinely hard 8+ km/h/s stop reads ~1.0, so harsh-braking detection
+# only triggers on real hard braking instead of on every routine stop.
+_BRAKE_REFERENCE_DECEL_KMH_S = 8.0
+
 
 @dataclass
 class OBDGenerator:
@@ -183,9 +190,13 @@ class OBDGenerator:
         new_speed = max(0.0, current_speed + speed_delta)
 
         # --- Brake pressure: proportional to how hard we're
-        # decelerating relative to the profile's max deceleration.
+        # decelerating relative to the fixed reference deceleration.
         if speed_delta < 0:
-            brake_pressure = min(1.0, abs(speed_delta) / (effective_max_decel * dt_seconds + 1e-6))
+            brake_pressure = min(
+                1.0,
+                abs(speed_delta)
+                / (_BRAKE_REFERENCE_DECEL_KMH_S * dt_seconds + 1e-6),
+            )
             brake_pressure += self._rng.uniform(0.0, 0.05)  # braking noise
             brake_pressure = min(1.0, brake_pressure)
         else:

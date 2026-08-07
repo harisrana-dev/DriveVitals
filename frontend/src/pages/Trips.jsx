@@ -1,24 +1,101 @@
 import { useCallback } from 'react';
+import { Radio } from 'lucide-react';
 import { useTripsFilters } from '../hooks/useTripsFilters';
 import { useTripDrawer } from '../context/TripDrawerContext';
 import { TripsKpis } from '../components/trips/TripsKpis';
 import { TripsFilters } from '../components/trips/TripsFilters';
 import { TripsTable } from '../components/trips/TripsTable';
+import { ActiveTripsList } from '../components/trips/ActiveTripsList';
 import { TripDrawer } from '../components/trips/TripDrawer';
+
+function SectionHeader({ title, subtitle, count, live }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <h2
+          style={{
+            fontSize: 15,
+            fontWeight: 600,
+            color: 'var(--color-text-primary)',
+          }}
+        >
+          {title}
+        </h2>
+        {live && (
+          <span
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              color: 'var(--color-green)',
+              background: 'var(--color-green-bg)',
+              padding: '2px 8px',
+              borderRadius: 20,
+              textTransform: 'uppercase',
+            }}
+          >
+            <Radio size={11} />
+            Live
+          </span>
+        )}
+        {count != null && (
+          <span
+            style={{
+              fontSize: 12,
+              color: 'var(--color-text-muted)',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {count}
+          </span>
+        )}
+      </div>
+      {subtitle && (
+        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+          {subtitle}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function TripsPage() {
   const {
-    trips,
+    activeTrips,
+    completedTrips,
     search,
     setSearch,
     statusFilter,
     setStatusFilter,
     routeFilter,
     setRouteFilter,
+    driverFilter,
+    setDriverFilter,
+    driverOptions,
+    vehicleFilter,
+    setVehicleFilter,
+    vehicleOptions,
+    gradeFilter,
+    setGradeFilter,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
     sortBy,
     setSortBy,
     sortAsc,
     toggleSort,
+    resetFilters,
   } = useTripsFilters();
 
   const { selectedTrip, openDrawer, closeDrawer } = useTripDrawer();
@@ -61,7 +138,7 @@ export function TripsPage() {
               color: 'var(--color-text-secondary)',
             }}
           >
-            Historical trip intelligence and route analytics
+            Live trip tracking, historical trip intelligence and route analytics
           </p>
         </div>
       </div>
@@ -75,17 +152,80 @@ export function TripsPage() {
         onStatusChange={setStatusFilter}
         routeFilter={routeFilter}
         onRouteChange={setRouteFilter}
+        driverFilter={driverFilter}
+        onDriverChange={setDriverFilter}
+        driverOptions={driverOptions}
+        vehicleFilter={vehicleFilter}
+        onVehicleChange={setVehicleFilter}
+        vehicleOptions={vehicleOptions}
+        gradeFilter={gradeFilter}
+        onGradeChange={setGradeFilter}
+        dateFrom={dateFrom}
+        onDateFromChange={setDateFrom}
+        dateTo={dateTo}
+        onDateToChange={setDateTo}
+        onReset={resetFilters}
         sortBy={sortBy}
         onSortChange={setSortBy}
         sortAsc={sortAsc}
         onSortToggle={toggleSort}
       />
 
-      <TripsTable
-        trips={trips}
-        onTripClick={handleTripClick}
-        selectedTripId={selectedTrip?.id}
-      />
+      <div
+        className="fade-in stagger-3"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        <SectionHeader
+          title="Active Trips"
+          subtitle="Trips currently in progress"
+          count={activeTrips.length}
+          live
+        />
+        <ActiveTripsList
+          trips={activeTrips}
+          onTripClick={handleTripClick}
+          selectedTripId={selectedTrip?.id}
+        />
+        {activeTrips.length === 0 && (
+          <div
+            style={{
+              padding: '28px 16px',
+              textAlign: 'center',
+              color: 'var(--color-text-muted)',
+              fontSize: 13,
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 12,
+            }}
+          >
+            No vehicles are currently on a trip. Active trips will appear here in real time.
+          </div>
+        )}
+      </div>
+
+      <div
+        className="fade-in stagger-4"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+      >
+        <SectionHeader
+          title="Historical Trips"
+          subtitle="Completed trips with full analytics"
+          count={completedTrips.length}
+        />
+        <TripsTable
+          trips={completedTrips}
+          onTripClick={handleTripClick}
+          selectedTripId={selectedTrip?.id}
+        />
+      </div>
 
       {selectedTrip && (
         <TripDrawer

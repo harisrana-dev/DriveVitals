@@ -26,6 +26,10 @@ async def list_telemetry(
         default=False,
         description="Return only the newest sample per vehicle.",
     ),
+    trip_id: str | None = Query(
+        default=None,
+        description="Filter samples to a single trip.",
+    ),
     limit: int = Query(
         default=100,
         description="Maximum number of samples to return.",
@@ -40,6 +44,7 @@ async def list_telemetry(
 
     samples, count = await service.list(
         vehicle_id=None,
+        trip_id=trip_id,
         latest=latest,
         limit=limit,
         offset=offset,
@@ -67,6 +72,10 @@ async def list_vehicle_telemetry(
         default=False,
         description="Return only the newest sample for the vehicle.",
     ),
+    trip_id: str | None = Query(
+        default=None,
+        description="Filter samples to a single trip.",
+    ),
     limit: int = Query(
         default=100,
         description="Maximum number of samples to return.",
@@ -81,6 +90,7 @@ async def list_vehicle_telemetry(
 
     samples, count = await service.list(
         vehicle_id=vehicle_id,
+        trip_id=trip_id,
         latest=latest,
         limit=limit,
         offset=offset,

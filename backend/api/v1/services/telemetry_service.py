@@ -19,6 +19,7 @@ class TelemetryService:
     async def list(
         self,
         vehicle_id: str | None,
+        trip_id: str | None,
         latest: bool,
         limit: int,
         offset: int,
@@ -37,6 +38,9 @@ class TelemetryService:
 
         if vehicle_id is not None:
             query = query.where(TelemetrySample.vehicle_id == vehicle_id)
+
+        if trip_id is not None:
+            query = query.where(TelemetrySample.trip_id == trip_id)
 
         if latest:
             query = query.distinct(TelemetrySample.vehicle_id).order_by(

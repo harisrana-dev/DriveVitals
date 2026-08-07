@@ -1,8 +1,8 @@
 import { apiClient } from '../../api/apiClient';
 import { endpoints } from '../../api/endpoints';
 
-export async function listTelemetry(params = {}) {
-  return apiClient.get(endpoints.telemetry.list, { params: { limit: 100, ...params } });
+export async function listTelemetry(params = {}, options = {}) {
+  return apiClient.get(endpoints.telemetry.list, { params: { limit: 100, ...params }, ...options });
 }
 
 export async function listLatestTelemetry(params = {}) {

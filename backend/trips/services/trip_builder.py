@@ -8,6 +8,7 @@ from backend.analytics.context.analytics_context import (
     AnalyticsContext,
 )
 from backend.analytics.driver_statistics.safety import (
+    compute_grade,
     compute_safety_score_for_summary,
 )
 from backend.analytics.state.runtime_state import (
@@ -19,20 +20,6 @@ from backend.fleet.models.trip import (
 from backend.trips.schemas.trip_payload import (
     TripSnapshot,
 )
-
-
-def _compute_grade(
-    score: float,
-) -> str:
-    if score >= 90:
-        return "A"
-    if score >= 80:
-        return "B"
-    if score >= 70:
-        return "C"
-    if score >= 60:
-        return "D"
-    return "F"
 
 
 _EVENT_TYPE_LABELS = {
@@ -146,6 +133,7 @@ class TripBuilder:
             driver_name=context.driver_name or None,
             route_id=context.route_id,
             route_type=context.route_type,
+            route_name=context.route_name or None,
             distance_km=distance_km,
             duration_seconds=duration_seconds,
             average_speed_kmh=average_speed_kmh,
@@ -153,7 +141,7 @@ class TripBuilder:
             fuel_consumed_liters=fuel_consumed_liters,
             average_fuel_rate_lph=average_fuel_rate_lph,
             safety_score=safety_score,
-            overall_grade=_compute_grade(safety_score),
+            overall_grade=compute_grade(safety_score),
             started_at=(
                 trip.started_at
                 if trip is not None

@@ -1,13 +1,9 @@
 import { memo } from 'react';
 import { Route, Map, Shield, Fuel } from 'lucide-react';
 import { useTripsSummary } from '../../hooks/useTripsData';
-import { useSmoothValue } from '../../hooks/useSmoothValue';
 
 export const TripsKpis = memo(function TripsKpis() {
   const summary = useTripsSummary();
-
-  const smoothDistance = useSmoothValue(summary.totalDistance);
-  const smoothScore = useSmoothValue(summary.avgSafetyScore);
 
   const cards = [
     {
@@ -20,7 +16,7 @@ export const TripsKpis = memo(function TripsKpis() {
     },
     {
       label: 'Total Distance',
-      value: smoothDistance.toFixed(1),
+      value: summary.totalDistance.toFixed(1),
       icon: <Map size={18} strokeWidth={1.8} />,
       color: 'var(--color-green)',
       bgColor: 'var(--color-green-bg)',
@@ -28,7 +24,7 @@ export const TripsKpis = memo(function TripsKpis() {
     },
     {
       label: 'Avg Safety Score',
-      value: Math.round(smoothScore),
+      value: Math.round(summary.avgSafetyScore),
       icon: <Shield size={18} strokeWidth={1.8} />,
       color: summary.avgSafetyScore >= 80 ? 'var(--color-green)' : summary.avgSafetyScore >= 60 ? 'var(--color-amber)' : 'var(--color-red)',
       bgColor: summary.avgSafetyScore >= 80 ? 'var(--color-green-bg)' : summary.avgSafetyScore >= 60 ? 'var(--color-amber-bg)' : 'var(--color-red-bg)',

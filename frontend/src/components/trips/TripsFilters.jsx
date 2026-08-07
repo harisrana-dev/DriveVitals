@@ -1,10 +1,9 @@
 import { memo } from 'react';
-import { Search, ArrowUpDown } from 'lucide-react';
+import { Search, ArrowUpDown, RotateCcw } from 'lucide-react';
 
 const statusOptions = [
   { value: '', label: 'All Statuses' },
   { value: 'completed', label: 'Completed' },
-  { value: 'running', label: 'Running' },
 ];
 
 const routeTypeOptions = [
@@ -14,12 +13,34 @@ const routeTypeOptions = [
   { value: 'rural', label: 'Rural' },
 ];
 
+const gradeOptions = [
+  { value: '', label: 'All Grades' },
+  { value: 'A', label: 'Grade A' },
+  { value: 'B', label: 'Grade B' },
+  { value: 'C', label: 'Grade C' },
+  { value: 'D', label: 'Grade D' },
+  { value: 'F', label: 'Grade F' },
+];
+
 const sortOptions = [
   { value: 'date', label: 'Date' },
   { value: 'distance', label: 'Distance' },
   { value: 'score', label: 'Safety Score' },
   { value: 'fuel', label: 'Fuel Used' },
 ];
+
+const selectStyle = {
+  padding: '8px 12px',
+  borderRadius: 8,
+  border: '1px solid var(--color-border)',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text-primary)',
+  fontSize: 13,
+  outline: 'none',
+  cursor: 'pointer',
+  minWidth: 120,
+  transition: 'border-color 0.15s ease',
+};
 
 export const TripsFilters = memo(function TripsFilters({
   search,
@@ -28,6 +49,19 @@ export const TripsFilters = memo(function TripsFilters({
   onStatusChange,
   routeFilter,
   onRouteChange,
+  driverFilter,
+  onDriverChange,
+  driverOptions = [],
+  vehicleFilter,
+  onVehicleChange,
+  vehicleOptions = [],
+  gradeFilter,
+  onGradeChange,
+  dateFrom,
+  onDateFromChange,
+  dateTo,
+  onDateToChange,
+  onReset,
   sortBy,
   onSortChange,
   sortAsc,
@@ -45,8 +79,8 @@ export const TripsFilters = memo(function TripsFilters({
       <div
         style={{
           position: 'relative',
-          flex: '1 1 220px',
-          minWidth: 180,
+          flex: '1 1 200px',
+          minWidth: 160,
         }}
       >
         <Search
@@ -62,7 +96,7 @@ export const TripsFilters = memo(function TripsFilters({
         />
         <input
           type="text"
-          placeholder="Search trips, vehicles, drivers..."
+          placeholder="Search trips, vehicles, drivers, routes..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           style={{
@@ -84,20 +118,7 @@ export const TripsFilters = memo(function TripsFilters({
       <select
         value={statusFilter}
         onChange={(e) => onStatusChange(e.target.value)}
-        style={{
-          padding: '8px 12px',
-          borderRadius: 8,
-          border: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-          color: 'var(--color-text-primary)',
-          fontSize: 13,
-          outline: 'none',
-          cursor: 'pointer',
-          minWidth: 120,
-          transition: 'border-color 0.15s ease',
-        }}
-        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+        style={selectStyle}
       >
         {statusOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -109,20 +130,7 @@ export const TripsFilters = memo(function TripsFilters({
       <select
         value={routeFilter}
         onChange={(e) => onRouteChange(e.target.value)}
-        style={{
-          padding: '8px 12px',
-          borderRadius: 8,
-          border: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-          color: 'var(--color-text-primary)',
-          fontSize: 13,
-          outline: 'none',
-          cursor: 'pointer',
-          minWidth: 120,
-          transition: 'border-color 0.15s ease',
-        }}
-        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+        style={selectStyle}
       >
         {routeTypeOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -131,31 +139,128 @@ export const TripsFilters = memo(function TripsFilters({
         ))}
       </select>
 
+      <select
+        value={driverFilter}
+        onChange={(e) => onDriverChange(e.target.value)}
+        style={selectStyle}
+      >
+        <option value="">All Drivers</option>
+        {driverOptions.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={vehicleFilter}
+        onChange={(e) => onVehicleChange(e.target.value)}
+        style={selectStyle}
+      >
+        <option value="">All Vehicles</option>
+        {vehicleOptions.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={gradeFilter}
+        onChange={(e) => onGradeChange(e.target.value)}
+        style={selectStyle}
+      >
+        {gradeOptions.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => onDateFromChange(e.target.value)}
+          aria-label="From date"
+          style={{
+            padding: '7px 10px',
+            borderRadius: 8,
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-surface)',
+            color: 'var(--color-text-primary)',
+            fontSize: 13,
+            outline: 'none',
+            fontFamily: 'inherit',
+          }}
+        />
+        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>→</span>
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => onDateToChange(e.target.value)}
+          aria-label="To date"
+          style={{
+            padding: '7px 10px',
+            borderRadius: 8,
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-surface)',
+            color: 'var(--color-text-primary)',
+            fontSize: 13,
+            outline: 'none',
+            fontFamily: 'inherit',
+          }}
+        />
+      </div>
+
+      {(search || statusFilter || routeFilter || driverFilter || vehicleFilter || gradeFilter || dateFrom || dateTo) && (
+        <button
+          onClick={onReset}
+          title="Clear all filters"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '8px 10px',
+            borderRadius: 8,
+            border: '1px solid var(--color-border)',
+            background: 'var(--color-surface)',
+            color: 'var(--color-text-secondary)',
+            fontSize: 12,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--color-surface-hover)';
+            e.currentTarget.style.color = 'var(--color-text-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'var(--color-surface)';
+            e.currentTarget.style.color = 'var(--color-text-secondary)';
+          }}
+        >
+          <RotateCcw size={13} />
+          Reset
+        </button>
+      )}
+
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 4,
+          marginLeft: 'auto',
         }}
       >
         <select
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value)}
           style={{
-            padding: '8px 12px',
+            ...selectStyle,
             borderRadius: '8px 0 0 8px',
-            border: '1px solid var(--color-border)',
             borderRight: 'none',
-            background: 'var(--color-surface)',
-            color: 'var(--color-text-primary)',
-            fontSize: 13,
-            outline: 'none',
-            cursor: 'pointer',
             minWidth: 90,
-            transition: 'border-color 0.15s ease',
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
         >
           {sortOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>

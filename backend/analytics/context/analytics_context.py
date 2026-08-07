@@ -28,3 +28,4 @@ class AnalyticsContext:
     vehicle_year: int
 
     driver_name: str = ""
+    route_name: str = ""

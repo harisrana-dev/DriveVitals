@@ -1,20 +1,19 @@
 import {
   X, Gauge, Clock, Route, Fuel,
-  Zap, Activity, Thermometer, Cpu, AlertTriangle,
-  Droplets,
+  Zap, AlertTriangle, Droplets, User, MapPin,
+  Sparkles, Radio,
 } from 'lucide-react';
-import { useSmoothValue } from '../../hooks/useSmoothValue';
+import {
+  AreaChart, Area, LineChart, Line, XAxis, YAxis,
+  CartesianGrid, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import { useTrip } from '../../hooks/useTripsData';
+import { useTripTelemetry } from '../../hooks/useTripTelemetry';
 
 const SEVERITY_COLORS = {
   severe: 'var(--color-red)',
   moderate: 'var(--color-amber)',
   minor: 'var(--color-text-muted)',
-};
-
-const SEVERITY_BG = {
-  severe: 'var(--color-red-bg)',
-  moderate: 'var(--color-amber-bg)',
-  minor: 'transparent',
 };
 
 function formatDuration(seconds) {
@@ -31,6 +30,18 @@ function formatDistance(km) {
   if (km == null || km <= 0) return '—';
   if (km < 1) return `${Math.round(km * 1000)} m`;
   return `${km.toFixed(2)} km`;
+}
+
+function formatTimestamp(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 export function TripDrawer({ trip, onClose }) {
@@ -61,8 +72,8 @@ function DrawerFrame({ onClose, children }) {
           position: 'fixed',
           top: 0,
           right: 0,
-          width: 440,
-          maxWidth: '90vw',
+          width: 560,
+          maxWidth: '94vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
@@ -80,9 +91,13 @@ function DrawerFrame({ onClose, children }) {
 }
 
 function DrawerContent({ trip, onClose }) {
+  const liveTrip = useTrip(trip.id);
+  const current = liveTrip || trip;
+  const isActive = current.completedAt == null;
+
   return (
     <>
-      <Header trip={trip} onClose={onClose} />
+      <Header trip={current} isActive={isActive} onClose={onClose} />
 
       <div
         style={{
@@ -91,15 +106,15 @@ function DrawerContent({ trip, onClose }) {
           padding: 20,
           display: 'flex',
           flexDirection: 'column',
-          gap: 20,
+          gap: 22,
         }}
       >
-        <TripSummarySection trip={trip} />
-        <TripBehaviourSection trip={trip} />
-        <TripTimelineSection events={trip.events} />
-        <TripWearPanel trip={trip} />
-        <TripStatisticsSection trip={trip} />
-        <TripChartsSection trip={trip} />
+        <TripSummarySection trip={current} isActive={isActive} />
+        <TripDriverSection trip={current} />
+        <TripBehaviourSection trip={current} />
+        <TripTimelineSection events={current.events} />
+        <TripTelemetrySection tripId={current.id} isActive={isActive} />
+        <TripInsightSection trip={current} isActive={isActive} />
       </div>
 
       <Footer onClose={onClose} />
@@ -107,7 +122,7 @@ function DrawerContent({ trip, onClose }) {
   );
 }
 
-function Header({ trip, onClose }) {
+function Header({ trip, isActive, onClose }) {
   return (
     <div
       style={{
@@ -118,25 +133,69 @@ function Header({ trip, onClose }) {
         borderBottom: '1px solid var(--color-border)',
       }}
     >
-      <div>
+      <div style={{ minWidth: 0 }}>
         <div
           style={{
-            fontSize: 11,
-            color: 'var(--color-text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
             marginBottom: 2,
-            fontFamily: 'monospace',
           }}
         >
-          {trip.id}
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--color-text-muted)',
+              fontFamily: 'monospace',
+            }}
+          >
+            {trip.id}
+          </span>
+          {isActive && (
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: '0.06em',
+                color: 'var(--color-green)',
+                background: 'var(--color-green-bg)',
+                padding: '2px 7px',
+                borderRadius: 20,
+                textTransform: 'uppercase',
+              }}
+            >
+              <Radio size={9} />
+              Live
+            </span>
+          )}
         </div>
         <div
           style={{
             fontSize: 16,
             fontWeight: 600,
             color: 'var(--color-text-primary)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}
         >
           {trip.vehicleName}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--color-text-muted)',
+            marginTop: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          <MapPin size={10} />
+          {trip.routeName || trip.routeType}
         </div>
       </div>
       <button
@@ -154,6 +213,7 @@ function Header({ trip, onClose }) {
           border: 'none',
           cursor: 'pointer',
           transition: 'all 0.15s ease',
+          flexShrink: 0,
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = 'var(--color-surface-hover)';
@@ -224,14 +284,15 @@ function StatItem({ icon, label, value, valueColor }) {
 }
 
 function GradeBadge({ grade, score }) {
-  const color =
+  const hasGrade = !!grade && grade !== '—';
+  const color = !hasGrade ? 'var(--color-text-muted)' :
     grade === 'A' ? 'var(--color-green)' :
     grade === 'B' ? 'var(--color-accent)' :
     grade === 'C' ? 'var(--color-amber)' :
     grade === 'D' ? 'var(--color-amber)' :
     'var(--color-red)';
 
-  const bg =
+  const bg = !hasGrade ? 'var(--color-surface-hover)' :
     grade === 'A' ? 'var(--color-green-bg)' :
     grade === 'B' ? 'var(--color-accent-subtle)' :
     grade === 'C' ? 'var(--color-amber-bg)' :
@@ -250,23 +311,25 @@ function GradeBadge({ grade, score }) {
         border: `1px solid ${color}`,
       }}
     >
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          background: color,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#fff',
-          fontSize: 18,
-          fontWeight: 700,
-          flexShrink: 0,
-        }}
-      >
-        {grade}
-      </div>
+      {hasGrade && (
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: color,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontSize: 18,
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
+          {grade}
+        </div>
+      )}
       <div>
         <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)' }}>
           Safety Score
@@ -279,13 +342,13 @@ function GradeBadge({ grade, score }) {
   );
 }
 
-function TripSummarySection({ trip }) {
-  const smoothSpeed = useSmoothValue(trip.averageSpeed);
-  const smoothScore = useSmoothValue(trip.safetyScore);
+function TripSummarySection({ trip, isActive }) {
+  const averageSpeed = trip.averageSpeed > 0 ? `${trip.averageSpeed.toFixed(1)} km/h` : '—';
+  const maximumSpeed = trip.maximumSpeed > 0 ? `${trip.maximumSpeed.toFixed(1)} km/h` : '—';
 
   return (
     <div>
-      <SectionTitle>Trip Summary</SectionTitle>
+      <SectionTitle>Trip Overview</SectionTitle>
       <div
         style={{
           display: 'flex',
@@ -293,7 +356,7 @@ function TripSummarySection({ trip }) {
           gap: 8,
         }}
       >
-        <GradeBadge grade={trip.grade} score={smoothScore} />
+        <GradeBadge grade={trip.grade} score={trip.safetyScore} />
 
         <div
           style={{
@@ -304,10 +367,93 @@ function TripSummarySection({ trip }) {
         >
           <StatItem icon={<Route size={14} />} label="Distance" value={formatDistance(trip.distance)} />
           <StatItem icon={<Clock size={14} />} label="Duration" value={formatDuration(trip.duration)} />
-          <StatItem icon={<Gauge size={14} />} label="Avg Speed" value={`${smoothSpeed.toFixed(1)} km/h`} />
-          <StatItem icon={<Zap size={14} />} label="Max Speed" value={`${trip.maximumSpeed.toFixed(1)} km/h`} />
+          <StatItem icon={<Gauge size={14} />} label="Avg Speed" value={averageSpeed} />
+          <StatItem icon={<Zap size={14} />} label="Max Speed" value={maximumSpeed} />
           <StatItem icon={<Fuel size={14} />} label="Fuel Used" value={trip.fuelFormatted} />
           <StatItem icon={<Droplets size={14} />} label="Avg Fuel Rate" value={trip.avgFuelRate > 0 ? `${trip.avgFuelRate.toFixed(1)} L/h` : '—'} />
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: 11,
+            color: 'var(--color-text-muted)',
+            paddingTop: 2,
+          }}
+        >
+          <span>
+            Started {formatTimestamp(trip.startedAt)}
+          </span>
+          <span>
+            {isActive ? 'In progress' : `Completed ${formatTimestamp(trip.completedAt)}`}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TripDriverSection({ trip }) {
+  const initials = (trip.driverName || '—')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase();
+
+  return (
+    <div>
+      <SectionTitle>Driver</SectionTitle>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '10px 12px',
+          borderRadius: 10,
+          background: 'var(--color-bg)',
+          border: '1px solid var(--color-border-light)',
+        }}
+      >
+        <div
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: '50%',
+            background: 'var(--color-accent-subtle)',
+            color: 'var(--color-accent)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 13,
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
+        >
+          {initials}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+            {trip.driverName}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
+            {trip.driverId}
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            fontSize: 11,
+            color: 'var(--color-text-muted)',
+          }}
+        >
+          <User size={11} />
+          {trip.vehicleName}
         </div>
       </div>
     </div>
@@ -323,8 +469,7 @@ function TripBehaviourSection({ trip }) {
   ];
 
   const totalEvents = events.reduce((s, e) => s + e.count, 0);
-
-  if (totalEvents === 0) return null;
+  const severityColor = SEVERITY_COLORS[trip.overallSeverity] || 'var(--color-text-muted)';
 
   return (
     <div>
@@ -336,6 +481,22 @@ function TripBehaviourSection({ trip }) {
           gap: 6,
         }}
       >
+        {totalEvents > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 2,
+            }}
+          >
+            <AlertTriangle size={12} style={{ color: severityColor }} />
+            <span style={{ fontSize: 12, color: severityColor, fontWeight: 500 }}>
+              {totalEvents} event{totalEvents === 1 ? '' : 's'} detected · {trip.overallSeverity} severity
+            </span>
+          </div>
+        )}
+
         <div
           style={{
             display: 'grid',
@@ -363,22 +524,22 @@ function TripBehaviourSection({ trip }) {
               alignItems: 'center',
               padding: '6px 10px',
               borderRadius: 6,
-              background: evt.count > 0 ? SEVERITY_BG[trip.overallSeverity] : 'transparent',
-              border: `1px solid ${evt.count > 0 ? (SEVERITY_COLORS[trip.overallSeverity] || 'var(--color-border-light)') : 'var(--color-border-light)'}`,
+              background: evt.count > 0 ? 'var(--color-red-bg)' : 'transparent',
+              border: `1px solid ${evt.count > 0 ? 'var(--color-red)' : 'var(--color-border-light)'}`,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <AlertTriangle
                 size={11}
                 style={{
-                  color: evt.count > 0 ? SEVERITY_COLORS[trip.overallSeverity] : 'var(--color-text-muted)',
+                  color: evt.count > 0 ? 'var(--color-red)' : 'var(--color-text-muted)',
                   flexShrink: 0,
                 }}
               />
               <span
                 style={{
                   fontSize: 12,
-                  color: evt.count > 0 ? SEVERITY_COLORS[trip.overallSeverity] : 'var(--color-text-muted)',
+                  color: evt.count > 0 ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
                   fontWeight: evt.count > 0 ? 500 : 400,
                 }}
               >
@@ -414,6 +575,22 @@ function TripBehaviourSection({ trip }) {
 function TripTimelineSection({ events }) {
   if (!events || events.length === 0) return null;
 
+  const chronological = (events || [])
+    .map((evt) => ({ ...evt, startedAt: evt.started_at || evt.startedAt }))
+    .filter((evt) => evt.startedAt)
+    .sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
+
+  const seen = new Set();
+  const deduped = [];
+  for (const evt of chronological) {
+    const key = `${evt.event_type || evt.label || 'event'}|${evt.startedAt}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(evt);
+  }
+
+  if (deduped.length === 0) return null;
+
   return (
     <div>
       <SectionTitle>Trip Timeline</SectionTitle>
@@ -425,7 +602,7 @@ function TripTimelineSection({ events }) {
           position: 'relative',
         }}
       >
-        {events.slice(0, 10).map((evt, i) => (
+        {deduped.slice(0, 10).map((evt, i) => (
           <div
             key={i}
             style={{
@@ -447,7 +624,7 @@ function TripTimelineSection({ events }) {
                 border: '2px solid var(--color-surface)',
               }}
             />
-            {i < events.length - 1 && (
+            {i < deduped.length - 1 && (
               <div
                 style={{
                   position: 'absolute',
@@ -514,7 +691,7 @@ function TripTimelineSection({ events }) {
             </div>
           </div>
         ))}
-        {events.length > 10 && (
+        {deduped.length > 10 && (
           <div
             style={{
               fontSize: 11,
@@ -523,7 +700,7 @@ function TripTimelineSection({ events }) {
               padding: '8px 0',
             }}
           >
-            +{events.length - 10} more events
+            +{deduped.length - 10} more events
           </div>
         )}
       </div>
@@ -531,200 +708,339 @@ function TripTimelineSection({ events }) {
   );
 }
 
-function TripWearPanel({ trip }) {
-  const totalEvents = trip.speedingCount + trip.harshBrakingCount + trip.aggressiveThrottleCount + trip.highRpmCount;
-
-  if (totalEvents === 0) return null;
-
-  const engineWear = Math.min(100, trip.highRpmCount * 8 + trip.aggressiveThrottleCount * 5);
-  const brakeWear = Math.min(100, trip.harshBrakingCount * 12);
-  const tyreWear = Math.min(100, trip.speedingCount * 6 + trip.harshBrakingCount * 4);
-  const fuelEfficiency = Math.max(0, 100 - (trip.aggressiveThrottleCount * 6 + trip.speedingCount * 3));
-  const overallWear = Math.round((engineWear + brakeWear + tyreWear + (100 - fuelEfficiency)) / 4);
-
-  const items = [
-    { label: 'Engine Wear', value: engineWear, color: engineWear > 50 ? 'var(--color-red)' : engineWear > 25 ? 'var(--color-amber)' : 'var(--color-green)' },
-    { label: 'Brake Wear', value: brakeWear, color: brakeWear > 50 ? 'var(--color-red)' : brakeWear > 25 ? 'var(--color-amber)' : 'var(--color-green)' },
-    { label: 'Tyre Wear', value: tyreWear, color: tyreWear > 50 ? 'var(--color-red)' : tyreWear > 25 ? 'var(--color-amber)' : 'var(--color-green)' },
-    { label: 'Fuel Efficiency', value: fuelEfficiency, color: fuelEfficiency < 50 ? 'var(--color-red)' : fuelEfficiency < 75 ? 'var(--color-amber)' : 'var(--color-green)' },
-  ];
-
-  return (
-    <div>
-      <SectionTitle>Vehicle Impact</SectionTitle>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '8px 10px',
-            borderRadius: 8,
-            background: 'var(--color-bg)',
-            border: '1px solid var(--color-border-light)',
-          }}
-        >
-          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-primary)' }}>
-            Overall Trip Wear
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <BarIndicator value={overallWear} color={overallWear > 50 ? 'var(--color-red)' : overallWear > 25 ? 'var(--color-amber)' : 'var(--color-green)'} />
-            <span style={{ fontSize: 14, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
-              {overallWear}%
-            </span>
-          </div>
-        </div>
-        {items.map((item) => (
-          <div
-            key={item.label}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '6px 10px',
-              borderRadius: 6,
-              background: 'transparent',
-              border: '1px solid var(--color-border-light)',
-            }}
-          >
-            <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
-              {item.label}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <BarIndicator value={item.value} color={item.color} />
-              <span style={{ fontSize: 12, fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: item.color, minWidth: 28, textAlign: 'right' }}>
-                {Math.round(item.value)}%
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function BarIndicator({ value, color }) {
+function ChartTip({ active, payload, label, unit }) {
+  if (!active || !payload?.length) return null;
   return (
     <div
       style={{
-        width: 48,
-        height: 4,
-        borderRadius: 2,
-        background: 'var(--color-border-light)',
-        overflow: 'hidden',
+        background: 'var(--chart-tooltip-bg)',
+        color: 'var(--chart-tooltip-text)',
+        padding: '6px 10px',
+        borderRadius: 8,
+        fontSize: 11,
+        boxShadow: 'var(--color-shadow-md)',
+        border: '1px solid var(--color-border)',
       }}
     >
-      <div
-        style={{
-          width: `${Math.min(100, value)}%`,
-          height: '100%',
-          background: color,
-          borderRadius: 2,
-          transition: 'width 0.3s ease',
-        }}
-      />
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{label}</div>
+      {payload.map((p) => (
+        <div key={p.dataKey} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              background: p.stroke || p.color || 'var(--color-accent)',
+            }}
+          />
+          <span style={{ color: 'var(--color-text-secondary)' }}>{p.name}:</span>
+          <span style={{ fontWeight: 500 }}>{p.value}{unit}</span>
+        </div>
+      ))}
     </div>
   );
 }
 
-function TripStatisticsSection({ trip }) {
-  const stats = [
-    { icon: <Activity size={14} />, label: 'Avg RPM', value: trip.highRpmCount > 0 ? `${Math.round(trip.highRpmDuration / Math.max(trip.highRpmCount, 1))}` : '—' },
-    { icon: <Zap size={14} />, label: 'Max Speed', value: `${trip.maximumSpeed.toFixed(1)} km/h` },
-    { icon: <Gauge size={14} />, label: 'Avg Speed', value: `${trip.averageSpeed.toFixed(1)} km/h` },
-    { icon: <Thermometer size={14} />, label: 'Idle Time', value: trip.speedingDuration > 0 ? formatDuration(trip.speedingDuration) : '—' },
-    { icon: <Cpu size={14} />, label: 'Engine Runtime', value: formatDuration(trip.duration) },
-    { icon: <Fuel size={14} />, label: 'Avg Fuel Rate', value: trip.avgFuelRate > 0 ? `${trip.avgFuelRate.toFixed(1)} L/h` : '—' },
-  ];
+function TripTelemetrySection({ tripId, isActive }) {
+  const { rows, summary, loading } = useTripTelemetry(tripId, { active: isActive });
 
   return (
     <div>
-      <SectionTitle>Telemetry Statistics</SectionTitle>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 8,
-        }}
-      >
-        {stats.map((stat) => (
-          <StatItem key={stat.label} icon={stat.icon} label={stat.label} value={stat.value} />
-        ))}
+      <SectionTitle>
+        Telemetry
+        {isActive && (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              marginLeft: 8,
+              color: 'var(--color-green)',
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}
+          >
+            <Radio size={9} />
+            live
+          </span>
+        )}
+      </SectionTitle>
+
+      {rows.length === 0 ? (
+        <div
+          style={{
+            padding: '14px 16px',
+            borderRadius: 8,
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border-light)',
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+            lineHeight: 1.6,
+          }}
+        >
+          {loading
+            ? 'Loading telemetry samples…'
+            : isActive
+              ? 'No telemetry samples recorded for this trip yet. Samples will stream in as the trip progresses.'
+              : 'No telemetry samples recorded for this trip.'}
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: 8,
+              marginBottom: 12,
+            }}
+          >
+            <StatItem icon={<Zap size={14} />} label="Peak Speed" value={`${Math.round(summary.maxSpeed)} km/h`} />
+            <StatItem icon={<Gauge size={14} />} label="Peak RPM" value={Math.round(summary.maxRpm).toLocaleString()} />
+            <StatItem icon={<Droplets size={14} />} label="Avg Load" value={`${Math.round(summary.avgLoad)}%`} />
+          </div>
+
+          <TelemetryChart
+            title="Speed Profile"
+            height={130}
+            gradientId="tripSpeedGrad"
+            dataKey="speed"
+            name="Speed"
+            color="var(--color-accent)"
+            unit=" km/h"
+            rows={rows}
+            area
+          />
+          <TelemetryChart
+            title="Throttle & Brake"
+            height={120}
+            dataKey="throttle"
+            name="Throttle"
+            color="var(--color-accent)"
+            unit="%"
+            rows={rows}
+            second={{ dataKey: 'brake', name: 'Brake', color: 'var(--color-red)' }}
+          />
+          <TelemetryChart
+            title="Engine RPM"
+            height={110}
+            dataKey="rpm"
+            name="RPM"
+            color="var(--color-amber)"
+            rows={rows}
+          />
+          <TelemetryChart
+            title="Engine Load"
+            height={110}
+            dataKey="load"
+            name="Load"
+            color="var(--color-green)"
+            unit="%"
+            rows={rows}
+            area
+          />
+          <TelemetryChart
+            title="Fuel Rate"
+            height={110}
+            dataKey="fuelRate"
+            name="Fuel Rate"
+            color="var(--color-accent)"
+            unit=" L/h"
+            rows={rows}
+            area
+          />
+          <TelemetryChart
+            title="Coolant Temperature"
+            height={110}
+            dataKey="coolant"
+            name="Coolant"
+            color="var(--color-red)"
+            unit="°C"
+            rows={rows}
+            area
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+function TelemetryChart({ title, rows, dataKey, name, color, unit = '', height, gradientId, second, area }) {
+  const body = area
+    ? (
+      <AreaChart data={rows} margin={{ top: 2, right: 2, left: -22, bottom: 0 }}>
+        {gradientId && (
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.18} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.01} />
+            </linearGradient>
+          </defs>
+        )}
+        <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="t" tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} minTickGap={40} />
+        <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={40} />
+        <Tooltip content={<ChartTip unit={unit} />} />
+        <Area
+          type="monotone"
+          dataKey={dataKey}
+          name={name}
+          stroke={color}
+          strokeWidth={1.6}
+          fill={gradientId ? `url(#${gradientId})` : color}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    )
+    : (
+      <LineChart data={rows} margin={{ top: 2, right: 2, left: -22, bottom: 0 }}>
+        <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey="t" tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} minTickGap={40} />
+        <YAxis tick={{ fontSize: 9, fill: 'var(--color-text-muted)' }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={40} />
+        <Tooltip content={<ChartTip unit={unit} />} />
+        <Line
+          type="monotone"
+          dataKey={dataKey}
+          name={name}
+          stroke={color}
+          strokeWidth={1.6}
+          dot={false}
+          isAnimationActive={false}
+        />
+        {second && (
+          <Line
+            type="monotone"
+            dataKey={second.dataKey}
+            name={second.name}
+            stroke={second.color}
+            strokeWidth={1.4}
+            dot={false}
+            isAnimationActive={false}
+          />
+        )}
+      </LineChart>
+    );
+
+  return (
+    <div
+      style={{
+        marginBottom: 12,
+        padding: '10px 12px 6px',
+        borderRadius: 8,
+        background: 'var(--color-bg)',
+        border: '1px solid var(--color-border-light)',
+      }}
+    >
+      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        {title}
       </div>
+      <ResponsiveContainer width="100%" height={height}>
+        {body}
+      </ResponsiveContainer>
     </div>
   );
 }
 
-function TripChartsSection({ trip }) {
-  const segments = [
-    { label: 'Speed Profile', value: Math.min(100, (trip.averageSpeed / 120) * 100), color: 'var(--color-accent)', detail: `${trip.averageSpeed.toFixed(0)} km/h avg` },
-    { label: 'Fuel Consumption', value: Math.min(100, (trip.fuelConsumed / 10) * 100), color: 'var(--color-amber)', detail: trip.fuelFormatted },
-    { label: 'Engine Load', value: Math.min(100, trip.aggressiveThrottleCount * 15 + trip.highRpmCount * 10), color: 'var(--color-red)', detail: `${Math.min(100, trip.aggressiveThrottleCount * 15 + trip.highRpmCount * 10)}%` },
-    { label: 'RPM Profile', value: Math.min(100, trip.highRpmCount * 20), color: 'var(--color-green)', detail: `${trip.highRpmCount} events` },
+const GRADE_TEXT = {
+  A: 'Excellent driving. No or minimal safety events recorded.',
+  B: 'Good driving with occasional minor events.',
+  C: 'Average driving. A few behaviour events were detected.',
+  D: 'Below average driving with repeated behaviour events.',
+  F: 'Poor driving. Frequent or severe safety events recorded.',
+};
+
+function buildInsight(trip, isActive) {
+  const counts = [
+    { label: 'speeding', weight: 3, count: trip.speedingCount },
+    { label: 'harsh braking', weight: 2, count: trip.harshBrakingCount },
+    { label: 'aggressive throttle', weight: 2, count: trip.aggressiveThrottleCount },
+    { label: 'high-RPM driving', weight: 1, count: trip.highRpmCount },
   ];
+
+  let worst = null;
+  let worstScore = 0;
+  for (const c of counts) {
+    const score = c.count * c.weight;
+    if (score > worstScore) {
+      worstScore = score;
+      worst = c;
+    }
+  }
+
+  const totalEvents = counts.reduce((s, c) => s + c.count, 0);
+
+  if (isActive) {
+    const lines = [];
+    lines.push(
+      `This trip is currently in progress: ${trip.driverName} has covered ` +
+      `${formatDistance(trip.distance)} in ${formatDuration(trip.duration)} at an average of ` +
+      `${trip.averageSpeed > 0 ? `${trip.averageSpeed.toFixed(1)} km/h` : 'n/a'}.`
+    );
+    if (totalEvents === 0) {
+      lines.push('No behaviour events have been detected so far.');
+    } else {
+      lines.push(`${totalEvents} behaviour event${totalEvents === 1 ? '' : 's'} so far, with ${worst.label} as the leading risk.`);
+    }
+    lines.push(`Current projected safety score: ${Math.round(trip.safetyScore)}%.`);
+    return lines.join(' ');
+  }
+
+  const parts = [];
+  parts.push(
+    `${trip.driverName} completed ${formatDistance(trip.distance)} in ` +
+    `${formatDuration(trip.duration)} with an average speed of ` +
+    `${trip.averageSpeed > 0 ? `${trip.averageSpeed.toFixed(1)} km/h` : 'n/a'}.`
+  );
+
+  if (totalEvents === 0) {
+    parts.push('The trip was clean — no behaviour events were detected.');
+  } else {
+    parts.push(
+      `${totalEvents} behaviour event${totalEvents === 1 ? '' : 's'} were detected; ` +
+      `${worst.label} was the dominant risk.`
+    );
+  }
+
+  const grade = trip.grade;
+  if (grade && GRADE_TEXT[grade]) {
+    parts.push(`Grade ${grade} — ${GRADE_TEXT[grade]}`);
+  } else {
+    parts.push(`Final safety score: ${Math.round(trip.safetyScore)}%.`);
+  }
+
+  return parts.join(' ');
+}
+
+function TripInsightSection({ trip, isActive }) {
+  const insight = buildInsight(trip, isActive);
 
   return (
     <div>
-      <SectionTitle>Trip Charts</SectionTitle>
+      <SectionTitle>AI Insight</SectionTitle>
       <div
         style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
+          gap: 10,
+          padding: '12px 14px',
+          borderRadius: 10,
+          background: 'var(--color-accent-subtle)',
+          border: '1px solid var(--color-border-light)',
         }}
       >
-        {segments.map((seg) => (
-          <div
-            key={seg.label}
-            style={{
-              padding: '10px 12px',
-              borderRadius: 8,
-              background: 'var(--color-bg)',
-              border: '1px solid var(--color-border-light)',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}
-            >
-              <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-                {seg.label}
-              </span>
-              <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                {seg.detail}
-              </span>
-            </div>
-            <div
-              style={{
-                width: '100%',
-                height: 6,
-                borderRadius: 3,
-                background: 'var(--color-border-light)',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  width: `${seg.value}%`,
-                  height: '100%',
-                  background: seg.color,
-                  borderRadius: 3,
-                  transition: 'width 0.4s ease',
-                }}
-              />
-            </div>
-          </div>
-        ))}
+        <Sparkles
+          size={16}
+          style={{ color: 'var(--color-accent)', flexShrink: 0, marginTop: 2 }}
+        />
+        <div>
+          <p style={{ fontSize: 12, color: 'var(--color-text-primary)', lineHeight: 1.65, margin: 0 }}>
+            {insight}
+          </p>
+          <p style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 8, marginBottom: 0 }}>
+            Automated summary generated from trip telemetry and behaviour events.
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -266,7 +266,10 @@ class DriveVitalsRuntime:
             DashboardBuilder(
                 context_store=(
                     self._context_store
-                )
+                ),
+                trip_provider=(
+                    self._fleet.trip_for_vehicle
+                ),
             )
         )
 
@@ -508,6 +511,9 @@ class DriveVitalsRuntime:
                     speed_limit_kmh=(
                         route.speed_limit_kmh
                     ),
+                    route_name=(
+                        f"{route.origin} \u2192 {route.destination}"
+                    ),
                     vehicle_make=(
                         vehicle.make
                     ),
@@ -711,6 +717,7 @@ class DriveVitalsRuntime:
                 context: Any,
                 runtime_state: Any,
                 all_events: list,
+                trip: Trip | None = None,
             ) -> None:
                 vehicle_id = summary.vehicle_id
                 runner = next(

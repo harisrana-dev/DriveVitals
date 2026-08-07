@@ -78,6 +78,21 @@ class FleetRunner:
             if not runner.is_complete()
         ]
 
+    def trip_for_vehicle(
+        self,
+        vehicle_id: str,
+    ) -> Optional[Trip]:
+        """
+        Return the current trip for a vehicle, or None when the vehicle
+        is not part of this fleet run.
+        """
+
+        for runner in self._runners:
+            if runner.vehicle.vehicle_id == vehicle_id:
+                return runner.trip
+
+        return None
+
     def start_all(
         self,
         now: Optional[datetime] = None,

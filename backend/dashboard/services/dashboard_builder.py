@@ -11,6 +11,8 @@ from backend.dashboard.schemas.dashboard_payload import (
     VehicleDashboardSummary,
 )
 
+_TANK_CAPACITY_LITERS = 60.0
+
 
 _ALERT_LABELS = {
     "speeding": "Speed limit exceeded",
@@ -25,9 +27,36 @@ class DashboardBuilder:
     def __init__(
         self,
         context_store: AnalyticsContextStore,
+        trip_provider=None,
     ) -> None:
         self._context_store = context_store
+        self._trip_provider = trip_provider
         self._latest = {}
+        self._start_fuel: dict[str, float] = {}
+
+    def _trip_for(
+        self,
+        vehicle_id: str,
+    ):
+        if self._trip_provider is None:
+            return None
+        try:
+            return self._trip_provider(vehicle_id)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _trip_distance(
+        trip,
+        odometer_km: float,
+    ) -> float | None:
+        if trip is None:
+            return None
+        if trip.starting_odometer_km is None:
+            return None
+        if odometer_km is None:
+            return None
+        return max(0.0, odometer_km - trip.starting_odometer_km)
 
     def update(
         self,
@@ -81,6 +110,35 @@ class DashboardBuilder:
             telemetry.speed_kmh,
         )
 
+        trip = self._trip_for(snapshot.vehicle_id)
+
+        if snapshot.vehicle_id not in self._start_fuel:
+            self._start_fuel[snapshot.vehicle_id] = (
+                telemetry.fuel_level_percent
+            )
+
+        start_fuel = self._start_fuel.get(snapshot.vehicle_id)
+        fuel_used_liters = None
+        if (
+            start_fuel is not None
+            and telemetry.fuel_level_percent is not None
+        ):
+            fuel_used_liters = round(
+                max(
+                    0.0,
+                    (start_fuel - telemetry.fuel_level_percent)
+                    / 100.0
+                    * _TANK_CAPACITY_LITERS,
+                ),
+                2,
+            )
+
+        route_id = (
+            trip.route_id
+            if trip is not None
+            else context.route_id if context is not None else None
+        )
+
         vehicle = VehicleDashboardSummary(
             vehicle_id=snapshot.vehicle_id,
             driver_id=snapshot.driver_id,
@@ -119,6 +177,23 @@ class DashboardBuilder:
             high_rpm=snapshot.behaviour.high_rpm,
             odometer_km=telemetry.odometer_km,
             last_updated_at=snapshot.timestamp,
+            route_id=route_id,
+            route_name=(
+                (context.route_name or None)
+                if context is not None
+                else None
+            ),
+            trip_started_at=(
+                trip.started_at
+                if trip is not None
+                else None
+            ),
+            trip_distance_km=self._trip_distance(
+                trip,
+                telemetry.odometer_km,
+            ),
+            fuel_rate_lph=telemetry.fuel_rate_lph,
+            fuel_used_liters=fuel_used_liters,
         )
 
         self._latest[
@@ -182,6 +257,8 @@ class DashboardBuilder:
         if vehicle is None:
             return None
 
+        self._start_fuel.pop(vehicle_id, None)
+
         completed = VehicleDashboardSummary(
             vehicle_id=vehicle.vehicle_id,
             driver_id=vehicle.driver_id,
@@ -208,6 +285,12 @@ class DashboardBuilder:
             high_rpm=False,
             odometer_km=vehicle.odometer_km,
             last_updated_at=completed_at,
+            route_id=vehicle.route_id,
+            route_name=vehicle.route_name,
+            trip_started_at=vehicle.trip_started_at,
+            trip_distance_km=vehicle.trip_distance_km,
+            fuel_rate_lph=0.0,
+            fuel_used_liters=vehicle.fuel_used_liters,
         )
 
         self._latest[vehicle_id] = completed

@@ -9,6 +9,8 @@ clean driving instead of being permanently pinned to zero by an early
 bad trip.
 """
 
+import math
+
 from backend.analytics.behaviour.aggregation.summary import (
     DriverBehaviourSummary,
 )
@@ -36,7 +38,7 @@ def compute_safety_score(
     Compute a safety score in [0, 100] from behaviour counts and the
     distance over which they occurred.
 
-    The score starts at SAFETY_START and decays toward zero as the
+    The score starts at SAFETY_START and decays exponentially as the
     density of weighted misbehaviour grows. Because the deduction is
     density-based rather than count-based, the score is never a
     permanent penalty accumulator: clean driving lowers the density and
@@ -55,8 +57,8 @@ def compute_safety_score(
     if weighted_density == float("inf"):
         return 0.0
 
-    score = SAFETY_START / (
-        1.0 + weighted_density * SAFETY_DENSITY_SENSITIVITY
+    score = SAFETY_START * math.exp(
+        -weighted_density * SAFETY_DENSITY_SENSITIVITY
     )
 
     return clamp_score(round(score, 2))
@@ -81,3 +83,18 @@ def compute_safety_score_for_summary(
         high_rpm_count=summary.high_rpm_event_count,
         distance_km=distance_km,
     )
+
+
+def compute_grade(score: float) -> str:
+    """
+    Map a safety score to the single canonical trip letter grade.
+    """
+    if score >= 90:
+        return "A"
+    if score >= 80:
+        return "B"
+    if score >= 70:
+        return "C"
+    if score >= 60:
+        return "D"
+    return "F"

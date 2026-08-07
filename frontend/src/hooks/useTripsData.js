@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTripsContext } from '../context/TripsContext';
 
 function gradeColor(grade) {
+  if (!grade) return 'var(--color-text-muted)';
   if (grade === 'A') return 'var(--color-green)';
   if (grade === 'B') return 'var(--color-accent)';
   if (grade === 'C') return 'var(--color-amber)';
@@ -26,7 +27,7 @@ function formatDuration(seconds) {
 }
 
 function formatDistance(km) {
-  if (km == null) return '—';
+  if (km == null || km <= 0) return '—';
   if (km < 1) return `${Math.round(km * 1000)} m`;
   return `${km.toFixed(1)} km`;
 }
@@ -36,9 +37,10 @@ function formatFuel(liters) {
   return `${liters.toFixed(1)} L`;
 }
 
-function mapTrips(raw) {
-  if (!raw || !Array.isArray(raw)) return [];
-  return raw.map((t) => ({
+function mapTrip(t) {
+  const fuelUsed = t.fuel_consumed_liters ?? t.fuel_used_liters;
+
+  return {
     id: t.trip_id,
     vehicleId: t.vehicle_id,
     driverId: t.driver_id,
@@ -46,20 +48,21 @@ function mapTrips(raw) {
     driverName: t.driver_name || t.driver_id || '—',
     routeId: t.route_id,
     routeType: t.route_type || '—',
+    routeName: t.route_name || null,
     distance: t.distance_km ?? 0,
     distanceFormatted: formatDistance(t.distance_km),
     duration: t.duration_seconds ?? 0,
     durationFormatted: formatDuration(t.duration_seconds),
     averageSpeed: t.average_speed_kmh ?? 0,
     maximumSpeed: t.maximum_speed_kmh ?? 0,
-    fuelConsumed: t.fuel_consumed_liters ?? 0,
-    fuelFormatted: formatFuel(t.fuel_consumed_liters),
+    fuelConsumed: fuelUsed ?? 0,
+    fuelFormatted: formatFuel(fuelUsed),
     avgFuelRate: t.average_fuel_rate_lph ?? 0,
-    safetyScore: t.safety_score ?? 0,
-    grade: t.overall_grade || '—',
+    safetyScore: (t.safety_score ?? t.trip_score) ?? 0,
+    grade: t.overall_grade || null,
     gradeColor: gradeColor(t.overall_grade),
-    startedAt: t.started_at || null,
-    completedAt: t.completed_at || null,
+    startedAt: t.started_at || t.start_time || null,
+    completedAt: t.completed_at || t.end_time || null,
     speedingCount: t.speeding_event_count ?? 0,
     speedingDuration: t.speeding_duration_seconds ?? 0,
     harshBrakingCount: t.harsh_braking_count ?? 0,
@@ -73,7 +76,12 @@ function mapTrips(raw) {
     overallSeverity: t.overall_severity || 'none',
     severityColor: severityColor(t.overall_severity),
     events: t.events || [],
-  }));
+  };
+}
+
+function mapTrips(raw) {
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw.map(mapTrip);
 }
 
 export function useTrips() {

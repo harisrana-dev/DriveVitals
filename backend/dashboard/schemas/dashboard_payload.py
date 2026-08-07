@@ -61,6 +61,18 @@ class VehicleDashboardSummary:
 
     trip_status: str = "active"
 
+    route_id: str | None = None
+
+    route_name: str | None = None
+
+    trip_started_at: datetime | None = None
+
+    trip_distance_km: float | None = None
+
+    fuel_rate_lph: float | None = None
+
+    fuel_used_liters: float | None = None
+
 
 @dataclass(frozen=True, slots=True)
 class DashboardSnapshot:

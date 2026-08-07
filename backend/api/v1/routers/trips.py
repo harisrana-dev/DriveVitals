@@ -55,7 +55,7 @@ async def list_trips(
     )
 
     return PaginatedResponse[TripRead](
-        data=[TripRead.model_validate(trip) for trip in trips],
+        data=[TripRead.from_trip(trip) for trip in trips],
         count=count,
     )
 
@@ -79,4 +79,4 @@ async def get_trip(
             detail=f"Trip {trip_id} not found",
         )
 
-    return Response[TripRead](data=TripRead.model_validate(trip))
+    return Response[TripRead](data=TripRead.from_trip(trip))

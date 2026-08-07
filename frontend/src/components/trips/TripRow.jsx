@@ -43,12 +43,14 @@ export const TripRow = memo(function TripRow({ trip, onClick, isSelected }) {
       </div>
 
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-text-primary)' }}>
-          <MapPin size={11} style={{ color: 'var(--color-text-muted)' }} />
-          <span>{trip.routeType}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-text-primary)', minWidth: 0 }}>
+          <MapPin size={11} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {trip.routeName || trip.routeType}
+          </span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1 }}>
-          {trip.routeId}
+        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {trip.routeName ? trip.routeType : trip.routeId}
         </div>
       </div>
 
@@ -63,7 +65,7 @@ export const TripRow = memo(function TripRow({ trip, onClick, isSelected }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
         <Gauge size={11} style={{ color: 'var(--color-text-muted)' }} />
-        <span>{trip.averageSpeed.toFixed(1)}</span>
+        <span>{trip.averageSpeed > 0 ? trip.averageSpeed.toFixed(1) : '—'}</span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
@@ -81,10 +83,10 @@ export const TripRow = memo(function TripRow({ trip, onClick, isSelected }) {
         >
           <Shield size={12} style={{ color: trip.gradeColor }} />
           <span style={{ fontWeight: 600, color: trip.gradeColor }}>
-            {trip.grade}
+            {trip.grade || '—'}
           </span>
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-            {Math.round(trip.safetyScore)}%
+            {trip.safetyScore > 0 ? `${Math.round(trip.safetyScore)}%` : '—'}
           </span>
         </div>
       </div>

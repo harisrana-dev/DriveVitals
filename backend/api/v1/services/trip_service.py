@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.db.models.trip import Trip
 from backend.db.repositories.trip_repository import TripRepository
@@ -16,6 +17,13 @@ class TripService:
     def _session(self) -> AsyncSession:
         return self._repository._session
 
+    @staticmethod
+    def _loads() -> list:
+        return [
+            selectinload(Trip.route),
+            selectinload(Trip.behaviour_events),
+        ]
+
     async def list(
         self,
         vehicle_id: str | None,
@@ -24,7 +32,7 @@ class TripService:
         limit: int,
         offset: int,
     ) -> tuple[list[Trip], int]:
-        query = select(Trip)
+        query = select(Trip).options(*self._loads())
 
         if vehicle_id is not None:
             query = query.where(Trip.vehicle_id == vehicle_id)
@@ -42,4 +50,10 @@ class TripService:
         return await paginate(self._session, query, limit, offset)
 
     async def get(self, trip_id: str) -> Trip | None:
-        return await self._repository.get_by_id(trip_id)
+        query = (
+            select(Trip)
+            .options(*self._loads())
+            .where(Trip.trip_id == trip_id)
+        )
+        result = await self._session.execute(query)
+        return result.scalar_one_or_none()

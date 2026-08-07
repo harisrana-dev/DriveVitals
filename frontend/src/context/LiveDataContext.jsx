@@ -5,8 +5,50 @@ import { listDrivers, listDriverStatistics } from "../services/api/driverApi";
 import { listMaintenance } from "../services/api/maintenanceApi";
 import { listAlerts, acknowledgeAlert, resolveAlert } from "../services/api/alertApi";
 import { listTelemetry } from "../services/api/telemetryApi";
+import { listTrips } from "../services/api/tripApi";
 
 const LiveDataContext = createContext(null);
+
+function mergeTripsPayload(wsTrips, restTrips) {
+  const rest = Array.isArray(restTrips) ? restTrips : [];
+  const live = Array.isArray(wsTrips?.trips) ? wsTrips.trips : [];
+
+  const byId = new Map();
+  rest.forEach((t) => {
+    if (t && t.trip_id) byId.set(t.trip_id, t);
+  });
+  live.forEach((t) => {
+    if (t && t.trip_id) byId.set(t.trip_id, t);
+  });
+
+  const trips = Array.from(byId.values());
+
+  if (wsTrips && live.length > 0 && rest.length === 0) {
+    return wsTrips;
+  }
+
+  const totalDistance = trips.reduce((s, t) => s + (t.distance_km ?? 0), 0);
+  const totalFuel = trips.reduce(
+    (s, t) => s + (t.fuel_consumed_liters ?? t.fuel_used_liters ?? 0),
+    0
+  );
+  const scores = trips
+    .map((t) => t.safety_score ?? t.trip_score)
+    .filter((v) => v != null);
+  const avgScore =
+    scores.length > 0
+      ? scores.reduce((s, v) => s + v, 0) / scores.length
+      : 0;
+
+  return {
+    timestamp: wsTrips?.timestamp ?? null,
+    trips,
+    total_trips: trips.length,
+    total_distance_km: totalDistance,
+    average_safety_score: avgScore,
+    total_fuel_consumed_liters: totalFuel,
+  };
+}
 
 function hasMaintenanceDue(maintenance, vehicleId, odometerKm) {
   const items = (maintenance || []).filter((m) => m.vehicle_id === vehicleId);
@@ -87,7 +129,8 @@ function buildFleetMeta(mergedFleet) {
 
 export function LiveDataProvider({ children }) {
   const [dashboard, setDashboard] = useState(null);
-  const [trips, setTrips] = useState(null);
+  const [tripsSnapshot, setTripsSnapshot] = useState(null);
+  const [restTrips, setRestTrips] = useState([]);
   const [dashboardConnectionState, setDashboardConnectionState] = useState("connecting");
 
   const [vehicles, setVehicles] = useState([]);
@@ -140,7 +183,7 @@ export function LiveDataProvider({ children }) {
       {
         onMessage: (message) => {
           if (message.type === "trips_snapshot" && message.data) {
-            setTrips(message.data);
+            setTripsSnapshot(message.data);
           }
         },
       }
@@ -161,10 +204,11 @@ export function LiveDataProvider({ children }) {
       listMaintenance(),
       listAlerts(),
       listTelemetry({ limit: 200 }),
+      listTrips(),
     ]);
     if (!mountedRef.current) return;
 
-    const [v, d, ds, vh, m, a, t] = results;
+    const [v, d, ds, vh, m, a, t, tr] = results;
     setVehicles(v.status === "fulfilled" ? v.value.data ?? [] : []);
     setDrivers(d.status === "fulfilled" ? d.value.data ?? [] : []);
     setDriverStatistics(ds.status === "fulfilled" ? ds.value.data ?? [] : []);
@@ -172,6 +216,7 @@ export function LiveDataProvider({ children }) {
     setMaintenance(m.status === "fulfilled" ? m.value.data ?? [] : []);
     setAlerts(a.status === "fulfilled" ? a.value.data ?? [] : []);
     setTelemetry(t.status === "fulfilled" ? t.value.data ?? [] : []);
+    setRestTrips(tr.status === "fulfilled" ? tr.value.data ?? [] : []);
     if (results.some((r) => r.status === "fulfilled")) {
       updateLastUpdate();
     }
@@ -228,6 +273,11 @@ export function LiveDataProvider({ children }) {
   );
 
   const fleetMeta = useMemo(() => buildFleetMeta(mergedFleet), [mergedFleet]);
+
+  const trips = useMemo(
+    () => mergeTripsPayload(tripsSnapshot, restTrips),
+    [tripsSnapshot, restTrips]
+  );
 
   const patchAlert = useCallback((alertId, patch) => {
     setAlerts((prev) =>

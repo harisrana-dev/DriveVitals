@@ -73,7 +73,7 @@ export function useTripsFilters() {
   }, [sortBy, sortAsc]);
 
   const activeTrips = useMemo(
-    () => sortTrips(applySearch((trips || []).filter((t) => t.completedAt == null))),
+    () => sortTrips(applySearch((trips || []).filter((t) => t.status === 'in_progress'))),
     [trips, applySearch, sortTrips]
   );
 

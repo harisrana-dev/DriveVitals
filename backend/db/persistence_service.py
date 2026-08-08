@@ -141,6 +141,31 @@ class PersistenceService:
         except Exception:
             logger.exception("Failed to complete trip %s", trip_id)
 
+    async def abort_stale_trips(self, end_time: datetime) -> int:
+        """Mark every ``in_progress`` trip as ``aborted``.
+
+        Called at runtime startup: any ``in_progress`` row at that point
+        must belong to a previous runtime session, and must never be
+        reported as active. History, recorded metrics and telemetry are
+        preserved; only the status and an end/termination timestamp are
+        set.
+        """
+        try:
+            async with async_session_factory() as session:
+                repo = TripRepository(session)
+                count = await repo.abort_stale(end_time=end_time)
+                await session.commit()
+                if count:
+                    logger.info(
+                        "Aborted %d stale in_progress trip(s) from a "
+                        "previous runtime session",
+                        count,
+                    )
+                return count
+        except Exception:
+            logger.exception("Failed to abort stale in_progress trips")
+            return 0
+
     async def persist_telemetry(self, sample: TelemetrySample) -> None:
         try:
             async with async_session_factory() as session:

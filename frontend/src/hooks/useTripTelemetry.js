@@ -50,7 +50,7 @@ export function useTripTelemetry(tripId, { active = false } = {}) {
     const load = async () => {
       try {
         const result = await listTelemetry(
-          { trip_id: tripId, limit: 1500 },
+          { trip_id: tripId, limit: 500 },
           { signal: controller.signal }
         );
         if (!disposed && !controller.signal.aborted) {

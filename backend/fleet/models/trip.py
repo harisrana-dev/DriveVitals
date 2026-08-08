@@ -25,6 +25,7 @@ class TripStatus(str, Enum):
     STARTED = "started"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
+    ABORTED = "aborted"
 
 
 @dataclass
@@ -75,3 +76,15 @@ class Trip:
         self.ending_odometer_km = ending_odometer_km
         self.completed_at = at or datetime.now(timezone.utc)
         self.status = TripStatus.COMPLETED
+
+    def abort(self, at: Optional[datetime] = None) -> None:
+        """Terminate the trip without completing it (e.g. the runtime
+        session it belonged to was interrupted).
+
+        Preserves any metrics recorded so far; no completion metrics are
+        fabricated.
+        """
+        if self.status != TripStatus.IN_PROGRESS:
+            raise ValueError(f"Cannot abort a trip in status {self.status}")
+        self.completed_at = at or datetime.now(timezone.utc)
+        self.status = TripStatus.ABORTED

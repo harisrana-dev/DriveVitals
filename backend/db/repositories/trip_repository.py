@@ -73,3 +73,23 @@ class TripRepository(BaseRepository):
         )
         await self._session.flush()
         return existing
+
+    async def abort_stale(self, end_time: datetime) -> int:
+        """Mark every ``in_progress`` trip as ``aborted``.
+
+        At runtime startup, ``in_progress`` rows can only belong to a
+        previous runtime session (the current session creates its trips
+        after this runs). History, recorded metrics and telemetry are
+        preserved; only the status and an end/termination timestamp are
+        set.
+        """
+        result = await self._session.execute(
+            update(Trip)
+            .where(Trip.status == "in_progress")
+            .values(
+                status="aborted",
+                end_time=end_time,
+            )
+        )
+        await self._session.flush()
+        return result.rowcount or 0

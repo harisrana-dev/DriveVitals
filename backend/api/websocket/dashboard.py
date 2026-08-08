@@ -25,18 +25,25 @@ snapshot_queue: asyncio.Queue[
 ] = asyncio.Queue()
 
 
+def _to_iso(value) -> str | None:
+    if value is None:
+        return None
+    return value.isoformat()
+
+
 def _serialize(
     snapshot: DashboardSnapshot,
 ) -> dict:
     data = asdict(snapshot)
-    data["timestamp"] = (
-        snapshot.timestamp.isoformat()
+    data["timestamp"] = _to_iso(
+        snapshot.timestamp
     )
     for v in data["vehicles"]:
-        v["last_updated_at"] = (
-            v["last_updated_at"].isoformat()
-            if v["last_updated_at"] is not None
-            else None
+        v["last_updated_at"] = _to_iso(
+            v["last_updated_at"]
+        )
+        v["trip_started_at"] = _to_iso(
+            v["trip_started_at"]
         )
     return data
 

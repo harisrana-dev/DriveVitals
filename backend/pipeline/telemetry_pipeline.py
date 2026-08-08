@@ -28,10 +28,15 @@ Example flow:
           └──► WebSocket Consumer
 """
 
+import asyncio
+import logging
 
 from typing import Protocol
 
 from backend.telemetry.models.telemetry_sample import TelemetrySample
+
+
+logger = logging.getLogger(__name__)
 
 
 class TelemetryConsumer(Protocol):
@@ -85,10 +90,27 @@ class TelemetryPipeline:
     ) -> None:
         """
         Publish one telemetry sample to all registered consumers.
+
+        Every consumer is isolated: if one consumer fails (a persistence
+        write, a WebSocket/client, an analytics step), the failure is
+        logged with the consumer and vehicle context and the remaining
+        consumers still receive the sample. A single bad consumer must
+        never stop telemetry generation or silently drop downstream
+        consumers.
         """
 
         for consumer in self._consumers:
-            consumer.consume(sample)
+            try:
+                consumer.consume(sample)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception(
+                    "Telemetry consumer %s failed for vehicle=%s at %s",
+                    consumer.__class__.__name__,
+                    sample.vehicle_id,
+                    sample.timestamp,
+                )
 
     @property
     def consumer_count(self) -> int:

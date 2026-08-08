@@ -195,6 +195,11 @@ class DriveVitalsRuntime:
         - HTTP routes
     """
 
+    # Number of consecutive tick-model failures after which the runtime
+    # considers itself genuinely unrecoverable and halts instead of
+    # spinning silently. Transient failures never reach this threshold.
+    MAX_CONSECUTIVE_TICK_FAILURES = 30
+
     def __init__(
         self,
         tick_seconds: float = 1.0,
@@ -592,6 +597,18 @@ class DriveVitalsRuntime:
                 await persistence.persist_route(route)
 
         # --------------------------------------------------------------
+        # Abort any in_progress trips left behind by a previous runtime
+        # session. Only the trips created below (this session) may ever be
+        # reported as active; orphans must not linger as active trips.
+        # History, recorded metrics and telemetry are preserved.
+        # --------------------------------------------------------------
+
+        if persistence is not None:
+            await persistence.abort_stale_trips(
+                end_time=datetime.now(timezone.utc),
+            )
+
+        # --------------------------------------------------------------
         # Persist trip rows BEFORE starting fleet — DB rows must exist
         # before any telemetry is produced, otherwise persist_telemetry
         # will violate the telemetry_samples_trip_id_fkey constraint.
@@ -854,24 +871,70 @@ class DriveVitalsRuntime:
 
         now = start_time
 
-        pre_tick_vehicles = {
-            runner.vehicle.vehicle_id
-            for runner
-            in self._fleet.active_runners()
-        }
-
         latest_samples: dict[str, TelemetrySample] = {}
+
+        consecutive_tick_failures = 0
 
         while (
             self._running
             and self._fleet.active_runners()
         ):
 
-            samples = (
-                self._fleet.tick_all(
-                    now=now
+            # The pre-tick vehicle set is recomputed every iteration so a
+            # failed tick can never leave the completion tracker pointing
+            # at vehicles that have already left the active set.
+            pre_tick_vehicles = {
+                runner.vehicle.vehicle_id
+                for runner
+                in self._fleet.active_runners()
+            }
+
+            # ----------------------------------------------------------
+            # Advance the fleet model for this tick
+            # ----------------------------------------------------------
+
+            tick_failed = False
+
+            try:
+                samples = (
+                    self._fleet.tick_all(
+                        now=now
+                    )
                 )
-            )
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception(
+                    "Fleet tick failed at %s (run_id=%s); "
+                    "skipping this tick",
+                    now.isoformat(),
+                    self._simulation_run_id,
+                )
+                samples = []
+                tick_failed = True
+
+            if tick_failed:
+                consecutive_tick_failures += 1
+                if (
+                    consecutive_tick_failures
+                    >= self.MAX_CONSECUTIVE_TICK_FAILURES
+                ):
+                    logger.error(
+                        "Halting simulation: %d consecutive tick "
+                        "failures at %s (run_id=%s)",
+                        consecutive_tick_failures,
+                        now.isoformat(),
+                        self._simulation_run_id,
+                    )
+                    break
+            else:
+                consecutive_tick_failures = 0
+
+            # ----------------------------------------------------------
+            # Distribute telemetry. A single failing consumer (analytics,
+            # persistence, WebSocket, ...) must not kill or starve the
+            # remaining consumers or vehicles.
+            # ----------------------------------------------------------
 
             for sample in samples:
 
@@ -879,9 +942,20 @@ class DriveVitalsRuntime:
                     sample.vehicle_id
                 ] = sample
 
-                self._telemetry_pipeline.publish(
-                    sample
-                )
+                try:
+                    self._telemetry_pipeline.publish(
+                        sample
+                    )
+                except asyncio.CancelledError:
+                    raise
+                except Exception:
+                    logger.exception(
+                        "Telemetry publish failed for vehicle=%s "
+                        "tick_time=%s (run_id=%s)",
+                        sample.vehicle_id,
+                        now.isoformat(),
+                        self._simulation_run_id,
+                    )
 
             post_tick_vehicles = {
                 runner.vehicle.vehicle_id
@@ -894,7 +968,39 @@ class DriveVitalsRuntime:
                 - post_tick_vehicles
             )
 
-            for vehicle_id in just_completed:
+            self._handle_trip_completions(
+                vehicle_ids=just_completed,
+                now=now,
+                latest_samples=latest_samples,
+            )
+
+            now += timedelta(
+                seconds=self._tick_seconds
+            )
+
+            await asyncio.sleep(
+                self._tick_seconds
+            )
+
+    def _handle_trip_completions(
+        self,
+        vehicle_ids: set[str],
+        now: datetime,
+        latest_samples: dict[str, TelemetrySample],
+    ) -> None:
+        """
+        Finalize trips that completed during this tick.
+
+        Each vehicle is processed in isolation: a single failing analytics
+        step, persistence write or WebSocket callback is logged with full
+        context (vehicle, tick, run) and never terminates the fleet loop or
+        starves the other vehicles completing in the same tick.
+        """
+
+        persistence = self._persistence_service
+
+        for vehicle_id in vehicle_ids:
+            try:
                 runner = next(
                     (
                         r
@@ -1057,16 +1163,16 @@ class DriveVitalsRuntime:
                                 else None
                             ),
                         )
-
-            pre_tick_vehicles = post_tick_vehicles
-
-            now += timedelta(
-                seconds=self._tick_seconds
-            )
-
-            await asyncio.sleep(
-                self._tick_seconds
-            )
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception(
+                    "Trip completion handling failed for vehicle=%s "
+                    "tick_time=%s (run_id=%s)",
+                    vehicle_id,
+                    now.isoformat(),
+                    self._simulation_run_id,
+                )
 
     def stop(
         self,

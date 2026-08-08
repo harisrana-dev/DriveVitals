@@ -63,6 +63,7 @@ function mapTrip(t) {
     gradeColor: gradeColor(t.overall_grade),
     startedAt: t.started_at || t.start_time || null,
     completedAt: t.completed_at || t.end_time || null,
+    status: t.status || (t.completed_at || t.end_time ? 'completed' : 'in_progress'),
     speedingCount: t.speeding_event_count ?? 0,
     speedingDuration: t.speeding_duration_seconds ?? 0,
     harshBrakingCount: t.harsh_braking_count ?? 0,

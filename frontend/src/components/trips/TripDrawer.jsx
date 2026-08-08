@@ -93,7 +93,7 @@ function DrawerFrame({ onClose, children }) {
 function DrawerContent({ trip, onClose }) {
   const liveTrip = useTrip(trip.id);
   const current = liveTrip || trip;
-  const isActive = current.completedAt == null;
+  const isActive = current.status === 'in_progress';
 
   return (
     <>

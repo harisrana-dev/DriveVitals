@@ -12,6 +12,7 @@ from backend.api.v1 import api_router
 from backend.db.base import Base
 from backend.db.models import (
     Alert,
+    BehaviourEvent,
     Driver,
     DriverStatistics,
     MaintenanceRecord,
@@ -69,6 +70,7 @@ async def _seed() -> dict[str, str]:
         "trip2": "t-2",
         "trip3": "t-3",
         "trip4": "t-4",
+        "trip5": "t-5",
     }
 
     async with test_session_factory() as session:
@@ -239,8 +241,71 @@ async def _seed() -> dict[str, str]:
                 trip_score=90.0,
                 status="completed",
             ),
+            Trip(
+                trip_id="t-5",
+                vehicle_id="v-3",
+                driver_id="d-3",
+                route_id="r-2",
+                start_time=datetime(2026, 1, 5, 8, 0, 0, tzinfo=timezone.utc),
+                end_time=datetime(2026, 1, 5, 8, 30, 0, tzinfo=timezone.utc),
+                distance_km=None,
+                duration_seconds=None,
+                fuel_used_liters=None,
+                average_speed_kmh=None,
+                maximum_speed_kmh=None,
+                trip_score=None,
+                status="aborted",
+            ),
         ]
         session.add_all(trips)
+        await session.flush()
+
+        session.add_all(
+            [
+                BehaviourEvent(
+                    event_id="be-1",
+                    trip_id="t-1",
+                    vehicle_id="v-1",
+                    driver_id="d-1",
+                    event_type="speeding",
+                    severity="moderate",
+                    started_at=datetime(2026, 1, 1, 8, 20, 0, tzinfo=timezone.utc),
+                    ended_at=datetime(2026, 1, 1, 8, 20, 20, tzinfo=timezone.utc),
+                    duration_seconds=20.0,
+                    distance_km=0.4,
+                    maximum_value=75.0,
+                    average_value=68.0,
+                ),
+                BehaviourEvent(
+                    event_id="be-2",
+                    trip_id="t-1",
+                    vehicle_id="v-1",
+                    driver_id="d-1",
+                    event_type="harsh_braking",
+                    severity="moderate",
+                    started_at=datetime(2026, 1, 1, 8, 40, 0, tzinfo=timezone.utc),
+                    ended_at=datetime(2026, 1, 1, 8, 40, 3, tzinfo=timezone.utc),
+                    duration_seconds=3.0,
+                    distance_km=0.05,
+                    maximum_value=0.9,
+                    average_value=0.85,
+                ),
+                BehaviourEvent(
+                    event_id="be-3",
+                    trip_id="t-1",
+                    vehicle_id="v-1",
+                    driver_id="d-1",
+                    event_type="aggressive_throttle",
+                    severity="minor",
+                    started_at=datetime(2026, 1, 1, 8, 50, 0, tzinfo=timezone.utc),
+                    ended_at=datetime(2026, 1, 1, 8, 50, 10, tzinfo=timezone.utc),
+                    duration_seconds=10.0,
+                    distance_km=0.2,
+                    maximum_value=95.0,
+                    average_value=90.0,
+                ),
+            ]
+        )
         await session.flush()
 
         samples = [

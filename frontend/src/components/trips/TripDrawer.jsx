@@ -335,7 +335,7 @@ function GradeBadge({ grade, score }) {
           Safety Score
         </div>
         <div style={{ fontSize: 22, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>
-          {Math.round(score)}%
+          {score != null ? `${Math.round(score)}%` : '—'}
         </div>
       </div>
     </div>
@@ -463,7 +463,7 @@ function TripDriverSection({ trip }) {
 function TripBehaviourSection({ trip }) {
   const events = [
     { key: 'speeding', label: 'Speeding', count: trip.speedingCount, duration: trip.speedingDuration },
-    { key: 'harsh_braking', label: 'Harsh Braking', count: trip.harshBrakingCount, duration: 0 },
+    { key: 'harsh_braking', label: 'Harsh Braking', count: trip.harshBrakingCount },
     { key: 'aggressive_throttle', label: 'Aggressive Throttle', count: trip.aggressiveThrottleCount, duration: trip.aggressiveThrottleDuration },
     { key: 'high_rpm', label: 'High RPM', count: trip.highRpmCount, duration: trip.highRpmDuration },
   ];
@@ -983,7 +983,11 @@ function buildInsight(trip, isActive) {
     } else {
       lines.push(`${totalEvents} behaviour event${totalEvents === 1 ? '' : 's'} so far, with ${worst.label} as the leading risk.`);
     }
-    lines.push(`Current projected safety score: ${Math.round(trip.safetyScore)}%.`);
+    lines.push(
+      trip.safetyScore != null
+        ? `Current projected safety score: ${Math.round(trip.safetyScore)}%.`
+        : 'A safety score will be available once the trip completes.'
+    );
     return lines.join(' ');
   }
 
@@ -1006,7 +1010,7 @@ function buildInsight(trip, isActive) {
   const grade = trip.grade;
   if (grade && GRADE_TEXT[grade]) {
     parts.push(`Grade ${grade} — ${GRADE_TEXT[grade]}`);
-  } else {
+  } else if (trip.safetyScore != null) {
     parts.push(`Final safety score: ${Math.round(trip.safetyScore)}%.`);
   }
 

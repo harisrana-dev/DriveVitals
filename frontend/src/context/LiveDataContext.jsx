@@ -29,11 +29,11 @@ function mergeTripsPayload(wsTrips, restTrips) {
 
   const totalDistance = trips.reduce((s, t) => s + (t.distance_km ?? 0), 0);
   const totalFuel = trips.reduce(
-    (s, t) => s + (t.fuel_consumed_liters ?? t.fuel_used_liters ?? 0),
+    (s, t) => s + (t.fuel_consumed_liters ?? 0),
     0
   );
   const scores = trips
-    .map((t) => t.safety_score ?? t.trip_score)
+    .map((t) => t.safety_score)
     .filter((v) => v != null);
   const avgScore =
     scores.length > 0
@@ -97,7 +97,7 @@ function buildFleetVehicles(vehicles, vehicleHealth, drivers, dashboardVehicles,
       speed_kmh: live?.speed_kmh ?? 0,
       rpm: live?.rpm ?? 0,
       throttle_position_percent: live?.throttle_position_percent ?? null,
-      brake_pressure: live?.brake_pressure ?? null,
+      brake_percent: live?.brake_percent ?? null,
       fuel_level_percent: live?.fuel_level_percent ?? null,
       coolant_temperature_c: live?.coolant_temperature_c ?? null,
       engine_load_percent: live?.engine_load_percent ?? null,

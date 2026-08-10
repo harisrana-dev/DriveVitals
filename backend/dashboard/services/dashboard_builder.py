@@ -151,7 +151,11 @@ class DashboardBuilder:
             throttle_position_percent=(
                 telemetry.throttle_position_percent
             ),
-            brake_pressure=telemetry.brake_pressure,
+            brake_percent=(
+                round(telemetry.brake_pressure * 100.0, 2)
+                if telemetry.brake_pressure is not None
+                else None
+            ),
             fuel_level_percent=(
                 telemetry.fuel_level_percent
             ),
@@ -269,7 +273,7 @@ class DashboardBuilder:
             speed_kmh=0.0,
             rpm=0.0,
             throttle_position_percent=None,
-            brake_pressure=None,
+            brake_percent=None,
             fuel_level_percent=vehicle.fuel_level_percent,
             coolant_temperature_c=vehicle.coolant_temperature_c,
             engine_load_percent=None,

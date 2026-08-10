@@ -178,7 +178,7 @@ class PersistenceService:
                     rpm=sample.rpm,
                     engine_load_percent=sample.engine_load_percent,
                     throttle_percent=sample.throttle_position_percent,
-                    brake_percent=sample.brake_pressure,
+                    brake_percent=round(sample.brake_pressure * 100.0, 2),
                     fuel_rate_lph=sample.fuel_rate_lph,
                     fuel_level_percent=sample.fuel_level_percent,
                     coolant_temperature_c=sample.coolant_temperature_c,

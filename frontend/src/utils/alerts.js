@@ -37,7 +37,7 @@ export function deriveIncidents(vehicles) {
         speed: v.speed_kmh ?? 0,
         rpm: v.rpm ?? 0,
         throttle_position_percent: v.throttle_position_percent ?? 0,
-        brake_pressure: v.brake_pressure ?? 0,
+        brake_percent: v.brake_percent ?? 0,
         engine_load_percent: engineLoad,
         fuel_level_percent: fuel,
       });
@@ -61,7 +61,7 @@ export function deriveIncidents(vehicles) {
         speed: v.speed_kmh ?? 0,
         rpm: v.rpm ?? 0,
         throttle_position_percent: v.throttle_position_percent ?? 0,
-        brake_pressure: v.brake_pressure ?? 0,
+        brake_percent: v.brake_percent ?? 0,
         engine_load_percent: engineLoad,
         coolant_temperature_c: coolant,
       });
@@ -85,7 +85,7 @@ export function deriveIncidents(vehicles) {
         speed: v.speed_kmh ?? 0,
         rpm: v.rpm ?? 0,
         throttle_position_percent: v.throttle_position_percent ?? 0,
-        brake_pressure: v.brake_pressure ?? 0,
+        brake_percent: v.brake_percent ?? 0,
         engine_load_percent: engineLoad,
         coolant_temperature_c: coolant,
       });
@@ -108,7 +108,7 @@ export function deriveIncidents(vehicles) {
         speed: v.speed_kmh ?? 0,
         rpm: v.rpm ?? 0,
         throttle_position_percent: v.throttle_position_percent ?? 0,
-        brake_pressure: v.brake_pressure ?? 0,
+        brake_percent: v.brake_percent ?? 0,
         engine_load_percent: engineLoad,
         fuel_level_percent: fuel,
         coolant_temperature_c: coolant,
@@ -132,7 +132,7 @@ export function deriveIncidents(vehicles) {
         speed: v.speed_kmh ?? 0,
         rpm: v.rpm ?? 0,
         throttle_position_percent: v.throttle_position_percent ?? 0,
-        brake_pressure: v.brake_pressure ?? 0,
+        brake_percent: v.brake_percent ?? 0,
         engine_load_percent: engineLoad,
         fuel_level_percent: fuel,
         coolant_temperature_c: coolant,
@@ -157,7 +157,7 @@ export function deriveIncidents(vehicles) {
         speed: v.speed_kmh ?? 0,
         rpm: v.rpm ?? 0,
         throttle_position_percent: v.throttle_position_percent ?? 0,
-        brake_pressure: v.brake_pressure ?? 0,
+        brake_percent: v.brake_percent ?? 0,
         engine_load_percent: engineLoad,
         fuel_level_percent: fuel,
       });
@@ -181,7 +181,7 @@ export function deriveIncidents(vehicles) {
         speed: v.speed_kmh ?? 0,
         rpm: v.rpm ?? 0,
         throttle_position_percent: v.throttle_position_percent ?? 0,
-        brake_pressure: v.brake_pressure ?? 0,
+        brake_percent: v.brake_percent ?? 0,
         fuel_level_percent: fuel,
         coolant_temperature_c: coolant,
       });

@@ -27,7 +27,7 @@ class VehicleDashboardSummary:
 
     throttle_position_percent: float | None
 
-    brake_pressure: float | None
+    brake_percent: float | None
 
     fuel_level_percent: float | None
 

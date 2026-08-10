@@ -141,7 +141,7 @@ class TripBuilder:
             fuel_consumed_liters=fuel_consumed_liters,
             average_fuel_rate_lph=average_fuel_rate_lph,
             safety_score=safety_score,
-            overall_grade=compute_grade(safety_score),
+            grade=compute_grade(safety_score),
             started_at=(
                 trip.started_at
                 if trip is not None
@@ -151,6 +151,11 @@ class TripBuilder:
                 trip.completed_at
                 if trip is not None
                 else runtime_state.timestamp
+            ),
+            status=(
+                trip.status.value
+                if trip is not None
+                else "completed"
             ),
             speeding_event_count=summary.speeding_event_count,
             speeding_duration_seconds=summary.speeding_duration_seconds,

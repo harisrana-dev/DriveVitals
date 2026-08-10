@@ -194,7 +194,7 @@ function LiveTelemetry({ alert }) {
         <TelemetryRow label="Speed" value={`${alert.speed.toFixed(1)} km/h`} />
         <TelemetryRow label="RPM" value={`${Math.round(alert.rpm)}`} />
         <TelemetryRow label="Throttle" value={`${alert.throttle_position_percent.toFixed(0)}%`} />
-        <TelemetryRow label="Brake Pressure" value={`${alert.brake_pressure.toFixed(2)}`} />
+        <TelemetryRow label="Brake Pressure" value={`${alert.brake_percent.toFixed(0)}%`} />
         <TelemetryRow label="Engine Load" value={`${alert.engine_load_percent.toFixed(0)}%`} />
         <TelemetryRow label="Fuel Level" value={`${alert.fuel_level_percent.toFixed(0)}%`} />
         <TelemetryRow label="Coolant" value={`${alert.coolant_temperature_c.toFixed(1)} °C`} />

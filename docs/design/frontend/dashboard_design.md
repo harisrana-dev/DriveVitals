@@ -47,7 +47,7 @@ Raw, point-in-time vehicle readings:
 | `rpm` | Engine RPM |
 | `engine_load_percent` | Engine load as a percentage |
 | `throttle_position_percent` | Throttle position as a percentage |
-| `brake_pressure` | Brake pressure reading |
+| `brake_percent` | Brake pressure as a percentage (0-100) |
 | `coolant_temperature_c` | Coolant temperature in °C |
 | `fuel_rate_lph` | Fuel consumption rate in liters/hour |
 | `fuel_level_percent` | Fuel tank level as a percentage |

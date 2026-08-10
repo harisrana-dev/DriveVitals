@@ -67,7 +67,7 @@ function mapRestAlert(a, meta) {
     speed: 0,
     rpm: 0,
     throttle_position_percent: 0,
-    brake_pressure: 0,
+    brake_percent: 0,
     engine_load_percent: 0,
     fuel_level_percent: 0,
     coolant_temperature_c: 0,

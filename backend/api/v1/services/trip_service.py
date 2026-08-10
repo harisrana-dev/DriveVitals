@@ -21,6 +21,8 @@ class TripService:
     def _loads() -> list:
         return [
             selectinload(Trip.route),
+            selectinload(Trip.vehicle),
+            selectinload(Trip.driver),
             selectinload(Trip.behaviour_events),
         ]
 

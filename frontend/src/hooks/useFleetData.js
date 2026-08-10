@@ -60,7 +60,7 @@ function mapVehicles(raw) {
     speed: v.speed_kmh ?? 0,
     rpm: v.rpm ?? 0,
     throttle: v.throttle_position_percent ?? null,
-    brake: v.brake_pressure ?? null,
+    brake: v.brake_percent ?? null,
     fuelLevel: v.fuel_level_percent ?? 0,
     coolantTemp: v.coolant_temperature_c ?? 0,
     engineLoad: v.engine_load_percent ?? null,
@@ -167,7 +167,7 @@ function telemetrySafety(t) {
   if ((t.coolant_temperature_c ?? 0) > 105) score -= 20;
   else if ((t.coolant_temperature_c ?? 0) > 95) score -= 10;
   if ((t.fuel_level_percent ?? 100) < 15) score -= 15;
-  if ((t.brake_percent ?? 0) > 0.7) score -= 8;
+  if ((t.brake_percent ?? 0) > 70) score -= 8;
   if ((t.throttle_percent ?? 0) > 85) score -= 8;
   return Math.max(0, Math.min(100, Math.round(score)));
 }

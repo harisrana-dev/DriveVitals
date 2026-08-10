@@ -38,8 +38,6 @@ function formatFuel(liters) {
 }
 
 function mapTrip(t) {
-  const fuelUsed = t.fuel_consumed_liters ?? t.fuel_used_liters;
-
   return {
     id: t.trip_id,
     vehicleId: t.vehicle_id,
@@ -55,15 +53,15 @@ function mapTrip(t) {
     durationFormatted: formatDuration(t.duration_seconds),
     averageSpeed: t.average_speed_kmh ?? 0,
     maximumSpeed: t.maximum_speed_kmh ?? 0,
-    fuelConsumed: fuelUsed ?? 0,
-    fuelFormatted: formatFuel(fuelUsed),
+    fuelConsumed: t.fuel_consumed_liters ?? 0,
+    fuelFormatted: formatFuel(t.fuel_consumed_liters),
     avgFuelRate: t.average_fuel_rate_lph ?? 0,
-    safetyScore: (t.safety_score ?? t.trip_score) ?? 0,
-    grade: t.overall_grade || null,
-    gradeColor: gradeColor(t.overall_grade),
-    startedAt: t.started_at || t.start_time || null,
-    completedAt: t.completed_at || t.end_time || null,
-    status: t.status || (t.completed_at || t.end_time ? 'completed' : 'in_progress'),
+    safetyScore: t.safety_score ?? null,
+    grade: t.grade || null,
+    gradeColor: gradeColor(t.grade),
+    startedAt: t.started_at || null,
+    completedAt: t.completed_at || null,
+    status: t.status,
     speedingCount: t.speeding_event_count ?? 0,
     speedingDuration: t.speeding_duration_seconds ?? 0,
     harshBrakingCount: t.harsh_braking_count ?? 0,

@@ -189,7 +189,7 @@ function DrawerContent({
             <TelemetryItem icon={<Gauge size={14} />} label="Speed" value={`${Math.round(smoothSpeed)} km/h`} />
             <TelemetryItem icon={<Activity size={14} />} label="RPM" value={Math.round(smoothRpm).toLocaleString()} />
             <TelemetryItem icon={<Zap size={14} />} label="Throttle" value={vehicle.throttle != null ? `${Math.round(smoothThrottle)}%` : '—'} />
-            <TelemetryItem icon={<Wind size={14} />} label="Brake" value={vehicle.brake != null ? `${Math.round(smoothBrake * 100)}%` : '—'} />
+            <TelemetryItem icon={<Wind size={14} />} label="Brake" value={vehicle.brake != null ? `${Math.round(smoothBrake)}%` : '—'} />
             <TelemetryItem icon={<Fuel size={14} />} label="Fuel" value={`${Math.round(smoothFuel)}%`} />
             <TelemetryItem icon={<Thermometer size={14} />} label="Coolant" value={vehicle.coolantTemp > 0 ? `${Math.round(smoothCoolant)}°C` : 'N/A'} />
             <TelemetryItem icon={<Cpu size={14} />} label="Engine Load" value={vehicle.engineLoad != null ? `${Math.round(smoothEngineLoad)}%` : '—'} />

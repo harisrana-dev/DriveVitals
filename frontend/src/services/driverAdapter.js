@@ -87,7 +87,7 @@ function adaptDriver(driver, stats, live) {
     speed: live?.speed_kmh ?? 0,
     rpm: live?.rpm ?? 0,
     throttle: live?.throttle_position_percent ?? 0,
-    brake: live?.brake_pressure ?? 0,
+    brake: live?.brake_percent ?? 0,
     fuelLevel: live?.fuel_level_percent ?? 0,
     engineLoad: live?.engine_load_percent ?? 0,
     coolantTemp: live?.coolant_temperature_c ?? 0,

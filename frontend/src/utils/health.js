@@ -6,7 +6,7 @@ export function computeComponentHealth(v) {
 
   let braking = 100;
   if (v.harshBraking) braking -= 25;
-  if (v.brakePressure > 0.7) braking -= 10;
+  if (v.brakePressure > 70) braking -= 10;
 
   let fuel = 100;
   if (v.fuelLevel < 15) fuel -= 30;

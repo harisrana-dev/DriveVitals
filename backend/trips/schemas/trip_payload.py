@@ -5,6 +5,7 @@ from datetime import datetime
 @dataclass(frozen=True, slots=True)
 class TripSnapshot:
     trip_id: str
+    status: str
     vehicle_id: str
     driver_id: str
     vehicle_name: str | None
@@ -18,7 +19,7 @@ class TripSnapshot:
     fuel_consumed_liters: float
     average_fuel_rate_lph: float
     safety_score: float
-    overall_grade: str
+    grade: str
     started_at: datetime | None
     completed_at: datetime | None
     speeding_event_count: int

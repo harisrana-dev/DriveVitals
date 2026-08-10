@@ -25,26 +25,35 @@ class TripRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     trip_id: str
+    status: str
+
     vehicle_id: str
+    vehicle_name: str | None = None
     driver_id: str
+    driver_name: str | None = None
     route_id: str
     route_name: str | None = None
-    start_time: datetime
-    end_time: datetime | None
+    route_type: str | None = None
+
+    started_at: datetime
+    completed_at: datetime | None
+
     distance_km: float | None
     duration_seconds: int | None
-    fuel_used_liters: float | None
+    fuel_consumed_liters: float | None
     average_speed_kmh: float | None
     maximum_speed_kmh: float | None
     average_fuel_rate_lph: float | None = None
-    trip_score: float | None
+    safety_score: float | None
     grade: str | None = None
-    status: str
 
     speeding_event_count: int = 0
+    speeding_duration_seconds: float = 0.0
     harsh_braking_count: int = 0
     aggressive_throttle_event_count: int = 0
+    aggressive_throttle_duration_seconds: float = 0.0
     high_rpm_event_count: int = 0
+    high_rpm_duration_seconds: float = 0.0
     severe_event_count: int = 0
     moderate_event_count: int = 0
     minor_event_count: int = 0
@@ -97,26 +106,43 @@ class TripRead(BaseModel):
         )
 
         route = getattr(trip, "route", None)
+        vehicle = getattr(trip, "vehicle", None)
+        driver = getattr(trip, "driver", None)
+
+        vehicle_name = None
+        if vehicle is not None:
+            vehicle_name = f"{vehicle.year} {vehicle.manufacturer} {vehicle.model}"
+
+        driver_name = None
+        if driver is not None:
+            driver_name = f"{driver.first_name} {driver.last_name}".strip()
 
         return cls(
             trip_id=trip.trip_id,
+            status=trip.status,
             vehicle_id=trip.vehicle_id,
+            vehicle_name=vehicle_name,
             driver_id=trip.driver_id,
+            driver_name=driver_name,
             route_id=trip.route_id,
             route_name=route.name if route is not None else None,
-            start_time=trip.start_time,
-            end_time=trip.end_time,
+            route_type=route.route_type if route is not None else None,
+            started_at=trip.start_time,
+            completed_at=trip.end_time,
             distance_km=trip.distance_km,
             duration_seconds=trip.duration_seconds,
-            fuel_used_liters=trip.fuel_used_liters,
+            fuel_consumed_liters=trip.fuel_used_liters,
             average_speed_kmh=trip.average_speed_kmh,
             maximum_speed_kmh=trip.maximum_speed_kmh,
             average_fuel_rate_lph=average_fuel_rate_lph,
-            trip_score=trip.trip_score,
+            safety_score=trip.trip_score,
             grade=grade,
-            status=trip.status,
             speeding_event_count=sum(
                 1 for e in events if e.event_type == "speeding"
+            ),
+            speeding_duration_seconds=round(
+                sum(e.duration_seconds for e in events if e.event_type == "speeding"),
+                2,
             ),
             harsh_braking_count=sum(
                 1 for e in events if e.event_type == "harsh_braking"
@@ -124,8 +150,20 @@ class TripRead(BaseModel):
             aggressive_throttle_event_count=sum(
                 1 for e in events if e.event_type == "aggressive_throttle"
             ),
+            aggressive_throttle_duration_seconds=round(
+                sum(
+                    e.duration_seconds
+                    for e in events
+                    if e.event_type == "aggressive_throttle"
+                ),
+                2,
+            ),
             high_rpm_event_count=sum(
                 1 for e in events if e.event_type == "high_rpm"
+            ),
+            high_rpm_duration_seconds=round(
+                sum(e.duration_seconds for e in events if e.event_type == "high_rpm"),
+                2,
             ),
             severe_event_count=sum(
                 1 for e in events if e.severity == "severe"

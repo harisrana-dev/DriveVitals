@@ -122,7 +122,7 @@ function DrawerContent({ driver, onClose }) {
             <LiveTelemetryItem icon={<Gauge size={13} />} label="Speed" value={`${Math.round(smoothSpeed)} km/h`} />
             <LiveTelemetryItem icon={<Activity size={13} />} label="RPM" value={Math.round(smoothRpm).toLocaleString()} />
             <LiveTelemetryItem icon={<Zap size={13} />} label="Throttle" value={`${Math.round(smoothThrottle)}%`} />
-            <LiveTelemetryItem icon={<Wind size={13} />} label="Brake" value={`${Math.round(smoothBrake)} kPa`} />
+            <LiveTelemetryItem icon={<Wind size={13} />} label="Brake" value={`${Math.round(smoothBrake)}%`} />
             <LiveTelemetryItem icon={<Fuel size={13} />} label="Fuel" value={`${Math.round(smoothFuel)}%`} />
             <LiveTelemetryItem icon={<Thermometer size={13} />} label="Coolant" value={driver.coolantTemp > 0 ? `${Math.round(smoothCoolant)}\u00b0C` : 'N/A'} />
             <LiveTelemetryItem icon={<Cpu size={13} />} label="Engine Load" value={`${Math.round(smoothEngineLoad)}%`} />

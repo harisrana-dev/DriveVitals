@@ -52,6 +52,15 @@ def _build_event_dict(
 
 
 class TripBuilder:
+    """Build canonical :class:`TripSnapshot` instances for completed trips.
+
+    This is the single owner of final trip metrics. It sources distance,
+    duration, and fuel from the completed ``Trip`` object and behaviour
+    data from the ``DriverBehaviourSummary``. Active-trip snapshots are
+    built by :func:`build_active_trip_snapshot` instead, which never
+    fabricates completion values.
+    """
+
     def build(
         self,
         summary: DriverBehaviourSummary,

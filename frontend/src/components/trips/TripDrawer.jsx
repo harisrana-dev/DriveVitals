@@ -365,6 +365,16 @@ function TripSummarySection({ trip, isActive }) {
             gap: 8,
           }}
         >
+          {isActive && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <StatItem
+                icon={<Gauge size={14} />}
+                label="Current Speed"
+                value={trip.currentSpeed != null ? `${Math.round(trip.currentSpeed)} km/h` : '—'}
+                valueColor={trip.currentSpeed > 0 ? 'var(--color-green)' : undefined}
+              />
+            </div>
+          )}
           <StatItem icon={<Route size={14} />} label="Distance" value={formatDistance(trip.distance)} />
           <StatItem icon={<Clock size={14} />} label="Duration" value={formatDuration(trip.duration)} />
           <StatItem icon={<Gauge size={14} />} label="Avg Speed" value={averageSpeed} />

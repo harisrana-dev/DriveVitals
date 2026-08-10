@@ -113,6 +113,7 @@ from backend.fleet.config.fleet_factory import (
 
 from backend.fleet.models.trip import (
     Trip,
+    TripStatus,
 )
 
 from backend.fleet.runtime.fleet_runner import (
@@ -148,11 +149,24 @@ from backend.telemetry.models.telemetry_sample import (
     TelemetrySample,
 )
 
+from backend.trips.schemas.trip_payload import (
+    TripSnapshot,
+)
+
+from backend.trips.services.active_trip_builder import (
+    build_active_trip_snapshot,
+)
+
 from typing import Any, Callable
 
 
 TripFlushCallback = Callable[
     [Any, Any, Any, list, Trip],
+    None,
+]
+
+ActiveTripUpdateCallback = Callable[
+    [list[TripSnapshot], Any],
     None,
 ]
 
@@ -412,6 +426,7 @@ class DriveVitalsRuntime:
         self._configure_fleet()
 
         self._trip_flush_callback: TripFlushCallback | None = None
+        self._trip_update_callback: ActiveTripUpdateCallback | None = None
 
         self._initial_fuel_levels: dict[str, float] = {}
 
@@ -974,6 +989,18 @@ class DriveVitalsRuntime:
                 latest_samples=latest_samples,
             )
 
+            # ----------------------------------------------------------
+            # Publish the current active-trip state once per tick.
+            #
+            # Runs AFTER trip completions so vehicles that finished this
+            # tick are excluded from the active set; their final completed
+            # snapshot was already published by the completion callback.
+            # ----------------------------------------------------------
+
+            self._publish_active_trip_updates(
+                now=now,
+            )
+
             now += timedelta(
                 seconds=self._tick_seconds
             )
@@ -1273,8 +1300,173 @@ class DriveVitalsRuntime:
     ) -> AlertEngine:
         return self._alert_engine
 
+    def _publish_active_trip_updates(
+        self,
+        now: datetime,
+    ) -> None:
+        """
+        Build and broadcast the active-trip state for the current tick.
+
+        One batch per tick containing the current active set only. Each
+        vehicle is isolated: a single failing snapshot must not starve
+        the other active trips in the same tick.
+        """
+
+        if self._trip_update_callback is None:
+            return
+
+        snapshots: list[TripSnapshot] = []
+
+        for runner in self._fleet.active_runners():
+            if runner.trip.status not in (
+                TripStatus.STARTED,
+                TripStatus.IN_PROGRESS,
+            ):
+                continue
+            try:
+                snapshot = self._build_active_trip_snapshot(
+                    runner=runner,
+                    now=now,
+                )
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception(
+                    "Active trip snapshot failed for vehicle=%s "
+                    "tick_time=%s (run_id=%s)",
+                    runner.vehicle.vehicle_id,
+                    now.isoformat(),
+                    self._simulation_run_id,
+                )
+                continue
+
+            if snapshot is not None:
+                snapshots.append(snapshot)
+
+        if not snapshots:
+            return
+
+        self._trip_update_callback(
+            snapshots,
+            now,
+        )
+
+    def _build_active_trip_snapshot(
+        self,
+        runner,
+        now: datetime,
+    ) -> TripSnapshot | None:
+        """
+        Compose one authoritative active-trip snapshot for a runner.
+
+        Sources, all existing runtime state (no fabricated values):
+          * ``runner.trip``        distance/identity/started_at
+          * analytics context      vehicle/driver/route metadata
+          * analytics runtime      live telemetry (speed, fuel, ...)
+          * analytics snapshot     live behaviour flags
+          * accumulated events     behaviour events so far this trip
+        """
+
+        vehicle_id = runner.vehicle.vehicle_id
+
+        context = self._context_store.get(
+            vehicle_id
+        )
+
+        if context is None:
+            return None
+
+        runtime_state = self._runtime_store.get(
+            vehicle_id
+        )
+
+        analytics_snapshot = (
+            self._snapshot_store.get(
+                vehicle_id
+            )
+        )
+
+        behaviour = (
+            analytics_snapshot.behaviour
+            if analytics_snapshot is not None
+            else None
+        )
+
+        active_event_types = (
+            analytics_snapshot.active_event_types
+            if analytics_snapshot is not None
+            else ()
+        )
+
+        events = (
+            self._analytics_engine.get_accumulated_events(
+                vehicle_id
+            )
+        )
+
+        summary = None
+        if events:
+            summary = self._behaviour_summarizer.summarize(
+                vehicle_id=runner.trip.vehicle_id,
+                driver_id=runner.trip.driver_id,
+                trip_id=runner.trip.trip_id,
+                total_distance_km=(
+                    runner.trip.distance_travelled_km
+                ),
+                events=events,
+            )
+
+        return build_active_trip_snapshot(
+            trip=runner.trip,
+            context=context,
+            runtime_state=runtime_state,
+            behaviour=behaviour,
+            active_event_types=active_event_types,
+            summary=summary,
+            events=events,
+            fuel_consumed_liters=self._live_fuel_consumed(
+                runner
+            ),
+            now=now,
+        )
+
+    def _live_fuel_consumed(
+        self,
+        runner,
+    ) -> float:
+        """
+        Fuel used so far, derived from the trip-start fuel level and the
+        current fuel level. Matches the completed-trip fuel calculation.
+        """
+
+        tank_capacity_liters = 60.0
+
+        initial_pct = self._initial_fuel_levels.get(
+            runner.vehicle.vehicle_id,
+            runner.vehicle.fuel_level_percent,
+        )
+        current_pct = (
+            runner.vehicle.fuel_level_percent
+        )
+
+        return round(
+            max(
+                0.0,
+                (initial_pct - current_pct)
+                / 100.0
+                * tank_capacity_liters,
+            ),
+            2,
+        )
+
     def set_trip_flush_callback(
         self,
         callback: TripFlushCallback,
     ) -> None:
         self._trip_flush_callback = callback
+
+    def set_trip_update_callback(
+        self,
+        callback: ActiveTripUpdateCallback,
+    ) -> None:
+        self._trip_update_callback = callback

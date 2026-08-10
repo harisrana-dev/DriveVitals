@@ -1,11 +1,49 @@
 import { useCallback } from 'react';
 import { useTripsFilters } from '../hooks/useTripsFilters';
 import { useTripDrawer } from '../context/TripDrawerContext';
+import { useLiveData } from '../context/LiveDataContext';
 import { TripsKpis } from '../components/trips/TripsKpis';
 import { TripsFilters } from '../components/trips/TripsFilters';
 import { TripsTable } from '../components/trips/TripsTable';
 import { ActiveTripsList } from '../components/trips/ActiveTripsList';
 import { TripDrawer } from '../components/trips/TripDrawer';
+
+const TRIPS_CONNECTION_META = {
+  live: { label: 'Live', color: 'var(--color-green)', bg: 'var(--color-green-bg)' },
+  connecting: { label: 'Connecting…', color: 'var(--color-amber)', bg: 'var(--color-amber-bg)' },
+  offline: { label: 'Offline', color: 'var(--color-red)', bg: 'var(--color-red-bg)' },
+};
+
+function ConnectionIndicator({ state }) {
+  const meta = TRIPS_CONNECTION_META[state] || TRIPS_CONNECTION_META.offline;
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '4px 10px',
+        borderRadius: 20,
+        background: meta.bg,
+        color: meta.color,
+        fontSize: 11,
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: meta.color,
+          flexShrink: 0,
+        }}
+      />
+      {meta.label}
+    </span>
+  );
+}
 
 function SectionHeader({ title, subtitle, count }) {
   return (
@@ -87,6 +125,7 @@ export function TripsPage() {
   } = useTripsFilters();
 
   const { selectedTrip, openDrawer, closeDrawer } = useTripDrawer();
+  const { tripsConnectionState } = useLiveData();
 
   const handleTripClick = useCallback((trip) => {
     openDrawer(trip);
@@ -129,6 +168,7 @@ export function TripsPage() {
             Live trip tracking, historical trip intelligence and route analytics
           </p>
         </div>
+        <ConnectionIndicator state={tripsConnectionState} />
       </div>
 
       <TripsKpis summary={summary} />
@@ -169,7 +209,7 @@ export function TripsPage() {
       >
         <SectionHeader
           title="Active Trips"
-          subtitle="Telemetry available in trip details"
+          subtitle="Real-time updates via live stream"
           count={activeTrips.length}
         />
         <ActiveTripsList

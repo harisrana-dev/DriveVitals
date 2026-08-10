@@ -1,5 +1,7 @@
 from asyncio import Queue
 
+from datetime import datetime
+
 from backend.analytics.behaviour.aggregation.summary import (
     DriverBehaviourSummary,
 )
@@ -51,6 +53,50 @@ class TripSnapshotPublisher:
             total_trips=total,
             total_distance_km=total_distance,
             average_safety_score=avg_score,
+            total_fuel_consumed_liters=total_fuel,
+        )
+        self._queue.put_nowait(trips_snapshot)
+
+    def publish_active(
+        self,
+        snapshots: list[TripSnapshot],
+        timestamp: datetime,
+    ) -> None:
+        """
+        Broadcast the current active-trip set without touching the
+        completed-trip store.
+
+        Active trips are never added to ``TripStore``; this keeps the
+        per-tick broadcast bounded to the live fleet (at most one
+        snapshot per active vehicle) instead of replaying the entire
+        completed-trip history on every tick.
+        """
+
+        trips = tuple(snapshots)
+        total = len(trips)
+
+        scores = [
+            t.safety_score
+            for t in trips
+            if t.safety_score is not None
+        ]
+        total_distance = sum(t.distance_km for t in trips)
+        total_fuel = sum(
+            t.fuel_consumed_liters
+            for t in trips
+            if t.fuel_consumed_liters is not None
+        )
+
+        trips_snapshot = TripsSnapshot(
+            timestamp=timestamp,
+            trips=trips,
+            total_trips=total,
+            total_distance_km=total_distance,
+            average_safety_score=(
+                sum(scores) / len(scores)
+                if scores
+                else 0.0
+            ),
             total_fuel_consumed_liters=total_fuel,
         )
         self._queue.put_nowait(trips_snapshot)

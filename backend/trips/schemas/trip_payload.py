@@ -37,6 +37,15 @@ class TripSnapshot:
 
     route_name: str | None = None
 
+    # Live-only fields. These are populated by the active-trip snapshot
+    # stream; completed trips leave them unset (None/False) because the
+    # trip has ended and the values are no longer meaningful.
+    current_speed_kmh: float | None = None
+    speeding: bool = False
+    harsh_braking: bool = False
+    aggressive_throttle: bool = False
+    high_rpm: bool = False
+
 
 @dataclass(frozen=True, slots=True)
 class TripsSnapshot:

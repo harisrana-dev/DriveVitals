@@ -10,6 +10,14 @@ from backend.dashboard.schemas.dashboard_payload import (
 
 
 class DashboardSnapshotPublisher:
+    """Subscriber to ``AnalyticsSnapshotStream`` that bridges synchronous
+    analytics output into the asynchronous WebSocket delivery layer.
+
+    Each incoming ``AnalyticsSnapshot`` is converted into a
+    ``DashboardSnapshot`` via the injected builder and placed onto the
+    provided ``asyncio.Queue``. This is the sync-to-async adaptation
+    point for the dashboard channel.
+    """
 
     def __init__(
         self,

@@ -12,6 +12,15 @@ from backend.trips.schemas.trip_payload import (
 
 
 class TripStore:
+    """In-memory store for completed trip snapshots.
+
+    Keyed by ``trip_id``. Active trips are never stored here; they are
+    broadcast directly via ``TripSnapshotPublisher.publish_active()``.
+    Re-adding a snapshot with an existing ``trip_id`` updates the entry
+    rather than appending a duplicate, which makes the store safe for
+    retry paths.
+    """
+
     def __init__(self) -> None:
         self._trips: dict[str, TripSnapshot] = {}
 

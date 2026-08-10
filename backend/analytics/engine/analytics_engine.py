@@ -285,6 +285,26 @@ class AnalyticsEngine:
 
         return self._snapshot_store.get_all()
 
+    def get_accumulated_events(
+        self,
+        vehicle_id: str,
+    ) -> list[BehaviourEvent]:
+        """
+        Return the behaviour events completed so far for one vehicle's
+        in-progress trip, without clearing them.
+
+        Read-only view used by the active-trip stream. Draining is
+        intentionally NOT performed here so the completion path
+        (``flush_vehicle``) still sees every event.
+        """
+
+        return list(
+            self._completed_events.get(
+                vehicle_id,
+                [],
+            )
+        )
+
     def drain_completed_events(
         self,
         vehicle_id: str,

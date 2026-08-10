@@ -140,8 +140,21 @@ async def lifespan(
             summary, context, runtime_state, all_events
         )
 
+    def _trip_update(
+        snapshots,
+        now,
+    ) -> None:
+        trip_publisher.publish_active(
+            snapshots,
+            timestamp=now,
+        )
+
     runtime.set_trip_flush_callback(
         _trip_flush
+    )
+
+    runtime.set_trip_update_callback(
+        _trip_update
     )
 
     # --------------------------------------------------------------

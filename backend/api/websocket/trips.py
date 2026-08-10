@@ -1,3 +1,16 @@
+"""
+WebSocket endpoint and worker for the trips channel.
+
+The trips channel broadcasts two kinds of snapshots:
+
+1. Active-trip updates (``publish_active``) — once per tick, containing
+   only currently active trips.
+2. Completed-trip updates (``publish``) — emitted when a trip finishes,
+   containing the full updated set of completed trips.
+
+Both are serialized and broadcast by ``trips_worker``.
+"""
+
 import asyncio
 
 from dataclasses import asdict

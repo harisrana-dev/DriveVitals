@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { ChevronRight, MapPin, Clock, Gauge, Activity } from 'lucide-react';
+import { TripStatusBadge } from './TripStatusBadge';
 
 function formatDuration(seconds) {
   if (!seconds || seconds <= 0) return '—';
@@ -35,7 +36,7 @@ export const ActiveTripsList = memo(function ActiveTripsList({ trips, onTripClic
       }}
     >
       {trips.map((trip, i) => {
-        const activeEvents = EVENT_CHIPS.filter((chip) => trip[chip.key] > 0);
+        const activeEvents = EVENT_CHIPS.filter((chip) => trip[chip.key]);
         return (
           <div
             key={trip.id}
@@ -96,8 +97,13 @@ export const ActiveTripsList = memo(function ActiveTripsList({ trips, onTripClic
               <span>{formatDuration(trip.duration)}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--color-text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-              <Gauge size={12} style={{ color: 'var(--color-text-muted)' }} />
-              <span>{trip.averageSpeed > 0 ? `${trip.averageSpeed.toFixed(0)} km/h` : '—'}</span>
+              <Gauge size={12} style={{ color: trip.currentSpeed > 0 ? 'var(--color-green)' : 'var(--color-text-muted)' }} />
+              <span style={{ fontWeight: 600, color: trip.currentSpeed > 0 ? 'var(--color-green)' : 'var(--color-text-primary)' }}>
+                {trip.currentSpeed != null ? `${Math.round(trip.currentSpeed)} km/h` : '—'}
+              </span>
+              <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                avg {trip.averageSpeed > 0 ? `${trip.averageSpeed.toFixed(0)}` : '—'}
+              </span>
             </div>
             <div style={{ fontSize: 11, color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
               {formatDistance(trip.distance)}
@@ -126,6 +132,7 @@ export const ActiveTripsList = memo(function ActiveTripsList({ trips, onTripClic
                 ))
               )}
             </div>
+            <TripStatusBadge status={trip.status} />
             <div style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}>
               <ChevronRight size={14} />
             </div>

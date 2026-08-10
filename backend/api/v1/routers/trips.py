@@ -17,7 +17,7 @@ router = APIRouter(prefix="/trips")
     summary="List trips",
     description=(
         "Return a paginated list of trips. Optionally filter by vehicle, "
-        "driver and completion status."
+        "driver, route type and trip status."
     ),
     tags=["Trips"],
 )
@@ -34,6 +34,18 @@ async def list_trips(
         default=None,
         description="Filter trips by completion status.",
     ),
+    status: str | None = Query(
+        default=None,
+        description=(
+            "Filter trips by one or more comma-separated statuses "
+            "(assigned, started, in_progress, completed, aborted). "
+            "When present, takes precedence over `completed`."
+        ),
+    ),
+    route_type: str | None = Query(
+        default=None,
+        description="Filter trips by route type (urban, highway, rural).",
+    ),
     limit: int = Query(
         default=100,
         description="Maximum number of trips to return.",
@@ -46,10 +58,16 @@ async def list_trips(
 ) -> PaginatedResponse[TripRead]:
     limit, offset = validate_pagination(limit, offset)
 
+    statuses = None
+    if status:
+        statuses = [s.strip() for s in status.split(",") if s.strip()]
+
     trips, count = await service.list(
         vehicle_id=vehicle_id,
         driver_id=driver_id,
         completed=completed,
+        statuses=statuses,
+        route_type=route_type,
         limit=limit,
         offset=offset,
     )

@@ -1,5 +1,15 @@
 import { memo } from 'react';
 import { ChevronRight, MapPin, Clock, Gauge, Fuel, Shield } from 'lucide-react';
+import { TripStatusBadge } from './TripStatusBadge';
+
+const GRID_TEMPLATE = '1.8fr 1.5fr 1.2fr 0.9fr 0.9fr 0.9fr 0.8fr 0.9fr 110px 44px';
+
+const ellipsis = {
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+};
 
 export const TripRow = memo(function TripRow({ trip, onClick, isSelected }) {
   return (
@@ -7,7 +17,7 @@ export const TripRow = memo(function TripRow({ trip, onClick, isSelected }) {
       onClick={() => onClick(trip)}
       style={{
         display: 'grid',
-        gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 48px',
+        gridTemplateColumns: GRID_TEMPLATE,
         alignItems: 'center',
         gap: 8,
         padding: '10px 16px',
@@ -25,55 +35,107 @@ export const TripRow = memo(function TripRow({ trip, onClick, isSelected }) {
       }}
     >
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontWeight: 500, color: 'var(--color-text-primary)', fontFamily: 'monospace', fontSize: 12 }}>
+        <div
+          style={{
+            ...ellipsis,
+            fontWeight: 500,
+            color: 'var(--color-text-primary)',
+            fontFamily: 'monospace',
+            fontSize: 12,
+          }}
+          title={trip.id}
+        >
           {trip.id}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 1 }}>
+        <div
+          style={{
+            ...ellipsis,
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+            marginTop: 1,
+          }}
+          title={trip.vehicleName}
+        >
           {trip.vehicleName}
         </div>
       </div>
 
-      <div>
-        <div style={{ color: 'var(--color-text-primary)', fontWeight: 500, fontSize: 13 }}>
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            ...ellipsis,
+            color: 'var(--color-text-primary)',
+            fontWeight: 500,
+            fontSize: 13,
+          }}
+          title={trip.driverName}
+        >
           {trip.driverName}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
-          {trip.driverId}
-        </div>
+        {trip.driverId && (
+          <div
+            style={{
+              ...ellipsis,
+              fontSize: 11,
+              color: 'var(--color-text-muted)',
+              fontFamily: 'monospace',
+              marginTop: 1,
+            }}
+            title={trip.driverId}
+          >
+            {trip.driverId}
+          </div>
+        )}
       </div>
 
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-text-primary)', minWidth: 0 }}>
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            color: 'var(--color-text-primary)',
+            minWidth: 0,
+          }}
+        >
           <MapPin size={11} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
-          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <span style={ellipsis} title={trip.routeName || trip.routeType}>
             {trip.routeName || trip.routeType}
           </span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div
+          style={{
+            ...ellipsis,
+            fontSize: 11,
+            color: 'var(--color-text-muted)',
+            marginTop: 1,
+          }}
+          title={trip.routeId}
+        >
           {trip.routeName ? trip.routeType : trip.routeId}
         </div>
       </div>
 
-      <div style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
+      <div style={{ minWidth: 0, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
         {trip.distanceFormatted}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
-        <Clock size={11} style={{ color: 'var(--color-text-muted)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
+        <Clock size={11} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
         <span>{trip.durationFormatted}</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
-        <Gauge size={11} style={{ color: 'var(--color-text-muted)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
+        <Gauge size={11} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
         <span>{trip.averageSpeed > 0 ? trip.averageSpeed.toFixed(1) : '—'}</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
-        <Fuel size={11} style={{ color: 'var(--color-text-muted)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text-primary)' }}>
+        <Fuel size={11} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
         <span>{trip.fuelFormatted}</span>
       </div>
 
-      <div>
+      <div style={{ minWidth: 0 }}>
         <div
           style={{
             display: 'flex',
@@ -81,7 +143,7 @@ export const TripRow = memo(function TripRow({ trip, onClick, isSelected }) {
             gap: 6,
           }}
         >
-          <Shield size={12} style={{ color: trip.gradeColor }} />
+          <Shield size={12} style={{ color: trip.gradeColor, flexShrink: 0 }} />
           <span style={{ fontWeight: 600, color: trip.gradeColor }}>
             {trip.grade || '—'}
           </span>
@@ -89,6 +151,10 @@ export const TripRow = memo(function TripRow({ trip, onClick, isSelected }) {
             {trip.safetyScore > 0 ? `${Math.round(trip.safetyScore)}%` : '—'}
           </span>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', minWidth: 0 }}>
+        <TripStatusBadge status={trip.status} />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', color: 'var(--color-text-muted)' }}>

@@ -1,7 +1,17 @@
 import { memo } from 'react';
 import { TripRow } from './TripRow';
 
-export const TripsTable = memo(function TripsTable({ trips, onTripClick, selectedTripId }) {
+export const TripsTable = memo(function TripsTable({
+  trips,
+  onTripClick,
+  selectedTripId,
+  loading = false,
+  hasMore = false,
+  onLoadMore,
+  loadingMore = false,
+  loadedCount,
+  totalCount,
+}) {
   return (
     <div
       style={{
@@ -14,7 +24,7 @@ export const TripsTable = memo(function TripsTable({ trips, onTripClick, selecte
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 48px',
+          gridTemplateColumns: '1.8fr 1.5fr 1.2fr 0.9fr 0.9fr 0.9fr 0.8fr 0.9fr 110px 44px',
           alignItems: 'center',
           gap: 8,
           padding: '10px 16px',
@@ -34,6 +44,7 @@ export const TripsTable = memo(function TripsTable({ trips, onTripClick, selecte
         <span>Avg Speed</span>
         <span>Fuel</span>
         <span>Safety</span>
+        <span>Status</span>
         <span />
       </div>
       <div
@@ -42,7 +53,7 @@ export const TripsTable = memo(function TripsTable({ trips, onTripClick, selecte
           overflowY: 'auto',
         }}
       >
-        {trips.length === 0 ? (
+        {loading ? (
           <div
             style={{
               padding: '40px 16px',
@@ -51,7 +62,18 @@ export const TripsTable = memo(function TripsTable({ trips, onTripClick, selecte
               fontSize: 13,
             }}
           >
-            No trips completed yet. Trips will appear here as vehicles complete their routes.
+            Loading trips...
+          </div>
+        ) : trips.length === 0 ? (
+          <div
+            style={{
+              padding: '40px 16px',
+              textAlign: 'center',
+              color: 'var(--color-text-muted)',
+              fontSize: 13,
+            }}
+          >
+            No trips match the current filters.
           </div>
         ) : (
           trips.map((trip, i) => (
@@ -63,6 +85,43 @@ export const TripsTable = memo(function TripsTable({ trips, onTripClick, selecte
               />
             </div>
           ))
+        )}
+
+        {hasMore && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              padding: '12px 16px',
+              borderTop: '1px solid var(--color-border)',
+            }}
+          >
+            <button
+              onClick={onLoadMore}
+              disabled={loadingMore}
+              style={{
+                padding: '8px 18px',
+                borderRadius: 8,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface-hover)',
+                color: 'var(--color-text-primary)',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: loadingMore ? 'default' : 'pointer',
+                opacity: loadingMore ? 0.6 : 1,
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {loadingMore ? 'Loading...' : 'Load more trips'}
+            </button>
+            {totalCount != null && loadedCount != null && (
+              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                {loadedCount} of {totalCount} loaded
+              </span>
+            )}
+          </div>
         )}
       </div>
     </div>

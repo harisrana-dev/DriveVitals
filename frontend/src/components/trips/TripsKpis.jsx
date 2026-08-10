@@ -1,14 +1,18 @@
 import { memo } from 'react';
 import { Route, Map, Shield, Fuel } from 'lucide-react';
-import { useTripsSummary } from '../../hooks/useTripsData';
 
-export const TripsKpis = memo(function TripsKpis() {
-  const summary = useTripsSummary();
+export const TripsKpis = memo(function TripsKpis({ summary }) {
+  const data = {
+    totalTrips: summary?.totalTrips ?? 0,
+    totalDistance: summary?.totalDistance ?? 0,
+    avgSafetyScore: summary?.avgSafetyScore ?? 0,
+    totalFuel: summary?.totalFuel ?? 0,
+  };
 
   const cards = [
     {
-      label: 'Total Trips',
-      value: summary.totalTrips,
+      label: 'Trips Loaded',
+      value: data.totalTrips,
       icon: <Route size={18} strokeWidth={1.8} />,
       color: 'var(--color-accent)',
       bgColor: 'var(--color-accent-subtle)',
@@ -16,7 +20,7 @@ export const TripsKpis = memo(function TripsKpis() {
     },
     {
       label: 'Total Distance',
-      value: summary.totalDistance.toFixed(1),
+      value: data.totalDistance.toFixed(1),
       icon: <Map size={18} strokeWidth={1.8} />,
       color: 'var(--color-green)',
       bgColor: 'var(--color-green-bg)',
@@ -24,15 +28,15 @@ export const TripsKpis = memo(function TripsKpis() {
     },
     {
       label: 'Avg Safety Score',
-      value: Math.round(summary.avgSafetyScore),
+      value: Math.round(data.avgSafetyScore),
       icon: <Shield size={18} strokeWidth={1.8} />,
-      color: summary.avgSafetyScore >= 80 ? 'var(--color-green)' : summary.avgSafetyScore >= 60 ? 'var(--color-amber)' : 'var(--color-red)',
-      bgColor: summary.avgSafetyScore >= 80 ? 'var(--color-green-bg)' : summary.avgSafetyScore >= 60 ? 'var(--color-amber-bg)' : 'var(--color-red-bg)',
+      color: data.avgSafetyScore >= 80 ? 'var(--color-green)' : data.avgSafetyScore >= 60 ? 'var(--color-amber)' : 'var(--color-red)',
+      bgColor: data.avgSafetyScore >= 80 ? 'var(--color-green-bg)' : data.avgSafetyScore >= 60 ? 'var(--color-amber-bg)' : 'var(--color-red-bg)',
       suffix: '%',
     },
     {
       label: 'Total Fuel',
-      value: summary.totalFuel.toFixed(1),
+      value: data.totalFuel.toFixed(1),
       icon: <Fuel size={18} strokeWidth={1.8} />,
       color: 'var(--color-amber)',
       bgColor: 'var(--color-amber-bg)',

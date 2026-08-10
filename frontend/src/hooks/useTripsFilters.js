@@ -1,8 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTrips } from './useTripsData';
+import { listTrips } from '../services/api/tripApi';
+import { mapTrips } from '../utils/trips';
+import {
+  buildTripQuery,
+  computeTripSummary,
+  matchesTripSearch,
+  refineTrips,
+  sortTrips,
+} from '../utils/tripFilters';
+
+const INITIAL_STATE = {
+  items: [],
+  count: 0,
+  offset: 0,
+  initialLoading: true,
+  loadingMore: false,
+  error: null,
+};
 
 export function useTripsFilters() {
-  const trips = useTrips();
+  const liveTrips = useTrips();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -15,115 +33,143 @@ export function useTripsFilters() {
   const [sortBy, setSortBy] = useState('date');
   const [sortAsc, setSortAsc] = useState(false);
 
+  const [history, setHistory] = useState(INITIAL_STATE);
+  const [refreshIndex, setRefreshIndex] = useState(0);
+
+  const historyRef = useRef(history);
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  const requestSeq = useRef(0);
+
+  const serverQuery = useMemo(
+    () => buildTripQuery({ statusFilter, routeFilter, driverFilter, vehicleFilter }),
+    [statusFilter, routeFilter, driverFilter, vehicleFilter]
+  );
+
+  useEffect(() => {
+    const seq = ++requestSeq.current;
+    setHistory((prev) => ({
+      ...prev,
+      items: [],
+      count: 0,
+      offset: 0,
+      initialLoading: true,
+      loadingMore: false,
+      error: null,
+    }));
+
+    listTrips({ ...serverQuery, offset: 0 })
+      .then((res) => {
+        if (requestSeq.current !== seq) return;
+        const data = mapTrips(res?.data);
+        setHistory({
+          items: data,
+          count: typeof res?.count === 'number' ? res.count : data.length,
+          offset: data.length,
+          initialLoading: false,
+          loadingMore: false,
+          error: null,
+        });
+      })
+      .catch((err) => {
+        if (requestSeq.current !== seq) return;
+        setHistory((prev) => ({ ...prev, initialLoading: false, error: err }));
+      });
+  }, [serverQuery, refreshIndex]);
+
+  const loadMoreTrips = useCallback(async () => {
+    const current = historyRef.current;
+    if (current.initialLoading || current.loadingMore) return;
+    if (current.offset >= current.count) return;
+
+    const seq = requestSeq.current;
+    setHistory((prev) => ({ ...prev, loadingMore: true }));
+
+    try {
+      const res = await listTrips({ ...serverQuery, offset: current.offset });
+      if (requestSeq.current !== seq) return;
+      const data = mapTrips(res?.data);
+      setHistory((prev) => {
+        const seen = new Set(prev.items.map((t) => t.id));
+        const fresh = data.filter((t) => t && !seen.has(t.id));
+        return {
+          items: [...prev.items, ...fresh],
+          count: typeof res?.count === 'number' ? res.count : prev.count,
+          offset: prev.offset + data.length,
+          initialLoading: false,
+          loadingMore: false,
+          error: null,
+        };
+      });
+    } catch (err) {
+      if (requestSeq.current !== seq) return;
+      setHistory((prev) => ({ ...prev, loadingMore: false, error: err }));
+    }
+  }, [serverQuery]);
+
+  const retryTrips = useCallback(() => {
+    setRefreshIndex((i) => i + 1);
+  }, []);
+
+  const activeTrips = useMemo(
+    () =>
+      sortTrips(
+        (liveTrips || []).filter(
+          (t) => t.status === 'in_progress' && matchesTripSearch(t, search)
+        ),
+        sortBy,
+        sortAsc
+      ),
+    [liveTrips, search, sortBy, sortAsc]
+  );
+
+  const historicalTrips = useMemo(
+    () =>
+      sortTrips(
+        refineTrips(history.items, { search, gradeFilter, dateFrom, dateTo }),
+        sortBy,
+        sortAsc
+      ),
+    [history.items, search, gradeFilter, dateFrom, dateTo, sortBy, sortAsc]
+  );
+
   const driverOptions = useMemo(() => {
     const seen = new Map();
-    (trips || []).forEach((t) => {
+    [...history.items, ...(liveTrips || [])].forEach((t) => {
       if (t.driverId && !seen.has(t.driverId)) {
-        seen.set(t.driverId, t.driverName);
+        seen.set(t.driverId, t.driverName || t.driverId);
       }
     });
     return Array.from(seen, ([value, label]) => ({ value, label }));
-  }, [trips]);
+  }, [history.items, liveTrips]);
 
   const vehicleOptions = useMemo(() => {
     const seen = new Map();
-    (trips || []).forEach((t) => {
+    [...history.items, ...(liveTrips || [])].forEach((t) => {
       if (t.vehicleId && !seen.has(t.vehicleId)) {
-        seen.set(t.vehicleId, t.vehicleName);
+        seen.set(t.vehicleId, t.vehicleName || t.vehicleId);
       }
     });
     return Array.from(seen, ([value, label]) => ({ value, label }));
-  }, [trips]);
+  }, [history.items, liveTrips]);
 
-  const applySearch = useMemo(() => (list) => {
-    if (!search.trim()) return list;
-    const q = search.toLowerCase();
-    return list.filter(
-      (t) =>
-        t.vehicleName.toLowerCase().includes(q) ||
-        t.vehicleId.toLowerCase().includes(q) ||
-        t.driverName.toLowerCase().includes(q) ||
-        t.driverId?.toLowerCase().includes(q) ||
-        t.id.toLowerCase().includes(q) ||
-        (t.routeName || '').toLowerCase().includes(q)
-    );
-  }, [search]);
-
-  const sortTrips = useMemo(() => (list) => {
-    const result = [...list];
-    result.sort((a, b) => {
-      let cmp = 0;
-      switch (sortBy) {
-        case 'date':
-          cmp = (a.completedAt || a.startedAt || '').localeCompare(b.completedAt || b.startedAt || '');
-          break;
-        case 'distance':
-          cmp = a.distance - b.distance;
-          break;
-        case 'score':
-          cmp = a.safetyScore - b.safetyScore;
-          break;
-        case 'fuel':
-          cmp = a.fuelConsumed - b.fuelConsumed;
-          break;
+  const summary = useMemo(() => {
+    const seen = new Set();
+    const all = [];
+    [...history.items, ...(liveTrips || [])].forEach((t) => {
+      if (t && t.id && !seen.has(t.id)) {
+        seen.add(t.id);
+        all.push(t);
       }
-      return sortAsc ? cmp : -cmp;
     });
-    return result;
-  }, [sortBy, sortAsc]);
+    return computeTripSummary(all);
+  }, [history.items, liveTrips]);
 
-  const activeTrips = useMemo(
-    () => sortTrips(applySearch((trips || []).filter((t) => t.status === 'in_progress'))),
-    [trips, applySearch, sortTrips]
-  );
+  const toggleSort = useCallback(() => setSortAsc((prev) => !prev), []);
 
-  const completedTrips = useMemo(() => {
-    let result = (trips || []).filter((t) => t.completedAt != null);
-
-    if (driverFilter) {
-      result = result.filter((t) => t.driverId === driverFilter);
-    }
-    if (vehicleFilter) {
-      result = result.filter((t) => t.vehicleId === vehicleFilter);
-    }
-    if (gradeFilter) {
-      result = result.filter((t) => t.grade === gradeFilter);
-    }
-    if (dateFrom) {
-      const from = new Date(`${dateFrom}T00:00:00`).getTime();
-      result = result.filter((t) => {
-        const ts = new Date(t.completedAt || t.startedAt).getTime();
-        return !Number.isNaN(ts) && ts >= from;
-      });
-    }
-    if (dateTo) {
-      const to = new Date(`${dateTo}T23:59:59.999`).getTime();
-      result = result.filter((t) => {
-        const ts = new Date(t.completedAt || t.startedAt).getTime();
-        return !Number.isNaN(ts) && ts <= to;
-      });
-    }
-    if (statusFilter === 'running') return [];
-
-    if (routeFilter) {
-      result = result.filter((t) => t.routeType === routeFilter);
-    }
-
-    return sortTrips(applySearch(result));
-  }, [
-    trips,
-    statusFilter,
-    routeFilter,
-    driverFilter,
-    vehicleFilter,
-    gradeFilter,
-    dateFrom,
-    dateTo,
-    applySearch,
-    sortTrips,
-  ]);
-
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setSearch('');
     setStatusFilter('');
     setRouteFilter('');
@@ -132,11 +178,12 @@ export function useTripsFilters() {
     setGradeFilter('');
     setDateFrom('');
     setDateTo('');
-  };
+  }, []);
 
   return {
     activeTrips,
-    completedTrips,
+    historicalTrips,
+    liveTrips,
     search,
     setSearch,
     statusFilter,
@@ -159,7 +206,16 @@ export function useTripsFilters() {
     setSortBy,
     sortAsc,
     setSortAsc,
-    toggleSort: () => setSortAsc((prev) => !prev),
+    toggleSort,
     resetFilters,
+    loadMoreTrips,
+    retryTrips,
+    summary,
+    historyCount: history.count,
+    historyLoaded: history.items.length,
+    historyError: history.error,
+    historyLoading: history.initialLoading,
+    historyLoadingMore: history.loadingMore,
+    historyHasMore: history.items.length < history.count,
   };
 }

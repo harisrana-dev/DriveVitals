@@ -132,6 +132,7 @@ export function LiveDataProvider({ children }) {
   const [tripsSnapshot, setTripsSnapshot] = useState(null);
   const [restTrips, setRestTrips] = useState([]);
   const [dashboardConnectionState, setDashboardConnectionState] = useState("connecting");
+  const [tripsConnectionState, setTripsConnectionState] = useState("connecting");
 
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -186,6 +187,7 @@ export function LiveDataProvider({ children }) {
             setTripsSnapshot(message.data);
           }
         },
+        onState: setTripsConnectionState,
       }
     );
 
@@ -318,6 +320,7 @@ export function LiveDataProvider({ children }) {
     alerts,
     telemetry,
     connectionStatus,
+    tripsConnectionState,
     lastUpdate,
     syncing,
     sync,

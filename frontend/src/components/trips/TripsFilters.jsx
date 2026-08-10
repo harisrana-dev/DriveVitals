@@ -3,7 +3,9 @@ import { Search, ArrowUpDown, RotateCcw } from 'lucide-react';
 
 const statusOptions = [
   { value: '', label: 'All Statuses' },
+  { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
+  { value: 'aborted', label: 'Aborted' },
 ];
 
 const routeTypeOptions = [

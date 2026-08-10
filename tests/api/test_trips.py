@@ -155,3 +155,94 @@ class TestTrips:
         assert trip["safety_score"] is None
         assert trip["grade"] is None
         assert trip["events"] == []
+
+    async def test_list_trips_filter_by_status(self, client: AsyncClient) -> None:
+        for status, expected in {
+            "completed": {"t-1", "t-2", "t-4"},
+            "in_progress": {"t-3"},
+            "aborted": {"t-5"},
+        }.items():
+            response = await client.get("/api/v1/trips", params={"status": status})
+
+            assert response.status_code == 200
+            payload = response.json()
+            assert {item["trip_id"] for item in payload["data"]} == expected
+            assert all(item["status"] == status for item in payload["data"])
+
+    async def test_list_trips_filter_by_multiple_statuses(
+        self, client: AsyncClient
+    ) -> None:
+        response = await client.get(
+            "/api/v1/trips", params={"status": "completed,aborted"}
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["count"] == 4
+        assert {item["trip_id"] for item in payload["data"]} == {
+            "t-1",
+            "t-2",
+            "t-4",
+            "t-5",
+        }
+        assert {item["status"] for item in payload["data"]} == {
+            "completed",
+            "aborted",
+        }
+
+    async def test_list_trips_status_precedence_over_completed(
+        self, client: AsyncClient
+    ) -> None:
+        response = await client.get(
+            "/api/v1/trips",
+            params={"status": "aborted", "completed": "true"},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["count"] == 1
+        assert {item["trip_id"] for item in payload["data"]} == {"t-5"}
+
+    async def test_list_trips_filter_by_route_type(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/trips", params={"route_type": "urban"}
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["count"] == 3
+        assert {item["trip_id"] for item in payload["data"]} == {"t-1", "t-3", "t-4"}
+        assert all(item["route_type"] == "urban" for item in payload["data"])
+
+    async def test_list_trips_deterministic_ordering(self, client: AsyncClient) -> None:
+        """Trips are ordered by start_time DESC with a stable secondary key."""
+        response = await client.get(
+            "/api/v1/trips", params={"limit": 100}
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        ids = [item["trip_id"] for item in payload["data"]]
+
+        assert ids == sorted(
+            ids, key=lambda tid: {
+                "t-5": "2026-01-05T08:00:00Z",
+                "t-4": "2026-01-04T08:00:00Z",
+                "t-3": "2026-01-03T08:00:00Z",
+                "t-2": "2026-01-02T08:00:00Z",
+                "t-1": "2026-01-01T08:00:00Z",
+            }[tid],
+            reverse=True,
+        )
+
+    async def test_list_trips_status_pagination(self, client: AsyncClient) -> None:
+        response = await client.get(
+            "/api/v1/trips",
+            params={"status": "completed,aborted", "limit": 2, "offset": 2},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert len(payload["data"]) == 2
+        assert payload["count"] == 4
+        assert {item["trip_id"] for item in payload["data"]} == {"t-2", "t-1"}

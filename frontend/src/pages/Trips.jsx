@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { Radio } from 'lucide-react';
 import { useTripsFilters } from '../hooks/useTripsFilters';
 import { useTripDrawer } from '../context/TripDrawerContext';
 import { TripsKpis } from '../components/trips/TripsKpis';
@@ -8,7 +7,7 @@ import { TripsTable } from '../components/trips/TripsTable';
 import { ActiveTripsList } from '../components/trips/ActiveTripsList';
 import { TripDrawer } from '../components/trips/TripDrawer';
 
-function SectionHeader({ title, subtitle, count, live }) {
+function SectionHeader({ title, subtitle, count }) {
   return (
     <div
       style={{
@@ -28,26 +27,6 @@ function SectionHeader({ title, subtitle, count, live }) {
         >
           {title}
         </h2>
-        {live && (
-          <span
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              color: 'var(--color-green)',
-              background: 'var(--color-green-bg)',
-              padding: '2px 8px',
-              borderRadius: 20,
-              textTransform: 'uppercase',
-            }}
-          >
-            <Radio size={11} />
-            Live
-          </span>
-        )}
         {count != null && (
           <span
             style={{
@@ -72,7 +51,7 @@ function SectionHeader({ title, subtitle, count, live }) {
 export function TripsPage() {
   const {
     activeTrips,
-    completedTrips,
+    historicalTrips,
     search,
     setSearch,
     statusFilter,
@@ -96,6 +75,15 @@ export function TripsPage() {
     sortAsc,
     toggleSort,
     resetFilters,
+    loadMoreTrips,
+    retryTrips,
+    summary,
+    historyCount,
+    historyLoaded,
+    historyError,
+    historyLoading,
+    historyLoadingMore,
+    historyHasMore,
   } = useTripsFilters();
 
   const { selectedTrip, openDrawer, closeDrawer } = useTripDrawer();
@@ -143,7 +131,7 @@ export function TripsPage() {
         </div>
       </div>
 
-      <TripsKpis />
+      <TripsKpis summary={summary} />
 
       <TripsFilters
         search={search}
@@ -181,9 +169,8 @@ export function TripsPage() {
       >
         <SectionHeader
           title="Active Trips"
-          subtitle="Trips currently in progress"
+          subtitle="Telemetry available in trip details"
           count={activeTrips.length}
-          live
         />
         <ActiveTripsList
           trips={activeTrips}
@@ -216,14 +203,51 @@ export function TripsPage() {
         }}
       >
         <SectionHeader
-          title="Historical Trips"
-          subtitle="Completed trips with full analytics"
-          count={completedTrips.length}
+          title="Trip History"
+          subtitle="Completed and aborted trips with full analytics"
+          count={historyCount}
         />
+        {historyError && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 10,
+              padding: '10px 16px',
+              borderRadius: 8,
+              background: 'var(--color-red-bg)',
+              color: 'var(--color-red)',
+              fontSize: 13,
+            }}
+          >
+            <span>Failed to load trips. Showing the live trip stream instead.</span>
+            <button
+              onClick={retryTrips}
+              style={{
+                padding: '4px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--color-red)',
+                background: 'transparent',
+                color: 'var(--color-red)',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
         <TripsTable
-          trips={completedTrips}
+          trips={historicalTrips}
           onTripClick={handleTripClick}
           selectedTripId={selectedTrip?.id}
+          loading={historyLoading}
+          hasMore={historyHasMore}
+          onLoadMore={loadMoreTrips}
+          loadingMore={historyLoadingMore}
+          loadedCount={historyLoaded}
+          totalCount={historyCount}
         />
       </div>
 

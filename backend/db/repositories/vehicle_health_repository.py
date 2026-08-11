@@ -52,12 +52,12 @@ class VehicleHealthRepository(BaseRepository):
 
         health = VehicleHealth(
             vehicle_id=vehicle_id,
-            overall_health_score=overall_health_score if overall_health_score is not None else 100.0,
-            engine_health=engine_health if engine_health is not None else 100.0,
-            brake_health=brake_health if brake_health is not None else 100.0,
-            transmission_health=transmission_health if transmission_health is not None else 100.0,
-            cooling_health=cooling_health if cooling_health is not None else 100.0,
-            fuel_system_health=fuel_system_health if fuel_system_health is not None else 100.0,
+            overall_health_score=overall_health_score,
+            engine_health=engine_health,
+            brake_health=brake_health,
+            transmission_health=transmission_health,
+            cooling_health=cooling_health,
+            fuel_system_health=fuel_system_health,
             last_updated=now,
         )
         self._session.add(health)

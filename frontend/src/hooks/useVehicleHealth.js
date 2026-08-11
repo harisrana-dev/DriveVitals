@@ -1,51 +1,43 @@
 import { useMemo } from 'react';
 import { useLiveData } from '../context/LiveDataContext';
-import { computeComponentHealth, healthCategory } from '../utils/health';
+import { canonicalHealthCategory } from '../utils/health';
 
-function clamp(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return 100;
-  return Math.max(0, Math.min(100, Math.round(n)));
+const COMPONENT_KEYS = ['engine', 'cooling', 'braking', 'transmission', 'fuel'];
+
+function subsystemScore(v, key) {
+  switch (key) {
+    case 'engine': return v.engine_health ?? null;
+    case 'cooling': return v.cooling_health ?? null;
+    case 'braking': return v.brake_health ?? null;
+    case 'transmission': return v.transmission_health ?? null;
+    case 'fuel': return v.fuel_system_health ?? null;
+    default: return null;
+  }
 }
 
-function average(a, b) {
-  const x = Number(a);
-  const y = Number(b);
-  const nums = [x, y].filter((n) => Number.isFinite(n));
-  if (nums.length === 0) return 100;
-  return nums.reduce((sum, n) => sum + n, 0) / nums.length;
+function subsystemStatus(v, key) {
+  switch (key) {
+    case 'engine': return v.engine_health_status ?? null;
+    case 'cooling': return v.cooling_health_status ?? null;
+    case 'braking': return v.brake_health_status ?? null;
+    case 'transmission': return v.transmission_health_status ?? null;
+    case 'fuel': return v.fuel_system_health_status ?? null;
+    default: return null;
+  }
 }
 
-function mapComponentHealth(record) {
-  if (!record) return null;
-  return {
-    engine: clamp(record.engine_health),
-    braking: clamp(record.brake_health),
-    fuel: clamp(record.fuel_system_health),
-    behaviour: clamp(average(record.transmission_health, record.cooling_health)),
-  };
-}
+function mapVehicle(v) {
+  const overallHealth = v.overall_health_score ?? null;
+  const healthStatus = v.overall_health_status ?? null;
 
-function mapVehicle(v, healthRecord) {
-  const restComponents = mapComponentHealth(healthRecord);
-  const liveComponents = computeComponentHealth({
-    coolantTemp: v.coolant_temperature_c ?? 0,
-    engineLoad: v.engine_load_percent ?? 0,
-    harshBraking: v.harsh_braking ?? false,
-    brakePressure: v.brake_percent ?? 0,
-    fuelLevel: v.fuel_level_percent ?? 0,
-    aggressiveThrottle: v.aggressive_throttle ?? false,
-    speeding: v.speeding ?? false,
-    highRpm: v.high_rpm ?? false,
-  });
-
-  const overall = v.overall_health_score ?? healthRecord?.overall_health_score ?? 100;
-  const components = {
-    engine: restComponents?.engine ?? liveComponents.engine,
-    braking: restComponents?.braking ?? liveComponents.braking,
-    fuel: restComponents?.fuel ?? liveComponents.fuel,
-    behaviour: restComponents?.behaviour ?? liveComponents.behaviour,
-  };
+  const components = {};
+  const componentsStatus = {};
+  for (const key of COMPONENT_KEYS) {
+    const score = subsystemScore(v, key);
+    const status = subsystemStatus(v, key);
+    components[key] = score;
+    componentsStatus[key] = status;
+  }
 
   return {
     id: v.vehicle_id,
@@ -53,15 +45,19 @@ function mapVehicle(v, healthRecord) {
     driverId: v.driver_id,
     driverName: v.driver_name || '\u2014',
     status: v.operational_status,
-    overallHealth: overall,
-    healthCategory: healthCategory(overall),
+    overallHealth: overallHealth,
+    healthStatus: healthStatus,
+    healthCategory: canonicalHealthCategory(overallHealth, healthStatus),
     components,
-    speed: v.speed_kmh ?? 0,
-    rpm: v.rpm ?? 0,
-    fuelLevel: v.fuel_level_percent ?? 0,
-    coolantTemp: v.coolant_temperature_c ?? 0,
-    engineLoad: v.engine_load_percent ?? 0,
-    brakePressure: v.brake_percent ?? 0,
+    componentsStatus,
+    healthReasons: v.health_reasons || [],
+    speed: v.speed_kmh ?? null,
+    rpm: v.rpm ?? null,
+    fuelLevel: v.fuel_level_percent ?? null,
+    coolantTemp: v.coolant_temperature_c ?? null,
+    engineLoad: v.engine_load_percent ?? null,
+    brakePressure: v.brake_percent ?? null,
+    odometer: v.odometer_km ?? null,
     activeEvents: v.active_event_types || [],
     speeding: !!v.speeding,
     harshBraking: !!v.harsh_braking,
@@ -72,18 +68,21 @@ function mapVehicle(v, healthRecord) {
 }
 
 export function useVehicleHealth() {
-  const { mergedFleet, vehicleHealth } = useLiveData();
+  const { mergedFleet } = useLiveData();
 
   return useMemo(() => {
     if (!Array.isArray(mergedFleet) || mergedFleet.length === 0) {
       return { vehicles: [], fleetStats: null };
     }
 
-    const healthById = new Map((vehicleHealth || []).map((h) => [h.vehicle_id, h]));
-    const vehicles = mergedFleet.map((v) => mapVehicle(v, healthById.get(v.vehicle_id)));
+    const vehicles = mergedFleet.map(mapVehicle);
 
-    const scores = vehicles.map((v) => v.overallHealth);
-    const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    const scores = vehicles
+      .map((v) => v.overallHealth)
+      .filter((s) => s != null);
+    const avgScore = scores.length > 0
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : null;
 
     const healthyCount = vehicles.filter((v) => v.healthCategory === 'healthy').length;
     const warningCount = vehicles.filter((v) => v.healthCategory === 'warning').length;
@@ -99,7 +98,7 @@ export function useVehicleHealth() {
         criticalCount,
       },
     };
-  }, [mergedFleet, vehicleHealth]);
+  }, [mergedFleet]);
 }
 
 export function useVehicle(vehicleId) {

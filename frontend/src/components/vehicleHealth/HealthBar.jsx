@@ -1,9 +1,10 @@
 import { memo } from 'react';
-import { healthCategory, healthColor } from '../../utils/health';
+import { canonicalHealthCategory, healthColor, healthLabel } from '../../utils/health';
 
-export const HealthBar = memo(function HealthBar({ score, height, showLabel }) {
-  const cat = healthCategory(score);
+export const HealthBar = memo(function HealthBar({ score, status, height, showLabel }) {
+  const cat = canonicalHealthCategory(score ?? null, status ?? null);
   const color = healthColor(cat);
+  const hasScore = score != null;
 
   return (
     <div style={{ width: '100%' }}>
@@ -18,10 +19,10 @@ export const HealthBar = memo(function HealthBar({ score, height, showLabel }) {
       >
         <div
           style={{
-            width: `${Math.max(0, Math.min(100, score ?? 0))}%`,
+            width: `${hasScore ? Math.max(0, Math.min(100, score)) : 0}%`,
             height: '100%',
             borderRadius: 3,
-            background: color,
+            background: hasScore ? color : 'var(--color-border)',
             transition: 'background-color 0.4s ease, width 0.4s ease',
           }}
         />
@@ -36,9 +37,9 @@ export const HealthBar = memo(function HealthBar({ score, height, showLabel }) {
           }}
         >
           <span style={{ color: 'var(--color-text-secondary)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
-            {Math.round(score ?? 0)}%
+            {hasScore ? `${Math.round(score)}%` : '\u2014'}
           </span>
-          <span style={{ color, fontWeight: 500, textTransform: 'capitalize' }}>{cat}</span>
+          <span style={{ color, fontWeight: 500, textTransform: 'capitalize' }}>{healthLabel(cat)}</span>
         </div>
       )}
     </div>

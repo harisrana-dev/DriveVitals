@@ -278,21 +278,6 @@ class DriveVitalsRuntime:
         )
 
         # --------------------------------------------------------------
-        # Dashboard builder
-        # --------------------------------------------------------------
-
-        self._dashboard_builder = (
-            DashboardBuilder(
-                context_store=(
-                    self._context_store
-                ),
-                trip_provider=(
-                    self._fleet.trip_for_vehicle
-                ),
-            )
-        )
-
-        # --------------------------------------------------------------
         # Analytics engine
         # --------------------------------------------------------------
 
@@ -370,6 +355,28 @@ class DriveVitalsRuntime:
 
         self._telemetry_pipeline.register(
             self._vehicle_health_consumer
+        )
+
+        # --------------------------------------------------------------
+        # Dashboard builder
+        #
+        # Constructed after the fleet intelligence state so the live
+        # dashboard can consume the canonical vehicle health snapshot
+        # computed by the health engine instead of deriving its own.
+        # --------------------------------------------------------------
+
+        self._dashboard_builder = (
+            DashboardBuilder(
+                context_store=(
+                    self._context_store
+                ),
+                trip_provider=(
+                    self._fleet.trip_for_vehicle
+                ),
+                health_provider=(
+                    self._intelligence_state.get_health_snapshot
+                ),
+            )
         )
 
         self._driver_statistics_engine = (

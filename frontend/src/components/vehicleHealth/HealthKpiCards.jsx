@@ -5,17 +5,19 @@ import { useSmoothValue } from '../../hooks/useSmoothValue';
 
 export const HealthKpiCards = memo(function HealthKpiCards() {
   const { fleetStats } = useVehicleHealth();
-  const safeAvg = fleetStats?.avgScore ?? 0;
+  const hasAvg = fleetStats?.avgScore != null;
+  const safeAvg = hasAvg ? fleetStats.avgScore : 0;
   const smoothFleetHealth = useSmoothValue(safeAvg);
+  const displayedAvg = hasAvg ? Math.round(smoothFleetHealth) : '\u2014';
 
   const cards = [
     {
       label: 'Fleet Health Score',
-      value: smoothFleetHealth,
+      value: displayedAvg,
       icon: <HeartPulse size={18} strokeWidth={1.8} />,
-      color: smoothFleetHealth >= 80 ? 'var(--color-green)' : smoothFleetHealth >= 50 ? 'var(--color-amber)' : 'var(--color-red)',
-      bgColor: smoothFleetHealth >= 80 ? 'var(--color-green-bg)' : smoothFleetHealth >= 50 ? 'var(--color-amber-bg)' : 'var(--color-red-bg)',
-      suffix: '%',
+      color: !hasAvg ? 'var(--color-text-muted)' : smoothFleetHealth >= 90 ? 'var(--color-green)' : smoothFleetHealth >= 70 ? 'var(--color-amber)' : 'var(--color-red)',
+      bgColor: !hasAvg ? 'var(--color-surface-hover)' : smoothFleetHealth >= 90 ? 'var(--color-green-bg)' : smoothFleetHealth >= 70 ? 'var(--color-amber-bg)' : 'var(--color-red-bg)',
+      suffix: hasAvg ? '%' : '',
     },
     {
       label: 'Healthy Vehicles',

@@ -1,39 +1,35 @@
-export function computeComponentHealth(v) {
-  let engine = 100;
-  if (v.coolantTemp > 105) engine -= 30;
-  else if (v.coolantTemp > 95) engine -= 15;
-  if (v.engineLoad > 85) engine -= 10;
+export const HEALTHY_MIN = 90;
+export const WARNING_MIN = 70;
 
-  let braking = 100;
-  if (v.harshBraking) braking -= 25;
-  if (v.brakePressure > 70) braking -= 10;
-
-  let fuel = 100;
-  if (v.fuelLevel < 15) fuel -= 30;
-  else if (v.fuelLevel < 30) fuel -= 15;
-  if (v.aggressiveThrottle) fuel -= 20;
-
-  let behaviour = 100;
-  if (v.speeding) behaviour -= 15;
-  if (v.aggressiveThrottle) behaviour -= 10;
-  if (v.highRpm) behaviour -= 10;
-
-  return {
-    engine: Math.max(0, Math.min(100, engine)),
-    braking: Math.max(0, Math.min(100, braking)),
-    fuel: Math.max(0, Math.min(100, fuel)),
-    behaviour: Math.max(0, Math.min(100, behaviour)),
-  };
-}
-
-export function healthCategory(score) {
-  if (score == null) return 'healthy';
-  if (score >= 80) return 'healthy';
-  if (score >= 50) return 'warning';
+export function canonicalHealthCategory(score, status) {
+  if (status === 'healthy' || status === 'warning' || status === 'critical') {
+    return status;
+  }
+  if (score == null) return 'unavailable';
+  if (score >= HEALTHY_MIN) return 'healthy';
+  if (score >= WARNING_MIN) return 'warning';
   return 'critical';
 }
 
-export function healthColor(category) {
+export function healthCategory(score) {
+  return canonicalHealthCategory(score, null);
+}
+
+export function healthLabel(category) {
+  switch (category) {
+    case 'healthy': return 'Healthy';
+    case 'warning': return 'Warning';
+    case 'critical': return 'Critical';
+    case 'unavailable': return 'Unavailable';
+    default: return category || 'Unavailable';
+  }
+}
+
+export function healthColor(categoryOrScore) {
+  const category =
+    typeof categoryOrScore === 'number' || categoryOrScore == null
+      ? canonicalHealthCategory(categoryOrScore, null)
+      : categoryOrScore;
   switch (category) {
     case 'healthy': return 'var(--color-green)';
     case 'warning': return 'var(--color-amber)';
@@ -42,31 +38,34 @@ export function healthColor(category) {
   }
 }
 
-export function healthBg(category) {
+export function healthBg(categoryOrScore) {
+  const category =
+    typeof categoryOrScore === 'number' || categoryOrScore == null
+      ? canonicalHealthCategory(categoryOrScore, null)
+      : categoryOrScore;
   switch (category) {
     case 'healthy': return 'var(--color-green-bg)';
     case 'warning': return 'var(--color-amber-bg)';
     case 'critical': return 'var(--color-red-bg)';
-    default: return 'var(--color-bg)';
+    default: return 'var(--color-surface-hover)';
   }
 }
 
 export function componentLabel(key) {
   switch (key) {
     case 'engine': return 'Engine';
-    case 'braking': return 'Braking';
-    case 'fuel': return 'Fuel Efficiency';
-    case 'behaviour': return 'Driver Behaviour';
+    case 'cooling': return 'Cooling';
+    case 'braking': return 'Brakes';
+    case 'transmission': return 'Transmission';
+    case 'fuel': return 'Fuel System';
     default: return key;
   }
 }
 
-export function componentIcon(key) {
-  switch (key) {
-    case 'engine': return '\u26ED';
-    case 'braking': return '\u26FD';
-    case 'fuel': return '\u26FD';
-    case 'behaviour': return '\u26A0';
-    default: return '\u25CF';
-  }
+export function healthReasonLabel(reason) {
+  if (!reason) return 'Health concern detected';
+  const idx = String(reason).indexOf(' (');
+  const head = idx >= 0 ? String(reason).slice(0, idx) : String(reason);
+  const detail = idx >= 0 ? String(reason).slice(idx) : '';
+  return head.charAt(0).toUpperCase() + head.slice(1) + detail;
 }

@@ -73,6 +73,30 @@ class VehicleDashboardSummary:
 
     fuel_used_liters: float | None = None
 
+    overall_health_status: str | None = None
+
+    engine_health: float | None = None
+
+    cooling_health: float | None = None
+
+    brake_health: float | None = None
+
+    transmission_health: float | None = None
+
+    fuel_system_health: float | None = None
+
+    engine_health_status: str | None = None
+
+    cooling_health_status: str | None = None
+
+    brake_health_status: str | None = None
+
+    transmission_health_status: str | None = None
+
+    fuel_system_health_status: str | None = None
+
+    health_reasons: tuple[str, ...] = ()
+
 
 @dataclass(frozen=True, slots=True)
 class DashboardSnapshot:
@@ -89,7 +113,7 @@ class DashboardSnapshot:
 
     active_vehicle_count: int
 
-    fleet_health_score: float
+    fleet_health_score: float | None
 
     attention_required: int
 

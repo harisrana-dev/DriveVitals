@@ -4,11 +4,17 @@ import { HealthStatusBadge } from './HealthStatusBadge';
 import { HealthBar } from './HealthBar';
 import { componentLabel } from '../../utils/health';
 
-const COMPONENT_KEYS = ['engine', 'braking', 'fuel', 'behaviour'];
+const COMPONENT_KEYS = ['engine', 'cooling', 'braking', 'transmission', 'fuel'];
 
 export const VehicleHealthCard = memo(function VehicleHealthCard({ vehicle, onClick, index }) {
   const [hovered, setHovered] = useState(false);
   const hasIssues = vehicle.activeEvents.length > 0;
+  const hasScore = vehicle.overallHealth != null;
+  const ringColor = hasScore
+    ? vehicle.healthCategory === 'healthy' ? 'var(--color-green)'
+      : vehicle.healthCategory === 'warning' ? 'var(--color-amber)'
+      : 'var(--color-red)'
+    : 'var(--color-border)';
 
   return (
     <div
@@ -80,20 +86,16 @@ export const VehicleHealthCard = memo(function VehicleHealthCard({ vehicle, onCl
               cy={36}
               r={30}
               fill="none"
-              stroke={
-                vehicle.overallHealth >= 80 ? 'var(--color-green)' :
-                vehicle.overallHealth >= 50 ? 'var(--color-amber)' :
-                'var(--color-red)'
-              }
+              stroke={ringColor}
               strokeWidth={5}
-              strokeDasharray={`${(vehicle.overallHealth / 100) * 188.5} 188.5`}
+              strokeDasharray={hasScore ? `${(vehicle.overallHealth / 100) * 188.5} 188.5` : `0 188.5`}
               strokeDashoffset={0}
               strokeLinecap="round"
               transform="rotate(-90 36 36)"
               style={{ transition: 'stroke-dasharray 0.4s ease' }}
             />
             <text x={36} y={36} textAnchor="middle" dy="4" fontSize="16" fontWeight="700" fill="var(--color-text-primary)">
-              {Math.round(vehicle.overallHealth)}
+              {hasScore ? Math.round(vehicle.overallHealth) : '\u2014'}
             </text>
           </svg>
         </div>
@@ -111,7 +113,7 @@ export const VehicleHealthCard = memo(function VehicleHealthCard({ vehicle, onCl
             <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
               {componentLabel(key)}
             </span>
-            <HealthBar score={vehicle.components[key]} height={4} />
+            <HealthBar score={vehicle.components[key]} status={vehicle.componentsStatus[key]} height={4} />
           </div>
         ))}
       </div>

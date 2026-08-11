@@ -2,8 +2,9 @@ import { memo, useCallback } from 'react';
 import { useVehicleHealth } from '../../hooks/useVehicleHealth';
 import { VehicleHealthCard } from './VehicleHealthCard';
 
-export const VehicleHealthMatrix = memo(function VehicleHealthMatrix({ onVehicleClick }) {
-  const { vehicles } = useVehicleHealth();
+export const VehicleHealthMatrix = memo(function VehicleHealthMatrix({ onVehicleClick, vehicles: vehiclesProp, noResultsMessage }) {
+  const { vehicles: allVehicles } = useVehicleHealth();
+  const vehicles = vehiclesProp ?? allVehicles;
 
   const handleClick = useCallback((id) => {
     onVehicleClick?.(id);
@@ -22,7 +23,7 @@ export const VehicleHealthMatrix = memo(function VehicleHealthMatrix({ onVehicle
           borderRadius: 12,
         }}
       >
-        No vehicle health data available.
+        {noResultsMessage || 'No vehicle health data available.'}
       </div>
     );
   }

@@ -88,7 +88,7 @@ export const HealthDistribution = memo(function HealthDistribution() {
             fill="var(--color-text-primary)"
             fontFamily="inherit"
           >
-            {fleetStats.avgScore}
+            {fleetStats.avgScore != null ? fleetStats.avgScore : '\u2014'}
           </text>
           <text
             x={size / 2}

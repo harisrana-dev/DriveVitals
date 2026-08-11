@@ -1,16 +1,10 @@
 import { memo } from 'react';
-import { healthColor, healthBg } from '../../utils/health';
-
-const LABELS = {
-  healthy: 'Healthy',
-  warning: 'Warning',
-  critical: 'Critical',
-};
+import { healthColor, healthBg, healthLabel } from '../../utils/health';
 
 export const HealthStatusBadge = memo(function HealthStatusBadge({ category, size }) {
   const color = healthColor(category);
   const bg = healthBg(category);
-  const label = LABELS[category] || category;
+  const label = healthLabel(category);
   const fontS = size === 'sm' ? 10 : 11;
   const pad = size === 'sm' ? '2px 8px' : '3px 10px';
 

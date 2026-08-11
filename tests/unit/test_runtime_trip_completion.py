@@ -114,6 +114,7 @@ def _make_runner(vehicle_id, trip_id, driver_id, route_id, fuel_level, distance_
         started_at=datetime(2026, 8, 7, 10, 0, tzinfo=timezone.utc),
         completed_at=datetime(2026, 8, 7, 10, 6, tzinfo=timezone.utc),
         distance_travelled_km=distance_km,
+        maximum_speed_kmh=62.5,
     )
     return SimpleNamespace(
         vehicle=vehicle,
@@ -246,7 +247,7 @@ def test_trip_completion_callback_accepts_five_arguments():
         )
         assert t1["duration_seconds"] == 360
         assert t1["fuel_used_liters"] == 2.1
-        assert t1["maximum_speed_kmh"] == 60.0
+        assert t1["maximum_speed_kmh"] == 62.5
 
     asyncio.run(_scenario())
 

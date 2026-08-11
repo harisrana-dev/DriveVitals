@@ -816,10 +816,7 @@ class DriveVitalsRuntime:
                         distance_km / (duration_seconds / 3600), 2
                     )
 
-                maximum_speed_kmh = (
-                    context.speed_limit_kmh
-                    + summary.maximum_speed_excess_kmh
-                )
+                maximum_speed_kmh = trip_obj.maximum_speed_kmh
 
                 initial_fuel_pct = self._initial_fuel_levels.get(
                     vehicle_id,

@@ -77,6 +77,7 @@ class VehicleRunner:
         )
 
         # Apply the tick's effects to persistent/lifecycle state.
+        self.trip.record_speed(sample.speed_kmh)
         self.vehicle.advance_odometer(distance_km)
         self.vehicle.consume_fuel(fuel_used_percent)
         self.trip.advance(distance_km)

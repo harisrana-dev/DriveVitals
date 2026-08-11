@@ -50,6 +50,16 @@ class Trip:
     # finalised (currently derived from the vehicle's fuel-level drop).
     fuel_used_liters: float = field(default=0.0)
 
+    # Highest speed observed during this trip, tracked from live
+    # telemetry samples. This is the authoritative peak for the trip —
+    # it is never derived from the speed limit or behaviour summary.
+    maximum_speed_kmh: float = field(default=0.0)
+
+    def record_speed(self, speed_kmh: float) -> None:
+        """Record an observed telemetry speed, keeping the peak."""
+        if speed_kmh > self.maximum_speed_kmh:
+            self.maximum_speed_kmh = speed_kmh
+
     def start(self, starting_odometer_km: float, at: Optional[datetime] = None) -> None:
         if self.status != TripStatus.ASSIGNED:
             raise ValueError(f"Cannot start a trip in status {self.status}")

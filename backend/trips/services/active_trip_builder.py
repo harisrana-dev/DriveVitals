@@ -104,16 +104,7 @@ def build_active_trip_snapshot(
         duration_seconds,
     )
 
-    maximum_speed_kmh = 0.0
-    if (
-        summary is not None
-        and summary.maximum_speed_excess_kmh > 0.0
-    ):
-        maximum_speed_kmh = round(
-            context.speed_limit_kmh
-            + summary.maximum_speed_excess_kmh,
-            2,
-        )
+    maximum_speed_kmh = trip.maximum_speed_kmh
 
     average_fuel_rate_lph = 0.0
     if (

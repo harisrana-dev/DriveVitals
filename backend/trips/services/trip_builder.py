@@ -107,8 +107,9 @@ class TripBuilder:
             )
 
         maximum_speed_kmh = (
-            context.speed_limit_kmh
-            + summary.maximum_speed_excess_kmh
+            trip.maximum_speed_kmh
+            if trip is not None
+            else 0.0
         )
 
         fuel_consumed_liters = (

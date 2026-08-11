@@ -198,3 +198,31 @@ class TestTripSnapshotContract:
         assert snapshot.status == "completed"
         assert snapshot.started_at is None
         assert snapshot.completed_at == _runtime_state().timestamp
+
+    def test_snapshot_maximum_speed_is_observed_peak_not_heuristic(self) -> None:
+        trip = _trip()
+        trip.maximum_speed_kmh = 88.5
+
+        snapshot = TripBuilder().build(
+            _summary(),
+            _context(),
+            _runtime_state(),
+            _events(),
+            trip,
+        )
+
+        # The summary carries maximum_speed_excess_kmh=10.0 against a
+        # 60.0 km/h limit (heuristic would give 70.0). The snapshot must
+        # report the observed peak recorded on the trip instead.
+        assert snapshot.maximum_speed_kmh == 88.5
+
+    def test_snapshot_without_trip_reports_zero_maximum_speed(self) -> None:
+        snapshot = TripBuilder().build(
+            _summary(),
+            _context(),
+            _runtime_state(),
+            [],
+            None,
+        )
+
+        assert snapshot.maximum_speed_kmh == 0.0

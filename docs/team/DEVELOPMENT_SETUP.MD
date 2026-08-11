@@ -10,9 +10,10 @@ Install the following before starting:
 
 | Tool | Purpose |
 |------|---------|
-| **Python 3.10+** | Backend runtime |
+| **Python 3.12+** | Backend runtime |
 | **Git** | Version control |
 | **Docker Desktop** | Runs PostgreSQL locally |
+| **Node.js 18+** | Frontend runtime |
 | **VS Code** | Recommended editor |
 
 Verify installations:
@@ -21,6 +22,7 @@ Verify installations:
 python --version
 git --version
 docker --version
+node --version
 ```
 
 ---
@@ -131,19 +133,20 @@ Then review the generated migration file before applying it with `alembic upgrad
 Create a `.env` file in the project root (never commit this file):
 
 ```env
-DATABASE_URL=postgresql://drivevitals_user:drivevitals_pass@localhost:5432/drivevitals_db
-
 POSTGRES_USER=drivevitals_user
 POSTGRES_PASSWORD=drivevitals_pass
 POSTGRES_DB=drivevitals_db
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
 ```
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | Full connection string used by SQLAlchemy |
-| `POSTGRES_USER` | Database user (must match docker-compose config) |
+| `POSTGRES_USER` | Database user |
 | `POSTGRES_PASSWORD` | Database password |
 | `POSTGRES_DB` | Database name |
+| `POSTGRES_HOST` | Database host (default `localhost`) |
+| `POSTGRES_PORT` | Database port (default `5432`) |
 
 ---
 
@@ -152,31 +155,46 @@ POSTGRES_DB=drivevitals_db
 With the virtual environment active and the database running:
 
 ```bash
-uvicorn backend.main:app --reload
+uvicorn backend.api.main:app --reload
 ```
 
 The API should now be available at `http://localhost:8000`, and interactive docs at `http://localhost:8000/docs`.
 
 ---
 
-## 9. Verifying the Setup
+## 9. Running the Frontend
+
+```bash
+cd frontend
+cp .env.example .env           # optional — sensible defaults are built in
+npm install
+npm run dev
+```
+
+The dashboard is served at `http://localhost:5173`.
+
+---
+
+## 10. Verifying the Setup
 
 Checklist for a successful setup:
 
 - [ ] `docker ps` shows the Postgres container running
 - [ ] `alembic upgrade head` completes with no errors
-- [ ] `uvicorn backend.main:app --reload` starts without errors
+- [ ] `uvicorn backend.api.main:app --reload` starts without errors
 - [ ] `http://localhost:8000/docs` loads in the browser
+- [ ] `npm run dev` starts the frontend
+- [ ] `http://localhost:5173` loads in the browser
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Problem | Likely Cause | Fix |
 |---------|--------------|-----|
 | `docker: command not found` | Docker Desktop not installed or not started | Install/start Docker Desktop |
 | Backend can't connect to DB | Postgres container not running | Run `docker compose up -d`, check `docker ps` |
-| `alembic.util.exc.CommandError` | Migrations out of sync | Confirm `.env` DATABASE_URL is correct, then re-run `alembic upgrade head` |
+| `alembic.util.exc.CommandError` | Migrations out of sync | Confirm `.env` variables are correct, then re-run `alembic upgrade head` |
 | `ModuleNotFoundError` | Virtual environment not activated, or dependencies not installed | Activate `venv`, re-run `pip install -r requirements.txt` |
 | Port `5432` already in use | Another Postgres instance running locally | Stop the other instance or change the exposed port in `docker-compose.yml` |
 | Changes to models not reflected in DB | Forgot to generate/apply migration | Run `alembic revision --autogenerate -m "..."` then `alembic upgrade head` |

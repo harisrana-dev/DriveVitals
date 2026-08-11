@@ -6,34 +6,34 @@ This is a practical guide to the current backend implementation: what each part 
 
 ```mermaid
 graph TD
-    A["DriveVitalsRuntime"] --> B["FleetRunner"]
-    B --> C["TelemetrySample"]
-    C --> D["TelemetryPipeline"]
-    D --> E["AnalyticsEngine"]
-    E --> F["AnalyticsSnapshot"]
-    F --> G["AnalyticsSnapshotStream"]
-    G --> H["DashboardSnapshotPublisher"]
-    H --> I["asyncio.Queue"]
-    I --> J["snapshot_worker"]
-    J --> K["WebSocketManager"]
-    K --> L["Dashboard clients"]
-
-    subgraph FastAPI_layer["FastAPI integration layer"]
-        H
-        I
-        J
-        K
+    subgraph Runtime["Runtime (no FastAPI, no WebSockets)"]
+        A[DriveVitalsRuntime] --> B[FleetRunner]
+        B --> C[TelemetrySample]
+        C --> D[TelemetryPipeline]
+        D --> E[AnalyticsEngine]
+        E --> F[AnalyticsSnapshot]
+        F --> G[AnalyticsSnapshotStream]
     end
 
-    subgraph Runtime_layer["Application layer (no FastAPI, no WebSockets)"]
-        A
-        B
-        C
-        D
-        E
-        F
-        G
+    subgraph FastAPI["FastAPI integration layer"]
+        H[DashboardSnapshotPublisher] --> I[snapshot_queue]
+        I --> J[snapshot_worker]
+        K[TripSnapshotPublisher] --> L[trips_queue]
+        L --> M[trips_worker]
+        J --> N[WebSocketManager]
+        M --> N
     end
+
+    G --> H
+    A --> K
+    N --> O[/ws/dashboard clients]
+    N --> P[/ws/trips clients]
+
+    subgraph REST["REST API"]
+        Q[10 routers /api/v1]
+    end
+
+    A --> Q
 ```
 
 ## Folder Responsibilities
@@ -41,24 +41,31 @@ graph TD
 Based on the modules currently imported and implemented:
 
 | Folder | Responsibility |
-|---|---|
-| `backend/api/` | FastAPI composition: `main.py` (app + lifespan), `dependencies.py` (shared `websocket_manager` instance), `websocket/` (the `/ws/dashboard` route, payload building, sync-to-async adaptation, connection management). This is the integration/composition layer. |
-| `backend/application/` | `runtime.py` — `DriveVitalsRuntime`, which composes the fleet, telemetry pipeline, and analytics engine, and drives the runtime loop. Framework-independent. |
-| `backend/fleet/` | Fleet domain: config/factory for loading fleet assignments (`FleetFactory`), models (`Trip`, plus vehicle/driver/route models referenced by the runtime), and `FleetRunner`, which produces telemetry samples for all active vehicles each tick. |
-| `backend/pipeline/` | `TelemetryPipeline` — receives telemetry samples from the fleet and dispatches them to registered consumers (the analytics engine). |
-| `backend/analytics/` | Analytics domain, split into: `behaviour/` (detection, event tracking, summarization of driver behaviour), `context/` (`AnalyticsContext` and its store, holding per-vehicle/driver/trip/route context), `state/` (`RuntimeStateStore`), `snapshot/` (`AnalyticsSnapshot` model and its store), and `engine.py` (`AnalyticsEngine`, which ties all of the above together to produce snapshots). |
-| `backend/streaming/` | `AnalyticsSnapshotStream` — the sync publish/subscribe stream that `AnalyticsEngine` emits snapshots onto, and that the FastAPI layer subscribes to. |
+|--------|----------------|
+| `backend/api/` | FastAPI composition: `main.py` (app + lifespan), `v1/routers/` (10 REST routers), `websocket/` (WebSocket routes, payload building, workers, managers). |
+| `backend/application/` | `runtime.py` — `DriveVitalsRuntime`, the composition root that wires every subsystem together and drives the main loop. Framework-independent. |
+| `backend/fleet/` | Fleet domain: `config/fleet_factory.py` (fixture generation), `models/` (Vehicle, Driver, Route, Trip, Assignment), `runtime/` (FleetRunner, VehicleRunner). |
+| `backend/pipeline/` | `TelemetryPipeline` — fan-out dispatcher that forwards each `TelemetrySample` to every registered consumer. |
+| `backend/analytics/` | Analytics domain: `engine/` (AnalyticsEngine), `behaviour/` (detection, event tracking, summarization), `context/` (AnalyticsContext + store), `state/` (RuntimeState + store), `snapshot/` (AnalyticsSnapshot + store), `vehicle_health/` (5 subsystem analyzers), `driver_statistics/` (aggregation + scoring). |
+| `backend/maintenance/` | Maintenance recommendation subsystem: 5 estimators + `MaintenanceService`. |
+| `backend/alerts/` | Alert model + generators (health, telemetry, maintenance, trip) + `AlertEngine` with deduplication. |
+| `backend/telemetry/` | `TelemetrySample` (canonical frozen dataclass) + `OBDGenerator` (simulated telemetry source). |
+| `backend/application/consumers/` | `VehicleHealthConsumer` and `DriverStatisticsConsumer` — pipeline consumers that bridge telemetry to health and driver-statistics engines. |
+| `backend/trips/` | Trip snapshot assembly: `TripBuilder` (completed trips), `build_active_trip_snapshot()` (active trips), `TripStore` (in-memory completed-trip cache), `TripSnapshot` / `TripsSnapshot` contracts. |
+| `backend/db/` | SQLAlchemy async models, repositories, `PersistenceService`, Alembic migrations. |
+| `backend/streaming/` | `AnalyticsSnapshotStream` — synchronous pub/sub for analytics snapshots. |
+| `backend/dashboard/` | `DashboardBuilder` — merges runtime state, health, and trip data into a `DashboardSnapshot`. |
 
 ## Application Startup
 
-`backend/api/main.py` creates a single module-level `DriveVitalsRuntime()`. On FastAPI `lifespan` startup it:
+`backend/api/main.py` creates module-level singletons. On FastAPI `lifespan` startup it:
 
-1. Creates a `DashboardSnapshotPublisher(queue=snapshot_queue)`.
-2. Subscribes it to `runtime.snapshot_stream`.
-3. Starts `snapshot_worker()` as a background `asyncio.Task`.
+1. Subscribes `snapshot_publisher` to `runtime.snapshot_stream`.
+2. Registers `_trip_flush` and `_trip_update` callbacks on the runtime.
+3. Starts `snapshot_worker()` and `trips_worker()` as background `asyncio.Task`s.
 4. Starts `runtime.run()` as a background `asyncio.Task`.
 
-On shutdown, it stops the runtime, cancels the runtime task, cancels the snapshot worker task, and unsubscribes the publisher — in that order.
+On shutdown, it stops the runtime, cancels all tasks, and unsubscribes the publisher — in that order.
 
 ## DriveVitalsRuntime
 
@@ -69,56 +76,75 @@ On shutdown, it stops the runtime, cancels the runtime task, cancels the snapsho
 - Analytics dependencies: `RuntimeStateStore`, `AnalyticsContextStore`, `DriverBehaviourAnalyzer`, `BehaviourEventTracker`, `DriverBehaviourSummarizer`, `AnalyticsSnapshotStore`
 - `AnalyticsSnapshotStream` (`_snapshot_stream`)
 - `AnalyticsEngine` (`_analytics_engine`), built from all of the above
+- `VehicleHealthEngine` + `VehicleHealthConsumer`
+- `DriverStatisticsEngine` + `DriverStatisticsConsumer`
+- `MaintenanceService`
+- `AlertEngine`
+- `IntelligenceState` (shared health/statistics state for consumers)
 
-At construction, it registers the analytics engine with the telemetry pipeline (`telemetry_pipeline.register(analytics_engine)`) and loads fleet configuration via `FleetFactory.from_config()`, building an `AnalyticsContext` per assignment and adding each vehicle/driver/route/trip combination to the fleet.
+At construction, it registers the analytics engine and vehicle health consumer with the telemetry pipeline, loads fleet configuration via `FleetFactory.from_config()`, and builds an `AnalyticsContext` per assignment.
 
 Its docstring is explicit that the runtime does not know about FastAPI, WebSockets, frontend clients, or HTTP routes.
 
-`run()` drives the loop:
+### `run()` flow
 
-```python
-self._fleet.start_all(now=start_time)
-while self._running and self._fleet.active_runners():
-    samples = self._fleet.tick_all(now=now)
-    for sample in samples:
-        self._telemetry_pipeline.publish(sample)
-    now += timedelta(seconds=self._tick_seconds)
-    await asyncio.sleep(self._tick_seconds)
-```
+1. Persist reference data (vehicles, drivers, routes).
+2. Abort stale `in_progress` trips from previous sessions.
+3. Persist new trip rows (before telemetry starts, to satisfy FK constraints).
+4. Start all trips.
+5. Enter the fleet tick loop:
+   - `FleetRunner.tick_all()` → samples
+   - For each sample: `TelemetryPipeline.publish(sample)`
+   - Detect vehicles that completed this tick
+   - Handle trip completions (flush analytics, driver stats, maintenance, alerts, persistence callbacks)
+   - Publish active-trip updates
+   - `await asyncio.sleep(tick_seconds)`
 
-`stop()` simply sets an internal flag that ends the loop on its next iteration.
+### `stop()`
+
+Sets `_running = False`. The loop ends on its next iteration.
 
 ## FleetRunner
 
 Ticks all configured vehicle assignments each cycle and returns the `TelemetrySample`s produced (`tick_all`). `start_all` begins all runners; `active_runners()` reports whether any are still running, which gates the runtime loop.
 
+## VehicleRunner
+
+Represents one active vehicle performing a trip. Owns the temporary `RuntimeState` for that vehicle and drives the OBD generator tick by tick, updating the persistent `Vehicle` (odometer, fuel level) and the `Trip` (distance travelled, lifecycle status).
+
+Key methods:
+
+- `start(now)` — transitions trip to `STARTED`, starts engine, resets runtime state.
+- `tick(now)` — advances simulation by one tick, returns a `TelemetrySample`. Raises if the trip is already completed.
+- `is_complete()` — returns `True` when `trip.status == COMPLETED`.
+
 ## TelemetryPipeline
 
-Receives each `TelemetrySample` published by the runtime and dispatches it to registered consumers. Currently, `AnalyticsEngine` is the only registered consumer.
+Receives each `TelemetrySample` published by the runtime and dispatches it to registered consumers. Currently, `AnalyticsEngine` and `_PersistenceTelemetryConsumer` (inline in `runtime.py`) are registered.
 
 ## AnalyticsEngine
 
-Consumes telemetry samples and, using its collaborators (`RuntimeStateStore`, `AnalyticsContextStore`, `DriverBehaviourAnalyzer`, `BehaviourEventTracker`, `DriverBehaviourSummarizer`, `AnalyticsSnapshotStore`), produces `AnalyticsSnapshot`s and emits them onto its `AnalyticsSnapshotStream`.
+Consumes telemetry samples and, using its collaborators (`RuntimeStateStore`, `AnalyticsContextStore`, `DriverBehaviourAnalyzer`, `BehaviourEventTracker`, `DriverBehaviourSummarizer`, `AnalyticsSnapshotStore`), produces `AnalyticsSnapshot`s and emits them onto `AnalyticsSnapshotStream`.
 
 ## AnalyticsSnapshot
 
-The data contract produced by the analytics engine, holding `vehicle_id`, `driver_id`, `trip_id`, `timestamp`, `telemetry`, `behaviour`, `completed_events`, and `active_event_types`. This is the backend-to-dashboard contract — the WebSocket payload is built directly from it.
+The data contract produced by the analytics engine, holding `vehicle_id`, `driver_id`, `trip_id`, `timestamp`, `telemetry`, `behaviour`, `completed_events`, and `active_event_types`.
 
 ## AnalyticsSnapshotStream
 
-A synchronous publish/subscribe stream. `AnalyticsEngine` publishes snapshots onto it; the FastAPI layer subscribes a `DashboardSnapshotPublisher` to it. This is the decoupling boundary between analytics and any application-layer consumer — the analytics engine has no knowledge of what (if anything) is subscribed.
+A synchronous publish/subscribe stream. `AnalyticsEngine` publishes snapshots onto it; the FastAPI layer subscribes publishers to it. This is the decoupling boundary between analytics and any application-layer consumer.
 
 ## DashboardSnapshotPublisher
 
-`backend/api/websocket/snapshot_publisher.py`. A subscriber to `AnalyticsSnapshotStream`. Its `publish(snapshot)` method calls `queue.put_nowait(snapshot)` on the `asyncio.Queue` it was constructed with. This is the sync-to-async adaptation point — it's the only piece of code that bridges the synchronous analytics stream into the async world.
+`backend/api/websocket/snapshot_publisher.py`. A subscriber to `AnalyticsSnapshotStream`. Its `publish(snapshot)` method calls `queue.put_nowait(snapshot)`. This is the sync-to-async adaptation point.
 
-## asyncio.Queue
+## TripSnapshotPublisher
 
-`snapshot_queue: asyncio.Queue[AnalyticsSnapshot]`, defined in `backend/api/websocket/dashboard.py`. Holds snapshots between being published (sync side) and being consumed by `snapshot_worker` (async side).
+`backend/api/websocket/trip_publisher.py`. Called from runtime callbacks. Builds `TripSnapshot`s via `TripBuilder`, stores them in `TripStore`, aggregates totals, and publishes `TripsSnapshot` to `trips_queue`. Also exposes `publish_active()` for per-tick active-trip broadcasts.
 
-## snapshot_worker
+## Snapshot Workers
 
-An async loop: `await snapshot_queue.get()`, build the dashboard JSON payload via `build_dashboard_payload()`, `await websocket_manager.broadcast(payload)`, then `snapshot_queue.task_done()`. This is the bridge from the queue to async WebSocket broadcasting.
+`snapshot_worker` and `trips_worker` are async loops that pop snapshots from their queues, serialize them, and broadcast via `WebSocketManager.broadcast()`.
 
 ## WebSocketManager
 
@@ -126,55 +152,22 @@ An async loop: `await snapshot_queue.get()`, build the dashboard JSON payload vi
 
 - `connect(websocket)` — accepts and stores a connection.
 - `disconnect(websocket)` — removes a connection if present.
-- `broadcast(message)` — sends `message` as JSON to every active connection; any connection that raises during send is collected and removed afterward.
+- `broadcast(message)` — sends `message` as JSON to every active connection; removes any connection that raises during send.
 - `connection_count` — number of currently active connections.
 
-## FastAPI Lifespan
+## Persistence
 
-Covered under Application Startup above — this is where the runtime, publisher, worker task, and runtime task are all created and torn down.
+`PersistenceService` is the single entry point for all database access. It wraps 10 repository classes and writes data incrementally as it is produced. The runtime registers an inline `_PersistenceTelemetryConsumer` and `_PersistenceSnapshotSubscriber` to feed telemetry, health, alerts, and behaviour events into persistence without coupling the runtime to SQLAlchemy directly.
 
-## WebSocket Endpoint
+## Stale-Trip Recovery
 
-`@router.websocket("/ws/dashboard")` in `backend/api/websocket/dashboard.py`:
-
-1. `websocket_manager.connect(websocket)`.
-2. Loops on `await websocket.receive_text()` to keep the connection alive and detect disconnects. Incoming text is not currently acted on.
-3. On `WebSocketDisconnect`, calls `websocket_manager.disconnect(websocket)`.
-
-## Shutdown Behavior
-
-On app shutdown: `runtime.stop()` → cancel and await `runtime_task` → cancel and await `snapshot_worker_task` → unsubscribe `snapshot_publisher` from `runtime.snapshot_stream`. Existing WebSocket connections are not explicitly closed by this sequence; they end when the server process stops.
-
-## Current Runtime-to-Dashboard Flow
-
-```
-FleetRunner.tick_all()
-    -> TelemetrySample(s)
-    -> TelemetryPipeline.publish()
-    -> AnalyticsEngine (consumer)
-    -> AnalyticsSnapshot
-    -> AnalyticsSnapshotStream (sync publish)
-    -> DashboardSnapshotPublisher.publish() [sync-to-async boundary]
-    -> asyncio.Queue.put_nowait()
-    -> snapshot_worker: await queue.get()
-    -> build_dashboard_payload()
-    -> WebSocketManager.broadcast()
-    -> every connected /ws/dashboard client
-```
-
-## Adding a New Dashboard Field
-
-1. Ensure the source data exists in `AnalyticsSnapshot` or its nested models (`telemetry`, `behaviour`, or an event model) — add it to `AnalyticsEngine`'s snapshot construction if it doesn't yet.
-2. Update `build_dashboard_payload()` in `backend/api/websocket/dashboard.py` to include the new field in the JSON payload.
-3. Update `docs/design/frontend/dashboard_design.md` to document the new field's meaning.
-4. Add or update tests covering the new field in the payload builder (and in `AnalyticsEngine`/`AnalyticsSnapshot` if the underlying data is new).
-5. Verify multiple connected clients still all receive the field — `WebSocketManager.broadcast()` sends to every active connection, so this should hold automatically, but confirm with a multi-client test.
+At startup, `persistence.abort_stale_trips()` marks every `in_progress` trip as `aborted`. This ensures that trips created by a previous runtime session are never reported as active. History, recorded metrics, and telemetry are preserved.
 
 ## Architecture Rules
 
 - No WebSocket code inside the runtime (`DriveVitalsRuntime`, `FleetRunner`, `TelemetryPipeline`, `AnalyticsEngine`). These modules must remain importable and runnable without FastAPI or Starlette.
 - No FastAPI dependencies inside `backend/analytics/`.
 - No dashboard-specific logic inside `AnalyticsEngine` — it produces `AnalyticsSnapshot`s and publishes to `AnalyticsSnapshotStream`; it does not know about dashboards, JSON payloads, or clients.
-- No business logic inside the `/ws/dashboard` route — it only manages connection accept/receive/disconnect via `WebSocketManager`.
-- Connection management belongs to `WebSocketManager` alone (connect, disconnect, broadcast, connection count).
-- Snapshot-to-async adaptation belongs to `DashboardSnapshotPublisher` and the `asyncio.Queue` boundary — this is the only place where the synchronous analytics side meets the asynchronous delivery side.
+- No business logic inside the WebSocket routes — they only manage connection accept/receive/disconnect via `WebSocketManager`.
+- Connection management belongs to `WebSocketManager` alone.
+- Snapshot-to-async adaptation belongs to publishers and `asyncio.Queue` boundaries.

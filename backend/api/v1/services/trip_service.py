@@ -9,6 +9,16 @@ from backend.db.repositories.trip_repository import TripRepository
 from backend.api.v1.services import paginate
 
 
+class TripLifecycleError(Exception):
+    """Raised when a deletion targets a trip that is not ``aborted``."""
+
+    def __init__(self, status: str) -> None:
+        self.status = status
+        super().__init__(
+            f"Only aborted trips can be deleted, trip has status '{status}'"
+        )
+
+
 class TripService:
 
     def __init__(self, repository: TripRepository) -> None:
@@ -67,3 +77,29 @@ class TripService:
         )
         result = await self._session.execute(query)
         return result.scalar_one_or_none()
+
+    async def delete_aborted(self, trip_id: str) -> Trip | None:
+        """Delete one trip, but only if it exists and is ``aborted``.
+
+        Returns the deleted trip when successful, ``None`` when the trip
+        does not exist, and raises :class:`TripLifecycleError` when the
+        trip exists but is not aborted.
+        """
+        trip = await self._repository.get_by_id(trip_id)
+        if trip is None:
+            return None
+        if trip.status != "aborted":
+            raise TripLifecycleError(trip.status)
+
+        deleted = await self._repository.delete_aborted(trip_id)
+        if not deleted:
+            await self._session.rollback()
+            return None
+        await self._session.commit()
+        return trip
+
+    async def delete_all_aborted(self) -> int:
+        """Delete every aborted trip and return the number deleted."""
+        deleted = await self._repository.delete_all_aborted()
+        await self._session.commit()
+        return deleted

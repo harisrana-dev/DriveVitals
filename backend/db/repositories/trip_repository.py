@@ -1,8 +1,11 @@
 import logging
 from datetime import datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
+from backend.db.models.alert import Alert
+from backend.db.models.behaviour_event import BehaviourEvent
+from backend.db.models.telemetry_sample import TelemetrySample
 from backend.db.models.trip import Trip
 from backend.db.repositories.base_repository import BaseRepository
 
@@ -90,6 +93,63 @@ class TripRepository(BaseRepository):
                 status="aborted",
                 end_time=end_time,
             )
+        )
+        await self._session.flush()
+        return result.rowcount or 0
+
+    async def delete_aborted(self, trip_id: str) -> bool:
+        """Delete a single trip, but only while it is still ``aborted``.
+
+        Trip-scoped child rows (telemetry samples, behaviour events and
+        alerts) are removed first because their foreign keys to ``trips``
+        do not cascade. The status guard inside the trip delete keeps the
+        operation safe against a trip that changed status concurrently.
+        """
+        await self._session.execute(
+            delete(TelemetrySample).where(
+                TelemetrySample.trip_id == trip_id
+            )
+        )
+        await self._session.execute(
+            delete(BehaviourEvent).where(
+                BehaviourEvent.trip_id == trip_id
+            )
+        )
+        await self._session.execute(
+            delete(Alert).where(Alert.trip_id == trip_id)
+        )
+        result = await self._session.execute(
+            delete(Trip).where(
+                Trip.trip_id == trip_id,
+                Trip.status == "aborted",
+            )
+        )
+        await self._session.flush()
+        return (result.rowcount or 0) > 0
+
+    async def delete_all_aborted(self) -> int:
+        """Delete every ``aborted`` trip and its trip-scoped child rows.
+
+        Returns the number of deleted trips. Vehicles, drivers and routes
+        are never touched.
+        """
+        aborted_ids = select(Trip.trip_id).where(Trip.status == "aborted")
+
+        await self._session.execute(
+            delete(TelemetrySample).where(
+                TelemetrySample.trip_id.in_(aborted_ids)
+            )
+        )
+        await self._session.execute(
+            delete(BehaviourEvent).where(
+                BehaviourEvent.trip_id.in_(aborted_ids)
+            )
+        )
+        await self._session.execute(
+            delete(Alert).where(Alert.trip_id.in_(aborted_ids))
+        )
+        result = await self._session.execute(
+            delete(Trip).where(Trip.status == "aborted")
         )
         await self._session.flush()
         return result.rowcount or 0

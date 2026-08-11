@@ -1,4 +1,5 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { useTripsFilters } from '../hooks/useTripsFilters';
 import { useTripDrawer } from '../context/TripDrawerContext';
 import { useLiveData } from '../context/LiveDataContext';
@@ -45,7 +46,7 @@ function ConnectionIndicator({ state }) {
   );
 }
 
-function SectionHeader({ title, subtitle, count }) {
+function SectionHeader({ title, subtitle, count, actions }) {
   return (
     <div
       style={{
@@ -77,12 +78,121 @@ function SectionHeader({ title, subtitle, count }) {
           </span>
         )}
       </div>
-      {subtitle && (
-        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-          {subtitle}
-        </span>
-      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {subtitle && (
+          <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+            {subtitle}
+          </span>
+        )}
+        {actions}
+      </div>
     </div>
+  );
+}
+
+function DeleteAllAbortedButton({ count, onConfirm }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleConfirm = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await onConfirm();
+      setConfirming(false);
+    } catch (err) {
+      setError(err?.message || 'Failed to delete aborted trips.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (confirming) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
+        <span style={{ fontSize: 12, color: 'var(--color-red)' }}>
+          Delete {count} aborted trip{count === 1 ? '' : 's'} permanently?
+        </span>
+        {error && (
+          <span style={{ fontSize: 11, color: 'var(--color-red)' }}>
+            {error}
+          </span>
+        )}
+        <button
+          onClick={() => {
+            setConfirming(false);
+            setError(null);
+          }}
+          disabled={busy}
+          style={{
+            padding: '5px 12px',
+            borderRadius: 6,
+            border: '1px solid var(--color-border)',
+            background: 'transparent',
+            color: 'var(--color-text-secondary)',
+            fontSize: 12,
+            cursor: busy ? 'default' : 'pointer',
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleConfirm}
+          disabled={busy}
+          style={{
+            padding: '5px 12px',
+            borderRadius: 6,
+            border: '1px solid var(--color-red)',
+            background: 'var(--color-red)',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: busy ? 'default' : 'pointer',
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          {busy ? 'Deleting...' : 'Delete'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '6px 12px',
+        borderRadius: 8,
+        border: '1px solid var(--color-red)',
+        background: 'transparent',
+        color: 'var(--color-red)',
+        fontSize: 12,
+        fontWeight: 500,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+        transition: 'all 0.15s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'var(--color-red-bg)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'transparent';
+      }}
+    >
+      <Trash2 size={13} />
+      Delete all aborted ({count})
+    </button>
   );
 }
 
@@ -115,6 +225,9 @@ export function TripsPage() {
     resetFilters,
     loadMoreTrips,
     retryTrips,
+    deleteTrip,
+    deleteAllAborted,
+    abortedCount,
     summary,
     historyCount,
     historyLoaded,
@@ -130,6 +243,13 @@ export function TripsPage() {
   const handleTripClick = useCallback((trip) => {
     openDrawer(trip);
   }, [openDrawer]);
+
+  const handleDeleteAllAborted = useCallback(async () => {
+    const deletedCount = await deleteAllAborted();
+    if (deletedCount > 0 && selectedTrip?.status === 'aborted') {
+      closeDrawer();
+    }
+  }, [deleteAllAborted, selectedTrip, closeDrawer]);
 
   return (
     <div
@@ -246,6 +366,14 @@ export function TripsPage() {
           title="Trip History"
           subtitle="Completed and aborted trips with full analytics"
           count={historyCount}
+          actions={
+            abortedCount > 0 && (
+              <DeleteAllAbortedButton
+                count={abortedCount}
+                onConfirm={handleDeleteAllAborted}
+              />
+            )
+          }
         />
         {historyError && (
           <div
@@ -295,6 +423,7 @@ export function TripsPage() {
         <TripDrawer
           trip={selectedTrip}
           onClose={closeDrawer}
+          onDelete={deleteTrip}
         />
       )}
     </div>

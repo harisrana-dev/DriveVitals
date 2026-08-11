@@ -309,9 +309,16 @@ export function LiveDataProvider({ children }) {
     }
   }, [patchAlert]);
 
+  const removeTrip = useCallback((tripId) => {
+    setRestTrips((prev) =>
+      (prev || []).filter((t) => t?.trip_id !== tripId)
+    );
+  }, []);
+
   const value = {
     dashboard,
     trips,
+    removeTrip,
     vehicles,
     drivers,
     driverStatistics,

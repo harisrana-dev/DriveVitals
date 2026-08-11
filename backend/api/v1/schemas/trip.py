@@ -21,6 +21,10 @@ _EVENT_TYPE_LABELS = {
 }
 
 
+class TripDeleteResult(BaseModel):
+    deleted_count: int
+
+
 class TripRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

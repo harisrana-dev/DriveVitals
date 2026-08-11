@@ -21,6 +21,7 @@ const endpoints = {
   trips: {
     list: '/trips',
     item: (id) => `/trips/${id}`,
+    aborted: '/trips/aborted',
   },
   drivers: {
     list: '/drivers',

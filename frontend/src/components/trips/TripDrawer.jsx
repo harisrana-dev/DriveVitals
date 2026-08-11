@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import {
   X, Gauge, Clock, Route, Fuel,
   Zap, AlertTriangle, Droplets, User, MapPin,
-  Sparkles, Radio,
+  Sparkles, Radio, Trash2,
 } from 'lucide-react';
 import {
   AreaChart, Area, LineChart, Line, XAxis, YAxis,
@@ -44,12 +45,12 @@ function formatTimestamp(value) {
   });
 }
 
-export function TripDrawer({ trip, onClose }) {
+export function TripDrawer({ trip, onClose, onDelete }) {
   if (!trip) return null;
 
   return (
     <DrawerFrame onClose={onClose}>
-      <DrawerContent trip={trip} onClose={onClose} />
+      <DrawerContent trip={trip} onClose={onClose} onDelete={onDelete} />
     </DrawerFrame>
   );
 }
@@ -90,10 +91,11 @@ function DrawerFrame({ onClose, children }) {
   );
 }
 
-function DrawerContent({ trip, onClose }) {
+function DrawerContent({ trip, onClose, onDelete }) {
   const liveTrip = useTrip(trip.id);
   const current = liveTrip || trip;
   const isActive = current.status === 'in_progress';
+  const isAborted = current.status === 'aborted';
 
   return (
     <>
@@ -117,7 +119,7 @@ function DrawerContent({ trip, onClose }) {
         <TripInsightSection trip={current} isActive={isActive} />
       </div>
 
-      <Footer onClose={onClose} />
+      <Footer trip={current} isAborted={isAborted} onDelete={onDelete} onClose={onClose} />
     </>
   );
 }
@@ -397,7 +399,11 @@ function TripSummarySection({ trip, isActive }) {
             Started {formatTimestamp(trip.startedAt)}
           </span>
           <span>
-            {isActive ? 'In progress' : `Completed ${formatTimestamp(trip.completedAt)}`}
+            {isActive
+              ? 'In progress'
+              : trip.status === 'aborted'
+                ? `Aborted ${formatTimestamp(trip.completedAt)}`
+                : `Completed ${formatTimestamp(trip.completedAt)}`}
           </span>
         </div>
       </div>
@@ -1002,11 +1008,19 @@ function buildInsight(trip, isActive) {
   }
 
   const parts = [];
-  parts.push(
-    `${trip.driverName} completed ${formatDistance(trip.distance)} in ` +
-    `${formatDuration(trip.duration)} with an average speed of ` +
-    `${trip.averageSpeed > 0 ? `${trip.averageSpeed.toFixed(1)} km/h` : 'n/a'}.`
-  );
+  if (trip.status === 'aborted') {
+    parts.push(
+      trip.distance != null && trip.duration != null
+        ? `${trip.driverName}'s trip was aborted after ${formatDistance(trip.distance)} in ${formatDuration(trip.duration)}.`
+        : `${trip.driverName}'s trip was aborted before any telemetry was recorded.`
+    );
+  } else {
+    parts.push(
+      `${trip.driverName} completed ${formatDistance(trip.distance)} in ` +
+      `${formatDuration(trip.duration)} with an average speed of ` +
+      `${trip.averageSpeed > 0 ? `${trip.averageSpeed.toFixed(1)} km/h` : 'n/a'}.`
+    );
+  }
 
   if (totalEvents === 0) {
     parts.push('The trip was clean — no behaviour events were detected.');
@@ -1032,7 +1046,7 @@ function TripInsightSection({ trip, isActive }) {
 
   return (
     <div>
-      <SectionTitle>AI Insight</SectionTitle>
+      <SectionTitle>Automated Trip Summary</SectionTitle>
       <div
         style={{
           display: 'flex',
@@ -1060,41 +1074,169 @@ function TripInsightSection({ trip, isActive }) {
   );
 }
 
-function Footer({ onClose }) {
+function Footer({ trip, isAborted, onDelete, onClose }) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await onDelete(trip.id);
+      onClose();
+    } catch (err) {
+      setError(err?.message || 'Failed to delete trip.');
+      setDeleting(false);
+    }
+  };
+
   return (
     <div
       style={{
         padding: '12px 20px',
         borderTop: '1px solid var(--color-border)',
         display: 'flex',
+        flexDirection: 'column',
         gap: 8,
       }}
     >
-      <button
-        onClick={onClose}
-        style={{
-          flex: 1,
-          padding: '8px 12px',
-          borderRadius: 8,
-          border: '1px solid var(--color-border)',
-          background: 'transparent',
-          color: 'var(--color-text-secondary)',
-          fontSize: 13,
-          fontWeight: 500,
-          cursor: 'pointer',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--color-surface-hover)';
-          e.currentTarget.style.color = 'var(--color-text-primary)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = 'var(--color-text-secondary)';
-        }}
-      >
-        Close
-      </button>
+      {error && (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--color-red)',
+            lineHeight: 1.5,
+            padding: '8px 12px',
+            borderRadius: 8,
+            background: 'var(--color-red-bg)',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {isAborted && onDelete && (
+        confirming ? (
+          <div
+            style={{
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'var(--color-red-bg)',
+              border: '1px solid var(--color-red)',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--color-text-primary)',
+                lineHeight: 1.5,
+                marginBottom: 8,
+              }}
+            >
+              Delete this trip permanently? The trip and its associated trip data will be removed.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => {
+                  setConfirming(false);
+                  setError(null);
+                }}
+                disabled={deleting}
+                style={{
+                  flex: 1,
+                  padding: '7px 12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--color-border)',
+                  background: 'transparent',
+                  color: 'var(--color-text-secondary)',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: deleting ? 'default' : 'pointer',
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                style={{
+                  flex: 1,
+                  padding: '7px 12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--color-red)',
+                  background: 'var(--color-red)',
+                  color: '#fff',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: deleting ? 'default' : 'pointer',
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                {deleting ? 'Deleting...' : 'Delete permanently'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirming(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '8px 12px',
+              borderRadius: 8,
+              border: '1px solid var(--color-red)',
+              background: 'transparent',
+              color: 'var(--color-red)',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--color-red-bg)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <Trash2 size={14} />
+            Delete trip
+          </button>
+        )
+      )}
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          onClick={onClose}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid var(--color-border)',
+            background: 'transparent',
+            color: 'var(--color-text-secondary)',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--color-surface-hover)';
+            e.currentTarget.style.color = 'var(--color-text-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--color-text-secondary)';
+          }}
+        >
+          Close
+        </button>
+      </div>
     </div>
   );
 }

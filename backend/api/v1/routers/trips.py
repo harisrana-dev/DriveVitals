@@ -1,12 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Response as FastAPIResponse,
+    status,
+)
 
 from backend.api.v1.dependencies import (
     get_trip_service,
     validate_pagination,
 )
 from backend.api.v1.schemas.common import PaginatedResponse, Response
-from backend.api.v1.schemas.trip import TripRead
-from backend.api.v1.services.trip_service import TripService
+from backend.api.v1.schemas.trip import TripDeleteResult, TripRead
+from backend.api.v1.services.trip_service import TripLifecycleError, TripService
 
 router = APIRouter(prefix="/trips")
 
@@ -76,6 +83,60 @@ async def list_trips(
         data=[TripRead.from_trip(trip) for trip in trips],
         count=count,
     )
+
+
+@router.delete(
+    "/aborted",
+    response_model=TripDeleteResult,
+    summary="Delete all aborted trips",
+    description=(
+        "Permanently delete every aborted trip together with its "
+        "trip-scoped telemetry, behaviour events and alerts. Vehicles, "
+        "drivers and routes are preserved. Returns the number of trips "
+        "deleted (0 when none are aborted)."
+    ),
+    tags=["Trips"],
+)
+async def delete_all_aborted_trips(
+    service: TripService = Depends(get_trip_service),
+) -> TripDeleteResult:
+    deleted_count = await service.delete_all_aborted()
+    return TripDeleteResult(deleted_count=deleted_count)
+
+
+@router.delete(
+    "/{trip_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete an aborted trip",
+    description=(
+        "Permanently delete a single trip and its trip-scoped telemetry, "
+        "behaviour events and alerts. Only trips in the `aborted` status "
+        "can be deleted; completed and in-progress trips are rejected."
+    ),
+    tags=["Trips"],
+)
+async def delete_trip(
+    trip_id: str,
+    service: TripService = Depends(get_trip_service),
+) -> FastAPIResponse:
+    try:
+        trip = await service.delete_aborted(trip_id)
+    except TripLifecycleError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Trip {trip_id} cannot be deleted while status is "
+                f"'{exc.status}'. Only aborted trips can be deleted."
+            ),
+        ) from exc
+
+    if trip is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Trip {trip_id} not found",
+        )
+
+    return FastAPIResponse(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get(

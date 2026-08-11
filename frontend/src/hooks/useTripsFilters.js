@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTrips } from './useTripsData';
-import { listTrips } from '../services/api/tripApi';
+import { useLiveData } from '../context/LiveDataContext';
+import {
+  deleteAbortedTrips,
+  deleteTrip as deleteTripApi,
+  listTrips,
+} from '../services/api/tripApi';
 import { mapTrips } from '../utils/trips';
 import {
   buildTripQuery,
@@ -21,6 +26,7 @@ const INITIAL_STATE = {
 
 export function useTripsFilters() {
   const liveTrips = useTrips();
+  const { removeTrip } = useLiveData();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -35,11 +41,53 @@ export function useTripsFilters() {
 
   const [history, setHistory] = useState(INITIAL_STATE);
   const [refreshIndex, setRefreshIndex] = useState(0);
+  const [deletedTripIds, setDeletedTripIds] = useState(() => new Set());
+  const [abortedCount, setAbortedCount] = useState(0);
 
   const historyRef = useRef(history);
   useEffect(() => {
     historyRef.current = history;
   }, [history]);
+
+  const liveTripsRef = useRef(liveTrips);
+  useEffect(() => {
+    liveTripsRef.current = liveTrips;
+  }, [liveTrips]);
+
+  const withoutDeleted = useCallback(
+    (trips) => (trips || []).filter((t) => t && !deletedTripIds.has(t.id)),
+    [deletedTripIds]
+  );
+
+  useEffect(() => {
+    setDeletedTripIds((prev) => {
+      if (prev.size === 0) return prev;
+      const liveIds = new Set((liveTripsRef.current || []).map((t) => t.id));
+      let changed = false;
+      const next = new Set();
+      prev.forEach((id) => {
+        if (liveIds.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [liveTrips]);
+
+  const refreshAbortedCount = useCallback(async () => {
+    try {
+      const res = await listTrips({ status: 'aborted', limit: 1, offset: 0 });
+      setAbortedCount(typeof res?.count === 'number' ? res.count : 0);
+    } catch {
+      setAbortedCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshAbortedCount();
+  }, [refreshAbortedCount]);
 
   const requestSeq = useRef(0);
 
@@ -113,59 +161,128 @@ export function useTripsFilters() {
     setRefreshIndex((i) => i + 1);
   }, []);
 
+  const deleteTrip = useCallback(
+    async (tripId) => {
+      await deleteTripApi(tripId);
+
+      setDeletedTripIds((prev) => {
+        if (prev.has(tripId)) return prev;
+        const next = new Set(prev);
+        next.add(tripId);
+        return next;
+      });
+      setHistory((prev) => ({
+        ...prev,
+        items: prev.items.filter((t) => t.id !== tripId),
+        count: Math.max(0, prev.count - 1),
+        offset: Math.max(0, prev.offset - 1),
+      }));
+      removeTrip(tripId);
+      refreshAbortedCount();
+    },
+    [removeTrip, refreshAbortedCount]
+  );
+
+  const deleteAllAborted = useCallback(async () => {
+    const res = await deleteAbortedTrips();
+    const deletedCount =
+      typeof res?.data?.deleted_count === 'number' ? res.data.deleted_count : 0;
+
+    const seen = new Set();
+    const abortedIds = [];
+    [...historyRef.current.items, ...(liveTripsRef.current || [])].forEach(
+      (t) => {
+        if (t && t.status === 'aborted' && t.id && !seen.has(t.id)) {
+          seen.add(t.id);
+          abortedIds.push(t.id);
+        }
+      }
+    );
+
+    if (deletedCount > 0 || abortedIds.length > 0) {
+      setDeletedTripIds((prev) => {
+        const next = new Set(prev);
+        abortedIds.forEach((id) => next.add(id));
+        return next;
+      });
+      setHistory((prev) => ({
+        ...prev,
+        items: prev.items.filter((t) => t.status !== 'aborted'),
+        count: Math.max(0, prev.count - deletedCount),
+        offset: Math.max(0, prev.offset - abortedIds.length),
+      }));
+      abortedIds.forEach((id) => removeTrip(id));
+    }
+
+    refreshAbortedCount();
+    return deletedCount;
+  }, [removeTrip, refreshAbortedCount]);
+
   const activeTrips = useMemo(
     () =>
       sortTrips(
-        (liveTrips || []).filter(
+        withoutDeleted(liveTrips || []).filter(
           (t) => t.status === 'in_progress' && matchesTripSearch(t, search)
         ),
         sortBy,
         sortAsc
       ),
-    [liveTrips, search, sortBy, sortAsc]
+    [withoutDeleted, liveTrips, search, sortBy, sortAsc]
   );
 
   const historicalTrips = useMemo(
     () =>
       sortTrips(
-        refineTrips(history.items, { search, gradeFilter, dateFrom, dateTo }),
+        refineTrips(
+          withoutDeleted(history.items),
+          { search, gradeFilter, dateFrom, dateTo }
+        ),
         sortBy,
         sortAsc
       ),
-    [history.items, search, gradeFilter, dateFrom, dateTo, sortBy, sortAsc]
+    [withoutDeleted, history.items, search, gradeFilter, dateFrom, dateTo, sortBy, sortAsc]
   );
 
   const driverOptions = useMemo(() => {
     const seen = new Map();
-    [...history.items, ...(liveTrips || [])].forEach((t) => {
+    [
+      ...withoutDeleted(history.items),
+      ...withoutDeleted(liveTrips || []),
+    ].forEach((t) => {
       if (t.driverId && !seen.has(t.driverId)) {
         seen.set(t.driverId, t.driverName || t.driverId);
       }
     });
     return Array.from(seen, ([value, label]) => ({ value, label }));
-  }, [history.items, liveTrips]);
+  }, [withoutDeleted, history.items, liveTrips]);
 
   const vehicleOptions = useMemo(() => {
     const seen = new Map();
-    [...history.items, ...(liveTrips || [])].forEach((t) => {
+    [
+      ...withoutDeleted(history.items),
+      ...withoutDeleted(liveTrips || []),
+    ].forEach((t) => {
       if (t.vehicleId && !seen.has(t.vehicleId)) {
         seen.set(t.vehicleId, t.vehicleName || t.vehicleId);
       }
     });
     return Array.from(seen, ([value, label]) => ({ value, label }));
-  }, [history.items, liveTrips]);
+  }, [withoutDeleted, history.items, liveTrips]);
 
   const summary = useMemo(() => {
     const seen = new Set();
     const all = [];
-    [...history.items, ...(liveTrips || [])].forEach((t) => {
+    [
+      ...withoutDeleted(history.items),
+      ...withoutDeleted(liveTrips || []),
+    ].forEach((t) => {
       if (t && t.id && !seen.has(t.id)) {
         seen.add(t.id);
         all.push(t);
       }
     });
     return computeTripSummary(all);
-  }, [history.items, liveTrips]);
+  }, [withoutDeleted, history.items, liveTrips]);
 
   const toggleSort = useCallback(() => setSortAsc((prev) => !prev), []);
 
@@ -210,6 +327,9 @@ export function useTripsFilters() {
     resetFilters,
     loadMoreTrips,
     retryTrips,
+    deleteTrip,
+    deleteAllAborted,
+    abortedCount,
     summary,
     historyCount: history.count,
     historyLoaded: history.items.length,

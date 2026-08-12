@@ -126,11 +126,16 @@ class MaintenanceService:
 
         Each record captures the projected service point: the odometer
         reading at which the work is due and its scheduled date.
+
+        The maintenance identity is ``{vehicle_id}:{maintenance_type}``
+        so repeated estimations for the same service update the same
+        row rather than creating duplicates as the odometer advances.
         """
         if odometer_km < 0.0:
             raise ValueError("odometer_km must be non-negative")
 
         records: list[MaintenanceRecord] = []
+        seen_types: set[str] = set()
         for recommendation in recommendations:
             if recommendation.estimated_due_date is None:
                 raise ValueError(
@@ -139,13 +144,16 @@ class MaintenanceService:
             projected_odometer = (
                 odometer_km + recommendation.remaining_km
             )
+            identity = (
+                f"{recommendation.vehicle_id}:"
+                f"{recommendation.maintenance_type.value}"
+            )
+            if identity in seen_types:
+                continue
+            seen_types.add(identity)
             records.append(
                 MaintenanceRecord(
-                    maintenance_id=(
-                        f"{recommendation.vehicle_id}:"
-                        f"{recommendation.maintenance_type.value}:"
-                        f"{int(projected_odometer)}"
-                    ),
+                    maintenance_id=identity,
                     vehicle_id=recommendation.vehicle_id,
                     maintenance_type=recommendation.maintenance_type,
                     odometer_km=projected_odometer,

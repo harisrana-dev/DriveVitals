@@ -6,6 +6,10 @@ from backend.analytics.context.context_store import (
     AnalyticsContextStore,
 )
 
+from backend.analytics.vehicle_health.health_reasons import (
+    flatten_health_reasons,
+)
+
 from backend.dashboard.schemas.dashboard_payload import (
     DashboardSnapshot,
     VehicleDashboardSummary,
@@ -79,28 +83,6 @@ class DashboardBuilder:
             return None, None
         status = getattr(subsystem.status, "value", subsystem.status)
         return subsystem.score, status
-
-    @staticmethod
-    def _flatten_reasons(
-        health,
-    ) -> tuple[str, ...]:
-        if health is None:
-            return ()
-        reasons: list[str] = []
-        for attribute in (
-            "engine_health",
-            "cooling_health",
-            "brake_health",
-            "transmission_health",
-            "fuel_system_health",
-        ):
-            subsystem = getattr(health, attribute, None)
-            if subsystem is None:
-                continue
-            for reason in subsystem.reasons:
-                if reason and reason not in reasons:
-                    reasons.append(reason)
-        return tuple(reasons)
 
     @staticmethod
     def _trip_distance(
@@ -179,7 +161,7 @@ class DashboardBuilder:
             "fuel_system_health",
         )
 
-        health_reasons = self._flatten_reasons(health)
+        health_reasons = flatten_health_reasons(health)
 
         driver_safety_score = self._compute_driver_safety(
             snapshot.active_event_types,

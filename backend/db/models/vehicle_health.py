@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, String
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db.base import Base
@@ -18,6 +18,7 @@ class VehicleHealth(Base):
     transmission_health: Mapped[float | None] = mapped_column(Float, nullable=True)
     cooling_health: Mapped[float | None] = mapped_column(Float, nullable=True)
     fuel_system_health: Mapped[float | None] = mapped_column(Float, nullable=True)
+    health_reasons: Mapped[list | None] = mapped_column(JSON, nullable=True)
     last_updated: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=datetime.now
     )

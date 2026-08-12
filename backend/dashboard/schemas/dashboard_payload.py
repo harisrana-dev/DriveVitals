@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from backend.analytics.vehicle_health.models.health_reason import (
+    HealthReason,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class VehicleDashboardSummary:
@@ -95,7 +99,7 @@ class VehicleDashboardSummary:
 
     fuel_system_health_status: str | None = None
 
-    health_reasons: tuple[str, ...] = ()
+    health_reasons: tuple[HealthReason, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

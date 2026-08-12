@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveData } from '../context/LiveDataContext';
+import { normalizeHealthReasons } from '../utils/health';
 
 function mapStatus(s) {
   if (s === 'ACTIVE') return 'active';
@@ -71,6 +72,7 @@ function mapVehicles(raw) {
     alertCount: v.active_alert_count ?? 0,
     activeAlert: v.active_alert_text || null,
     activeEventTypes: v.active_event_types || [],
+     reasons: normalizeHealthReasons(v.health_reasons || []),
     speeding: v.speeding ?? false,
     aggressiveThrottle: v.aggressive_throttle ?? false,
     harshBraking: v.harsh_braking ?? false,

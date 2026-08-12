@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.analytics.vehicle_health.health_config import (
+    health_config_to_dict,
+)
 from backend.api.v1.dependencies import (
     get_vehicle_health_service,
     validate_pagination,
@@ -9,6 +12,20 @@ from backend.api.v1.schemas.vehicle_health import VehicleHealthRead
 from backend.api.v1.services.vehicle_health_service import VehicleHealthService
 
 router = APIRouter(prefix="/vehicle-health")
+
+
+@router.get(
+    "/config",
+    response_model=Response[dict],
+    summary="Get health configuration",
+    description=(
+        "Return the canonical health thresholds and subsystem weights "
+        "consumed by the vehicle health engine."
+    ),
+    tags=["Vehicle Health"],
+)
+async def get_health_config() -> Response[dict]:
+    return Response[dict](data=health_config_to_dict())
 
 
 @router.get(

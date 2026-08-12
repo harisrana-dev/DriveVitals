@@ -34,3 +34,21 @@ class TestVehicleHealth:
 
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
+
+    async def test_get_vehicle_health_reasons_default_to_empty(self, client: AsyncClient) -> None:
+        """Rows persisted before reasons were stored must not break the API."""
+        response = await client.get("/api/v1/vehicle-health/v-1")
+
+        assert response.status_code == 200
+        record = response.json()["data"]
+        assert record["health_reasons"] == []
+
+    async def test_get_health_config(self, client: AsyncClient) -> None:
+        response = await client.get("/api/v1/vehicle-health/config")
+
+        assert response.status_code == 200
+        config = response.json()["data"]
+        assert config["weights"]["engine"] == 0.30
+        assert config["status"]["healthy_min"] == 90.0
+        assert config["engine"]["redline_rpm"] == 6200.0
+        assert config["cooling"]["overheat_temp_c"] == 100.0

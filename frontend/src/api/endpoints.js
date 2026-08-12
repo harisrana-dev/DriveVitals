@@ -7,6 +7,7 @@ const endpoints = {
   vehicleHealth: {
     list: '/vehicle-health',
     item: (id) => `/vehicle-health/${id}`,
+    config: '/vehicle-health/config',
   },
   alerts: {
     list: '/alerts',

@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MaintenanceOverview } from '../components/maintenance/MaintenanceOverview';
 import { MaintenanceDistribution } from '../components/maintenance/MaintenanceDistribution';
 import { ServiceQueue } from '../components/maintenance/ServiceQueue';
@@ -8,9 +9,16 @@ import { ServiceHistory } from '../components/maintenance/ServiceHistory';
 import { MaintenanceDrawer } from '../components/maintenance/MaintenanceDrawer';
 
 export function MaintenancePage() {
-  const [selectedVehicleId, setSelectedVehicleId] = useState(null);
-  const handleServiceClick = useCallback((item) => { setSelectedVehicleId(item.vehicleId); }, []);
-  const handleCloseDrawer = useCallback(() => { setSelectedVehicleId(null); }, []);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedVehicleId = searchParams.get('vehicle');
+
+  const handleServiceClick = useCallback((item) => {
+    setSearchParams({ vehicle: item.vehicleId }, { replace: true });
+  }, [setSearchParams]);
+
+  const handleCloseDrawer = useCallback(() => {
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1400 }}>

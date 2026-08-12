@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useCallback, useState } from "react";
 import { subscribeToChannel, reconnectAll, getState } from "../websocket";
-import { listVehicles, listVehicleHealth } from "../services/api/vehicleApi";
+import { listVehicles, listVehicleHealth, getHealthConfig } from "../services/api/vehicleApi";
 import { listDrivers, listDriverStatistics } from "../services/api/driverApi";
 import { listMaintenance } from "../services/api/maintenanceApi";
 import { listAlerts, acknowledgeAlert, resolveAlert } from "../services/api/alertApi";
@@ -106,7 +106,7 @@ function buildFleetVehicles(vehicles, vehicleHealth, drivers, dashboardVehicles,
       brake_health_status: live?.brake_health_status ?? health?.brake_health_status ?? null,
       transmission_health_status: live?.transmission_health_status ?? health?.transmission_health_status ?? null,
       fuel_system_health_status: live?.fuel_system_health_status ?? health?.fuel_system_health_status ?? null,
-      health_reasons: live?.health_reasons || [],
+      health_reasons: live?.health_reasons || health?.health_reasons || [],
       speed_kmh: live?.speed_kmh ?? null,
       rpm: live?.rpm ?? null,
       throttle_position_percent: live?.throttle_position_percent ?? null,
@@ -152,6 +152,7 @@ export function LiveDataProvider({ children }) {
   const [drivers, setDrivers] = useState([]);
   const [driverStatistics, setDriverStatistics] = useState([]);
   const [vehicleHealth, setVehicleHealth] = useState([]);
+  const [healthConfig, setHealthConfig] = useState(null);
   const [maintenance, setMaintenance] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [telemetry, setTelemetry] = useState([]);
@@ -217,6 +218,7 @@ export function LiveDataProvider({ children }) {
       listDrivers(),
       listDriverStatistics(),
       listVehicleHealth(),
+      getHealthConfig(),
       listMaintenance(),
       listAlerts(),
       listTelemetry({ limit: 200 }),
@@ -224,11 +226,12 @@ export function LiveDataProvider({ children }) {
     ]);
     if (!mountedRef.current) return;
 
-    const [v, d, ds, vh, m, a, t, tr] = results;
+    const [v, d, ds, vh, hc, m, a, t, tr] = results;
     setVehicles(v.status === "fulfilled" ? v.value.data ?? [] : []);
     setDrivers(d.status === "fulfilled" ? d.value.data ?? [] : []);
     setDriverStatistics(ds.status === "fulfilled" ? ds.value.data ?? [] : []);
     setVehicleHealth(vh.status === "fulfilled" ? vh.value.data ?? [] : []);
+    setHealthConfig(hc.status === "fulfilled" ? hc.value.data ?? null : null);
     setMaintenance(m.status === "fulfilled" ? m.value.data ?? [] : []);
     setAlerts(a.status === "fulfilled" ? a.value.data ?? [] : []);
     setTelemetry(t.status === "fulfilled" ? t.value.data ?? [] : []);
@@ -337,6 +340,7 @@ export function LiveDataProvider({ children }) {
     drivers,
     driverStatistics,
     vehicleHealth,
+    healthConfig,
     maintenance,
     alerts,
     telemetry,

@@ -72,15 +72,20 @@ export const MaintenanceQueue = memo(function MaintenanceQueue() {
         {visibleItems.map((item, i) => {
           const ps = priorityStyles[item.priority];
           return (
-            <div
+            <Link
               key={item.id}
+              to={`/maintenance?vehicle=${encodeURIComponent(item.vehicleId)}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
                 padding: '14px 20px',
                 borderBottom: i < visibleItems.length - 1 ? '1px solid var(--color-border-light)' : 'none',
+                textDecoration: 'none',
+                transition: 'background 0.15s ease',
               }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface-hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               <div style={{
                 width: 34,
@@ -127,7 +132,7 @@ export const MaintenanceQueue = memo(function MaintenanceQueue() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: ps.color }}>
                 {ps.icon}
               </div>
-            </div>
+            </Link>
           );
         })}
         {visibleItems.length === 0 && (

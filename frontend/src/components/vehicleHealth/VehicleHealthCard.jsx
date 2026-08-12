@@ -1,8 +1,8 @@
 import { memo, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { HealthStatusBadge } from './HealthStatusBadge';
 import { HealthBar } from './HealthBar';
-import { componentLabel } from '../../utils/health';
+import { componentLabel, topHealthReason, healthReasonLabel, HEALTH_SEVERITY_COLORS } from '../../utils/health';
 
 const COMPONENT_KEYS = ['engine', 'cooling', 'braking', 'transmission', 'fuel'];
 
@@ -10,6 +10,7 @@ export const VehicleHealthCard = memo(function VehicleHealthCard({ vehicle, onCl
   const [hovered, setHovered] = useState(false);
   const hasIssues = vehicle.activeEvents.length > 0;
   const hasScore = vehicle.overallHealth != null;
+  const topReason = topHealthReason(vehicle.healthReasons);
   const ringColor = hasScore
     ? vehicle.healthCategory === 'healthy' ? 'var(--color-green)'
       : vehicle.healthCategory === 'warning' ? 'var(--color-amber)'
@@ -126,17 +127,28 @@ export const VehicleHealthCard = memo(function VehicleHealthCard({ vehicle, onCl
           display: 'flex',
           alignItems: 'center',
           gap: 5,
-          color: hasIssues ? 'var(--color-red)' : 'var(--color-green)',
+          color: topReason ? (HEALTH_SEVERITY_COLORS[topReason.severity] || 'var(--color-amber)') : hasIssues ? 'var(--color-red)' : 'var(--color-green)',
           fontWeight: 500,
+          minWidth: 0,
         }}
       >
-        {hasIssues ? (
+        {topReason ? (
+          <>
+            <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {topReason.title || healthReasonLabel(topReason.reason)}
+            </span>
+          </>
+        ) : hasIssues ? (
           <>
             <AlertTriangle size={11} />
             {vehicle.activeEvents.length} active issue{vehicle.activeEvents.length > 1 ? 's' : ''}
           </>
         ) : (
-          'No active issues'
+          <>
+            <CheckCircle2 size={11} />
+            No active issues
+          </>
         )}
       </div>
     </div>

@@ -19,6 +19,7 @@ class VehicleHealthRepository(BaseRepository):
         transmission_health: float | None = None,
         cooling_health: float | None = None,
         fuel_system_health: float | None = None,
+        health_reasons: list[dict] | None = None,
         last_updated: datetime | None = None,
     ) -> VehicleHealth:
         result = await self._session.execute(
@@ -42,6 +43,8 @@ class VehicleHealthRepository(BaseRepository):
                 updates["cooling_health"] = cooling_health
             if fuel_system_health is not None:
                 updates["fuel_system_health"] = fuel_system_health
+            if health_reasons is not None:
+                updates["health_reasons"] = health_reasons
             await self._session.execute(
                 update(VehicleHealth)
                 .where(VehicleHealth.vehicle_id == vehicle_id)
@@ -58,6 +61,7 @@ class VehicleHealthRepository(BaseRepository):
             transmission_health=transmission_health,
             cooling_health=cooling_health,
             fuel_system_health=fuel_system_health,
+            health_reasons=health_reasons,
             last_updated=now,
         )
         self._session.add(health)

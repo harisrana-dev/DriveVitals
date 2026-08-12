@@ -6,6 +6,9 @@ from backend.analytics.driver_statistics.models.driver_statistics import (
     DriverStatistics,
 )
 from backend.analytics.snapshot.analytics_snapshot import AnalyticsSnapshot
+from backend.analytics.vehicle_health.health_reasons import (
+    flatten_health_reasons,
+)
 from backend.analytics.vehicle_health.models.health_snapshot import (
     HealthSnapshot,
 )
@@ -235,6 +238,12 @@ class PersistenceService:
                     transmission_health=health_snapshot.transmission_health.score,
                     cooling_health=health_snapshot.cooling_health.score,
                     fuel_system_health=health_snapshot.fuel_system_health.score,
+                    health_reasons=[
+                        reason.to_dict()
+                        for reason in flatten_health_reasons(
+                            health_snapshot
+                        )
+                    ],
                     last_updated=health_snapshot.timestamp,
                 )
                 await session.commit()

@@ -16,3 +16,7 @@ export async function listVehicleHealth(params = {}) {
 export async function getVehicleHealth(vehicleId) {
   return apiClient.get(endpoints.vehicleHealth.item(vehicleId));
 }
+
+export async function getHealthConfig() {
+  return apiClient.get(endpoints.vehicleHealth.config);
+}

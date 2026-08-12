@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from backend.analytics.vehicle_health.health_config import (
     DEFAULT_HEALTH_CONFIG,
@@ -13,6 +13,20 @@ def _status_for_score(score: float | None) -> str | None:
     if score is None:
         return None
     return status_for_score(score, DEFAULT_HEALTH_CONFIG.status).value
+
+
+class HealthReasonRead(BaseModel):
+    """Structured health reason, matching the live WebSocket shape."""
+
+    subsystem: str
+    reason: str
+    code: str = ""
+    title: str = ""
+    severity: str = "warning"
+    summary: str = ""
+    evidence: dict[str, object] | None = None
+    impact: str | None = None
+    recommendation: str | None = None
 
 
 class VehicleHealthRead(BaseModel):
@@ -31,8 +45,14 @@ class VehicleHealthRead(BaseModel):
     transmission_health_status: str | None = None
     cooling_health_status: str | None = None
     fuel_system_health_status: str | None = None
-    health_reasons: list[str] = []
+    health_reasons: list[HealthReasonRead] = []
     last_updated: datetime
+
+    @field_validator("health_reasons", mode="before")
+    @classmethod
+    def _coerce_reasons(cls, value):
+        """Tolerate rows persisted before reasons were stored."""
+        return value or []
 
     @model_validator(mode="after")
     def _derive_statuses(self) -> "VehicleHealthRead":

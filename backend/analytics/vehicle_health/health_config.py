@@ -13,7 +13,7 @@ are introduced here first and consumed through HealthConfig.
 """
 
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from math import sqrt
 
 from backend.analytics.vehicle_health.models.subsystem_health import (
@@ -156,6 +156,29 @@ class HealthConfig:
 DEFAULT_HEALTH_CONFIG = HealthConfig()
 
 
+def health_config_to_dict(
+    config: HealthConfig = DEFAULT_HEALTH_CONFIG,
+) -> dict[str, object]:
+    """
+    Serialize a HealthConfig for external consumers (e.g. the REST
+    config endpoint) so the dashboard can render canonical thresholds
+    next to the reasons produced by the health engine.
+    """
+    return {
+        "weights": {
+            subsystem.value: weight
+            for subsystem, weight in config.weights.items()
+        },
+        "status": asdict(config.status),
+        "window_size": config.window_size,
+        "engine": asdict(config.engine),
+        "brake": asdict(config.brake),
+        "cooling": asdict(config.cooling),
+        "transmission": asdict(config.transmission),
+        "fuel_system": asdict(config.fuel_system),
+    }
+
+
 def clamp_score(score: float) -> float:
     """Clamp a health score into the valid [0, 100] range."""
     return min(100.0, max(0.0, score))
@@ -237,6 +260,7 @@ __all__ = [
     "FuelSystemThresholds",
     "HealthConfig",
     "DEFAULT_HEALTH_CONFIG",
+    "health_config_to_dict",
     "clamp_score",
     "status_for_score",
     "excess_penalty",

@@ -5,6 +5,7 @@ import { useRelativeTime } from '../../hooks/useRelativeTime';
 import { StatusBadge } from './StatusBadge';
 import { VehicleHealthBar } from './VehicleHealthBar';
 import { FuelBar } from './FuelBar';
+import { topHealthReason, healthReasonLabel, subsystemLabel } from '../../utils/health';
 
 const EVENT_LABELS = {
   speeding: 'Speeding',
@@ -26,6 +27,7 @@ export const VehicleCard = memo(function VehicleCard({ vehicle, onClick, index }
   const activeEvents = vehicle.activeEventTypes || [];
   const visibleEvents = eventsExpanded ? activeEvents : activeEvents.slice(0, 2);
   const hiddenCount = activeEvents.length - 2;
+  const topReason = topHealthReason(vehicle.reasons);
 
   const handleViewDetails = useCallback((e) => {
     e.stopPropagation();
@@ -182,6 +184,30 @@ export const VehicleCard = memo(function VehicleCard({ vehicle, onClick, index }
       <FuelBar level={vehicle.fuelLevel} />
 
       <VehicleHealthBar vehicle={vehicle} height={5} />
+
+      {topReason && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '5px 8px',
+            borderRadius: 6,
+            background: 'var(--color-amber-bg)',
+            border: '1px solid var(--color-amber)',
+            fontSize: 11,
+            fontWeight: 500,
+            color: 'var(--color-amber)',
+            lineHeight: 1.3,
+            minWidth: 0,
+          }}
+        >
+          <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {subsystemLabel(topReason.subsystem)}: {healthReasonLabel(topReason.reason)}
+          </span>
+        </div>
+      )}
 
       <div
         style={{

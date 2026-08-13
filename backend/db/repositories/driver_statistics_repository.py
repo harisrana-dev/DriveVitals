@@ -22,6 +22,9 @@ class DriverStatisticsRepository(BaseRepository):
         high_rpm_events: int | None = None,
         total_distance_km: float | None = None,
         total_trips: int | None = None,
+        total_driving_time_seconds: int | None = None,
+        average_trip_score: float | None = None,
+        fuel_efficiency: float | None = None,
         last_updated: datetime | None = None,
     ) -> DriverStatistics:
         result = await self._session.execute(
@@ -55,6 +58,14 @@ class DriverStatisticsRepository(BaseRepository):
                 updates["total_distance_km"] = total_distance_km
             if total_trips is not None:
                 updates["total_trips"] = total_trips
+            if total_driving_time_seconds is not None:
+                updates["total_driving_time_seconds"] = (
+                    total_driving_time_seconds
+                )
+            if average_trip_score is not None:
+                updates["average_trip_score"] = average_trip_score
+            if fuel_efficiency is not None:
+                updates["fuel_efficiency"] = fuel_efficiency
             await self._session.execute(
                 update(DriverStatistics)
                 .where(DriverStatistics.driver_id == driver_id)
@@ -91,6 +102,19 @@ class DriverStatisticsRepository(BaseRepository):
             ),
             high_rpm_events=(
                 high_rpm_events if high_rpm_events is not None else 0
+            ),
+            total_driving_time_seconds=(
+                total_driving_time_seconds
+                if total_driving_time_seconds is not None
+                else 0
+            ),
+            average_trip_score=(
+                average_trip_score
+                if average_trip_score is not None
+                else 0.0
+            ),
+            fuel_efficiency=(
+                fuel_efficiency if fuel_efficiency is not None else 0.0
             ),
             last_updated=now,
         )

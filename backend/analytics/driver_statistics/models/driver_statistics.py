@@ -6,6 +6,7 @@ by the DriverStatisticsEngine. Contains no scoring logic.
 """
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,5 +31,10 @@ class DriverStatistics:
     harsh_braking_count: int
     overspeed_count: int
     harsh_acceleration_count: int
-    total_distance: float
-    total_trips: int
+    high_rpm_count: int = 0
+    total_distance: float = 0.0
+    total_trips: int = 0
+    total_driving_time_seconds: int = 0
+    total_fuel_used_liters: float = 0.0
+    average_trip_score: Optional[float] = None
+    fuel_efficiency: Optional[float] = None

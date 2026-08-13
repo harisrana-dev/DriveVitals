@@ -1,15 +1,22 @@
+import { useEffect, useRef, useState } from 'react';
 import {
   X, TrendingUp, TrendingDown, Minus,
   Gauge, Thermometer, Fuel, Activity, AlertTriangle,
-  Zap, Cpu, Wind,
+  Zap, Cpu, Wind, Route, Trophy, Lightbulb, Clock, ChevronRight,
 } from 'lucide-react';
-import { useDriver, useDriverPerformance } from '../../hooks/useDrivers';
+import { useDriver, useDriverPerformance, useDrivers } from '../../hooks/useDrivers';
+import { useDriverTrips } from '../../hooks/useDriverTrips';
 import { useSmoothValue } from '../../hooks/useSmoothValue';
 import { useRelativeTime } from '../../hooks/useRelativeTime';
 import { DriverScoreRing } from './DriverScoreRing';
 import { DriverRiskBadge } from './DriverRiskBadge';
 import { DriverBehaviourTimeline } from './DriverBehaviourTimeline';
 import { DriverMetrics } from './DriverMetrics';
+import { TripStatusBadge } from '../trips/TripStatusBadge';
+import { TripDrawer } from '../trips/TripDrawer';
+import { EmptyState } from '../ui/EmptyState';
+import { computeDriverBenchmark } from '../../utils/driverBenchmark';
+import { generateDriverInsights } from '../../utils/driverInsights';
 
 const STATUS_MAP = {
   active: { label: 'ACTIVE', color: 'var(--color-green)', bg: 'var(--color-green-bg)' },
@@ -23,13 +30,32 @@ const TREND_LABELS = {
   declining: { label: 'Declining', icon: TrendingDown, color: 'var(--color-red)' },
 };
 
+const TABS = ['Overview', 'Live', 'Trips', 'Performance', 'Behaviour', 'Insights'];
+
+function gradeColor(grade) {
+  if (!grade) return 'var(--color-text-muted)';
+  if (grade === 'A') return 'var(--color-green)';
+  if (grade === 'B') return 'var(--color-accent)';
+  if (grade === 'C' || grade === 'D') return 'var(--color-amber)';
+  return 'var(--color-red)';
+}
+
 export function DriverProfileDrawer({ driverId, onClose }) {
   const driver = useDriver(driverId);
-  if (!driver) return null;
+  const [activeTab, setActiveTab] = useState('Overview');
 
   return (
     <DrawerFrame onClose={onClose}>
-      <DrawerContent driver={driver} onClose={onClose} />
+      {driver ? (
+        <DrawerContent
+          driver={driver}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onClose={onClose}
+        />
+      ) : (
+        <DrawerEmpty onClose={onClose} />
+      )}
     </DrawerFrame>
   );
 }
@@ -52,8 +78,8 @@ function DrawerFrame({ onClose, children }) {
           position: 'fixed',
           top: 0,
           right: 0,
-          width: 480,
-          maxWidth: '90vw',
+          width: 500,
+          maxWidth: '92vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
@@ -61,6 +87,8 @@ function DrawerFrame({ onClose, children }) {
           zIndex: 301,
           display: 'flex',
           flexDirection: 'column',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
           animation: 'slideInRight 0.2s ease-out',
         }}
       >
@@ -70,92 +98,155 @@ function DrawerFrame({ onClose, children }) {
   );
 }
 
-function DrawerContent({ driver, onClose }) {
+function DrawerContent({ driver, activeTab, onTabChange, onClose }) {
+  const [selectedTrip, setSelectedTrip] = useState(null);
   const performance = useDriverPerformance(driver.id);
-  const relativeTime = useRelativeTime(driver.lastActive);
+  const { trips, loading } = useDriverTrips(driver.id);
+  const allDrivers = useDrivers();
+  const scrollRef = useRef(null);
   const statusStyle = STATUS_MAP[driver.status] || STATUS_MAP.off_duty;
-  const trend = TREND_LABELS[driver.trend] || TREND_LABELS.stable;
-  const TrendIcon = trend.icon;
 
-  const smoothSpeed = useSmoothValue(driver.speed ?? 0);
-  const smoothRpm = useSmoothValue(driver.rpm ?? 0);
-  const smoothThrottle = useSmoothValue(driver.throttle ?? 0);
-  const smoothBrake = useSmoothValue(driver.brake ?? 0);
-  const smoothFuel = useSmoothValue(driver.fuelLevel ?? 0);
-  const smoothCoolant = useSmoothValue(driver.coolantTemp ?? 0);
-  const smoothEngineLoad = useSmoothValue(driver.engineLoad ?? 0);
-  const smoothHealth = useSmoothValue(driver.healthScore ?? 0);
+  const historical = driver.historical || {};
+  const benchmark = computeDriverBenchmark(driver, allDrivers);
+  const insights = generateDriverInsights({ driver, allDrivers });
 
-  const activeEvents = driver.activeEventTypes || [];
+  const trend = historical.trend ? TREND_LABELS[historical.trend] : null;
+  const TrendIcon = trend ? trend.icon : null;
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [activeTab]);
 
   return (
     <>
       <Header driver={driver} onClose={onClose} statusStyle={statusStyle} />
 
+      <SummaryBlock driver={driver} trend={trend} TrendIcon={TrendIcon} />
+
+      <NavSurface active={activeTab} onChange={onTabChange} />
+
+      <div
+        ref={scrollRef}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          padding: '12px 20px 20px',
+          boxSizing: 'border-box',
+        }}
+      >
+        {activeTab === 'Overview' && <OverviewTab driver={driver} benchmark={benchmark} />}
+        {activeTab === 'Live' && <LiveTab driver={driver} />}
+        {activeTab === 'Trips' && (
+          <TripsTab trips={trips} loading={loading} onTripClick={setSelectedTrip} />
+        )}
+        {activeTab === 'Performance' && (
+          <PerformanceTab driver={driver} performance={performance} />
+        )}
+        {activeTab === 'Behaviour' && <BehaviourTab driver={driver} />}
+        {activeTab === 'Insights' && (
+          <InsightsTab insights={insights} benchmark={benchmark} />
+        )}
+      </div>
+
+      <Footer onClose={onClose} />
+
+      {selectedTrip && (
+        <TripDrawer
+          key={selectedTrip.id}
+          trip={selectedTrip}
+          onClose={() => setSelectedTrip(null)}
+        />
+      )}
+    </>
+  );
+}
+
+function SummaryBlock({ driver, trend, TrendIcon }) {
+  const relativeTime = useRelativeTime(driver.lastActive);
+  return (
+    <div style={{ flexShrink: 0, padding: '16px 20px 0', boxSizing: 'border-box' }}>
+      <DualScoreBlocks
+        driver={driver}
+        relativeTime={relativeTime}
+        trend={trend}
+        TrendIcon={TrendIcon}
+      />
+    </div>
+  );
+}
+
+function DrawerEmpty({ onClose }) {
+  return (
+    <>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--color-border)',
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            color: 'var(--color-text-muted)',
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          <Activity size={16} style={{ color: 'var(--color-accent)' }} />
+          Driver Details
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'var(--color-text-muted)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--color-surface-hover)';
+            e.currentTarget.style.color = 'var(--color-text-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--color-text-muted)';
+          }}
+        >
+          <X size={18} />
+        </button>
+      </div>
       <div
         style={{
           flex: 1,
-          overflowY: 'auto',
-          padding: 20,
+          minHeight: 0,
           display: 'flex',
-          flexDirection: 'column',
-          gap: 20,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 20,
+          boxSizing: 'border-box',
         }}
       >
-        <PerformanceOverview
-          driver={driver}
-          relativeTime={relativeTime}
-          trend={trend}
-          TrendIcon={TrendIcon}
-          smoothHealth={smoothHealth}
+        <EmptyState
+          title="Driver unavailable"
+          description="The selected driver could not be found. Live data may still be reconnecting — try again in a moment."
+          icon={<Activity size={20} />}
         />
-
-        <div>
-          <SectionTitle>Live Telemetry</SectionTitle>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 6,
-            }}
-          >
-            <LiveTelemetryItem icon={<Gauge size={13} />} label="Speed" value={`${Math.round(smoothSpeed)} km/h`} />
-            <LiveTelemetryItem icon={<Activity size={13} />} label="RPM" value={Math.round(smoothRpm).toLocaleString()} />
-            <LiveTelemetryItem icon={<Zap size={13} />} label="Throttle" value={`${Math.round(smoothThrottle)}%`} />
-            <LiveTelemetryItem icon={<Wind size={13} />} label="Brake" value={`${Math.round(smoothBrake)}%`} />
-            <LiveTelemetryItem icon={<Fuel size={13} />} label="Fuel" value={`${Math.round(smoothFuel)}%`} />
-            <LiveTelemetryItem icon={<Thermometer size={13} />} label="Coolant" value={driver.coolantTemp > 0 ? `${Math.round(smoothCoolant)}\u00b0C` : 'N/A'} />
-            <LiveTelemetryItem icon={<Cpu size={13} />} label="Engine Load" value={`${Math.round(smoothEngineLoad)}%`} />
-            <LiveTelemetryItem icon={<Activity size={13} />} label="Health" value={`${Math.round(smoothHealth)}%`} />
-          </div>
-        </div>
-
-        {activeEvents.length > 0 && (
-          <ActiveEventsSection events={activeEvents} />
-        )}
-
-        <BehaviourSummary scoreBreakdown={driver.scoreBreakdown} />
-
-        <div>
-          <SectionTitle>Metrics</SectionTitle>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 8,
-            }}
-          >
-            <DriverMetrics driver={driver} />
-          </div>
-        </div>
-
-        <DriverBehaviourTimeline driver={driver} />
-
-        <PerformanceTrend performance={performance} />
-
-        <BehaviourDistribution distribution={driver.behaviourDistribution} />
       </div>
-
       <Footer onClose={onClose} />
     </>
   );
@@ -170,6 +261,8 @@ function Header({ driver, onClose, statusStyle }) {
         justifyContent: 'space-between',
         padding: '16px 20px',
         borderBottom: '1px solid var(--color-border)',
+        flexShrink: 0,
+        boxSizing: 'border-box',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -270,80 +363,551 @@ function Header({ driver, onClose, statusStyle }) {
   );
 }
 
-function PerformanceOverview({ driver, relativeTime, trend, TrendIcon, smoothHealth }) {
+function DualScoreBlocks({ driver, relativeTime, trend, TrendIcon }) {
+  const historical = driver.historical || {};
+  const hasLive = driver.status === 'active' && driver.live?.score != null;
+
   return (
     <div
       style={{
-        display: 'flex',
-        gap: 16,
-        padding: '16px 18px',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 10,
+      }}
+    >
+      <ScoreBlock
+        label="Live Score"
+        score={driver.live?.score ?? null}
+        subtitle={hasLive ? `Live now · ${relativeTime}` : 'No live telemetry — driver not active'}
+        riskLevel={driver.live?.riskLevel || 'unknown'}
+        accent={hasLive ? 'var(--color-accent)' : 'var(--color-text-muted)'}
+      />
+      <ScoreBlock
+        label="Historical Safety"
+        score={historical.safetyScore}
+        subtitle={
+          historical.grade
+            ? `Grade ${historical.grade} over ${historical.tripsCompleted ?? 0} trips`
+            : 'No completed-trip score recorded yet'
+        }
+        riskLevel={historical.riskLevel || 'unknown'}
+        grade={historical.grade}
+        accent={
+          historical.safetyScore == null
+            ? 'var(--color-text-muted)'
+            : historical.safetyScore >= 90 ? 'var(--color-green)' :
+              historical.safetyScore >= 70 ? 'var(--color-amber)' : 'var(--color-red)'
+        }
+        trend={trend}
+        TrendIcon={TrendIcon}
+        scoreDelta={historical.scoreDelta ?? null}
+      />
+    </div>
+  );
+}
+
+function ScoreBlock({ label, score, subtitle, riskLevel, grade, accent, trend, TrendIcon, scoreDelta }) {
+  return (
+    <div
+      style={{
+        padding: '12px 14px',
         borderRadius: 12,
         background: 'var(--color-bg)',
         border: '1px solid var(--color-border-light)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 6,
       }}
     >
-      <DriverScoreRing score={smoothHealth} size={88} />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, justifyContent: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <DriverRiskBadge level={driver.riskLevel} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: trend.color, fontWeight: 500 }}>
-            <TrendIcon size={13} strokeWidth={2} />
-            {trend.label}
-          </div>
-        </div>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: accent,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+        }}
+      >
+        {label}
+      </div>
+      <DriverScoreRing score={score} size={72} />
+      <DriverRiskBadge level={riskLevel} size="sm" />
+      {grade && (
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minWidth: 26,
+            height: 22,
+            padding: '0 8px',
+            borderRadius: 6,
+            background: `${gradeColor(grade)}1a`,
+            color: gradeColor(grade),
+            fontSize: 13,
+            fontWeight: 700,
+            lineHeight: 1,
+          }}
+        >
+          {grade}
+        </span>
+      )}
+      {trend && TrendIcon ? (
         <div
           style={{
-            fontSize: 13,
-            color: 'var(--color-text-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 11,
+            color: trend.color,
             fontWeight: 500,
           }}
         >
-          {driver.vehicleName}
+          <TrendIcon size={12} strokeWidth={2} />
+          {trend.label}
+          {scoreDelta != null && Math.abs(scoreDelta) > 0 && (
+            <span>{`${scoreDelta > 0 ? '+' : ''}${scoreDelta}`}</span>
+          )}
         </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--color-text-muted)',
-          }}
-        >
-          {driver.tripsToday > 0 ? `${driver.tripsToday} trips today` : 'No trips today'}
-          <span style={{ margin: '0 4px', opacity: 0.4 }}>·</span>
-          {relativeTime}
-        </div>
+      ) : (
+        score != null && (
+          <span
+            style={{
+              fontSize: 10,
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            Not enough data for a trend
+          </span>
+        )
+      )}
+      <div
+        style={{
+          fontSize: 10,
+          color: 'var(--color-text-muted)',
+          textAlign: 'center',
+          lineHeight: 1.4,
+        }}
+      >
+        {subtitle}
       </div>
     </div>
   );
 }
 
-function ActiveEventsSection({ events }) {
+function NavSurface({ active, onChange }) {
   return (
     <div
       style={{
-        padding: '12px 14px',
-        borderRadius: 8,
-        background: 'var(--color-red-bg)',
-        border: '1px solid var(--color-red)',
+        flexShrink: 0,
+        padding: '10px 20px 0',
+        boxSizing: 'border-box',
       }}
     >
-      <SectionTitle>Active Events</SectionTitle>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {events.map((evt) => (
-          <div
-            key={evt}
+      <div
+        role="tablist"
+        aria-label="Driver sections"
+        style={{
+          display: 'flex',
+          gap: 2,
+          padding: 4,
+          borderRadius: 10,
+          background: 'var(--color-bg)',
+          border: '1px solid var(--color-border-light)',
+          overflowX: 'auto',
+          boxSizing: 'border-box',
+        }}
+      >
+        {TABS.map((tab) => {
+          const isActive = active === tab;
+          return (
+            <button
+              key={tab}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onChange(tab)}
+              style={{
+                flex: '0 0 auto',
+                padding: '7px 12px',
+                borderRadius: 7,
+                border: 'none',
+                background: isActive ? 'var(--color-accent-subtle)' : 'transparent',
+                color: isActive ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.12s ease',
+              }}
+            >
+              {tab}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function OverviewTab({ driver, benchmark }) {
+  const historical = driver.historical || {};
+  const relativeTime = useRelativeTime(driver.lastActive);
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+      }}
+    >
+      <div
+        style={{
+          padding: '14px 16px',
+          borderRadius: 10,
+          background: 'var(--color-bg)',
+          border: '1px solid var(--color-border-light)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <Activity size={14} style={{ color: 'var(--color-accent)' }} />
+          <span
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              color: 'var(--color-red)',
-              fontWeight: 500,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--color-text-primary)',
             }}
           >
-            <AlertTriangle size={11} style={{ flexShrink: 0 }} />
-            {evt.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+            {driver.vehicleName || 'No vehicle assigned'}
+          </span>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
+          {driver.vehicleId || '—'}
+        </div>
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 11,
+            color: 'var(--color-text-muted)',
+          }}
+        >
+          {driver.tripsToday > 0 ? `${driver.tripsToday} trip${driver.tripsToday === 1 ? '' : 's'} today` : 'No trips today'}
+          <span style={{ margin: '0 4px', opacity: 0.4 }}>·</span>
+          {relativeTime}
+        </div>
+        {historical.percentile != null && (
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 12,
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            <Trophy size={11} style={{ verticalAlign: 'text-bottom', marginRight: 4, color: 'var(--color-amber)' }} />
+            {historical.percentile}th percentile for safety across scored drivers
           </div>
-        ))}
+        )}
       </div>
+
+      <FleetBenchmark benchmark={benchmark} compact />
+    </div>
+  );
+}
+
+function LiveTab({ driver }) {
+  const telemetry = driver.live?.telemetry || {};
+  const smoothSpeed = useSmoothValue(telemetry.speed ?? 0);
+  const smoothRpm = useSmoothValue(telemetry.rpm ?? 0);
+  const smoothThrottle = useSmoothValue(telemetry.throttle ?? 0);
+  const smoothBrake = useSmoothValue(telemetry.brake ?? 0);
+  const smoothFuel = useSmoothValue(telemetry.fuelLevel ?? 0);
+  const smoothCoolant = useSmoothValue(telemetry.coolantTemp ?? 0);
+  const smoothEngineLoad = useSmoothValue(telemetry.engineLoad ?? 0);
+  const smoothHealth = useSmoothValue(telemetry.healthScore ?? 0);
+
+  const activeEvents = driver.live?.activeEvents || [];
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+      }}
+    >
+      {activeEvents.length > 0 && (
+        <div
+          style={{
+            padding: '12px 14px',
+            borderRadius: 8,
+            background: 'var(--color-red-bg)',
+            border: '1px solid var(--color-red)',
+          }}
+        >
+          <SectionTitle>Active Events</SectionTitle>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {activeEvents.map((evt) => (
+              <div
+                key={evt}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 12,
+                  color: 'var(--color-red)',
+                  fontWeight: 500,
+                }}
+              >
+                <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+                {evt.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <SectionTitle>Live Telemetry</SectionTitle>
+        {driver.status !== 'active' ? (
+          <div
+            style={{
+              padding: '14px 16px',
+              borderRadius: 8,
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border-light)',
+              fontSize: 12,
+              color: 'var(--color-text-muted)',
+              lineHeight: 1.6,
+            }}
+          >
+            No live telemetry — the driver is not currently active. Live
+            speed, engine and behaviour data will stream here while they
+            drive.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 6,
+            }}
+          >
+            <LiveTelemetryItem icon={<Gauge size={13} />} label="Speed" value={telemetry.speed != null ? `${Math.round(smoothSpeed)} km/h` : '—'} />
+            <LiveTelemetryItem icon={<Activity size={13} />} label="RPM" value={telemetry.rpm != null ? Math.round(smoothRpm).toLocaleString() : '—'} />
+            <LiveTelemetryItem icon={<Zap size={13} />} label="Throttle" value={telemetry.throttle != null ? `${Math.round(smoothThrottle)}%` : '—'} />
+            <LiveTelemetryItem icon={<Wind size={13} />} label="Brake" value={telemetry.brake != null ? `${Math.round(smoothBrake)}%` : '—'} />
+            <LiveTelemetryItem icon={<Fuel size={13} />} label="Fuel" value={telemetry.fuelLevel != null ? `${Math.round(smoothFuel)}%` : '—'} />
+            <LiveTelemetryItem icon={<Thermometer size={13} />} label="Coolant" value={telemetry.coolantTemp != null ? `${Math.round(smoothCoolant)}\u00b0C` : '—'} />
+            <LiveTelemetryItem icon={<Cpu size={13} />} label="Engine Load" value={telemetry.engineLoad != null ? `${Math.round(smoothEngineLoad)}%` : '—'} />
+            <LiveTelemetryItem icon={<Activity size={13} />} label="Vehicle Health" value={telemetry.healthScore != null ? `${Math.round(smoothHealth)}%` : '—'} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TripsTab({ trips, loading, onTripClick }) {
+  return (
+    <div>
+      <SectionTitle>Completed Trips</SectionTitle>
+      {loading ? (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+            padding: '8px 2px',
+          }}
+        >
+          Loading trips...
+        </div>
+      ) : trips.length === 0 ? (
+        <EmptyState
+          title="No completed trips"
+          description="Completed trips for this driver will appear here."
+          icon={<Route size={20} />}
+        />
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          {trips.map((trip) => (
+            <div
+              key={trip.id}
+              onClick={() => onTripClick(trip)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '8px 10px',
+                borderRadius: 8,
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border-light)',
+                cursor: 'pointer',
+                transition: 'border-color 0.12s ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border-light)'; }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                <Clock size={12} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: 'var(--color-text-primary)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {trip.routeName || trip.routeType || trip.routeId || 'Route'}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--color-text-muted)',
+                    }}
+                  >
+                    {trip.completedAt
+                      ? new Date(trip.completedAt).toLocaleString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'Completed'}
+                    {trip.distanceFormatted && trip.distanceFormatted !== '—'
+                      ? ` · ${trip.distanceFormatted}`
+                      : ''}
+                  </div>
+                </div>
+              </div>
+              <TripStatusBadge status={trip.status} />
+              {trip.safetyScore != null ? (
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                    color:
+                      trip.safetyScore >= 90 ? 'var(--color-green)' :
+                      trip.safetyScore >= 70 ? 'var(--color-amber)' :
+                      'var(--color-red)',
+                    minWidth: 30,
+                    textAlign: 'right',
+                  }}
+                >
+                  {Math.round(trip.safetyScore)}
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--color-text-muted)',
+                    minWidth: 30,
+                    textAlign: 'right',
+                  }}
+                >
+                  —
+                </span>
+              )}
+              <ChevronRight size={13} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PerformanceTab({ driver, performance }) {
+  const historical = driver.historical || {};
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+      }}
+    >
+      <div>
+        <SectionTitle>Historical Scores</SectionTitle>
+        <ScoreSummary scores={historical.scores || {}} />
+      </div>
+
+      <div>
+        <SectionTitle>Metrics</SectionTitle>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 8,
+          }}
+        >
+          <DriverMetrics driver={driver} />
+        </div>
+      </div>
+
+      <PerformanceTrend
+        performance={performance}
+        observations={historical.performanceHistory.length}
+      />
+    </div>
+  );
+}
+
+function BehaviourTab({ driver }) {
+  return (
+    <div>
+      <DriverBehaviourTimeline driver={driver} />
+      {driver.behaviour.totalRatePer100Km != null && (
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 11,
+            color: 'var(--color-text-muted)',
+            lineHeight: 1.5,
+          }}
+        >
+          {driver.behaviour.totalEvents} recorded event
+          {driver.behaviour.totalEvents === 1 ? '' : 's'} across{' '}
+          {driver.historical.totalDistanceKm != null
+            ? `${Math.round(driver.historical.totalDistanceKm)} km`
+            : 'recorded distance'} —{' '}
+          {driver.behaviour.totalRatePer100Km} per 100 km.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InsightsTab({ insights, benchmark }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+      }}
+    >
+      <FleetBenchmark benchmark={benchmark} />
+      <DriverInsights insights={insights} />
     </div>
   );
 }
@@ -384,97 +948,131 @@ function LiveTelemetryItem({ icon, label, value }) {
   );
 }
 
-function BehaviourSummary({ scoreBreakdown }) {
-  const breakdown = scoreBreakdown || {};
+function ScoreSummary({ scores }) {
   const items = [
-    { label: 'Braking', value: breakdown.braking || 0 },
-    { label: 'Acceleration', value: breakdown.acceleration || 0 },
-    { label: 'Speed Compliance', value: breakdown.speed || 0 },
-    { label: 'Efficiency', value: breakdown.efficiency || 0 },
+    { label: 'Safety', value: scores?.safety },
+    { label: 'Efficiency', value: scores?.efficiency },
+    { label: 'Aggression', value: scores?.aggression },
   ];
+  const present = items.filter((i) => i.value != null);
 
   return (
-    <div>
-      <SectionTitle>Score Breakdown</SectionTitle>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 6,
-        }}
-      >
-        {items.map((item) => (
-          <div
-            key={item.label}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '6px 0',
-            }}
-          >
-            <span
-              style={{
-                width: 100,
-                fontSize: 12,
-                color: 'var(--color-text-secondary)',
-                flexShrink: 0,
-              }}
-            >
-              {item.label}
-            </span>
+    <div
+      style={{
+        padding: '12px 14px',
+        borderRadius: 8,
+        background: 'var(--color-bg)',
+        border: '1px solid var(--color-border-light)',
+      }}
+    >
+      {present.length === 0 ? (
+        <EmptyState
+          title="No scores available"
+          description="Safety, efficiency and aggression scores will appear once this driver has completed trips with recorded statistics."
+        />
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          {items.map((item) => (
             <div
+              key={item.label}
               style={{
-                flex: 1,
-                height: 6,
-                borderRadius: 3,
-                background: 'var(--color-border-light)',
-                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
               }}
             >
-              <div
+              <span
                 style={{
-                  width: `${item.value}%`,
-                  height: '100%',
-                  borderRadius: 3,
-                  background:
-                    item.value >= 90 ? 'var(--color-green)' :
-                    item.value >= 70 ? 'var(--color-amber)' :
-                    'var(--color-red)',
-                  transition: 'width 0.4s ease',
+                  width: 100,
+                  fontSize: 12,
+                  color: 'var(--color-text-secondary)',
+                  flexShrink: 0,
                 }}
-              />
+              >
+                {item.label}
+              </span>
+              {item.value == null ? (
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  Not available yet
+                </span>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 6,
+                      borderRadius: 3,
+                      background: 'var(--color-border-light)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${Math.max(0, Math.min(100, item.value))}%`,
+                        height: '100%',
+                        borderRadius: 3,
+                        background:
+                          item.value >= 90 ? 'var(--color-green)' :
+                          item.value >= 70 ? 'var(--color-amber)' :
+                          'var(--color-red)',
+                        transition: 'width 0.4s ease',
+                      }}
+                    />
+                  </div>
+                  <span
+                    style={{
+                      width: 32,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      fontVariantNumeric: 'tabular-nums',
+                      color: 'var(--color-text-primary)',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {item.value}
+                  </span>
+                </>
+              )}
             </div>
-            <span
-              style={{
-                width: 32,
-                fontSize: 13,
-                fontWeight: 600,
-                fontVariantNumeric: 'tabular-nums',
-                color: 'var(--color-text-primary)',
-                textAlign: 'right',
-              }}
-            >
-              {item.value}
-            </span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function PerformanceTrend({ performance }) {
-  if (!performance || !performance.history || performance.history.length < 2) return null;
+function PerformanceTrend({ performance, observations }) {
+  if (!performance || !performance.history || performance.history.length < 2) {
+    return (
+      <div>
+        <SectionTitle>Performance Trend</SectionTitle>
+        <EmptyState
+          title="Not enough completed trips"
+          description="At least two scored trips are needed to plot a performance trend."
+        />
+      </div>
+    );
+  }
 
   const history = performance.history;
-  const width = 400;
+  const width = 420;
   const height = 80;
   const padding = { top: 8, bottom: 16, left: 0, right: 0 };
   const chartW = width - padding.left - padding.right;
   const chartH = height - padding.top - padding.bottom;
 
-  const scores = history.map((h) => h.score);
+  const scores = history.map((h) => h.score).filter((s) => s != null);
   const min = Math.max(0, Math.min(...scores) - 5);
   const max = Math.min(100, Math.max(...scores) + 5);
   const range = max - min || 1;
@@ -529,32 +1127,45 @@ function PerformanceTrend({ performance }) {
               <g key={idx}>
                 <circle cx={x} cy={y} r="2.5" fill={lineColor} />
                 <text x={x} y={height - 2} textAnchor="middle" fontSize="8" fill="var(--color-text-muted)">
-                  {history[idx].date.slice(5)}
+                  {h.date ? new Date(h.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}
                 </text>
               </g>
             );
           })}
         </svg>
       </div>
+      {observations != null && observations < 4 && (
+        <div
+          style={{
+            marginTop: 6,
+            fontSize: 11,
+            color: 'var(--color-text-muted)',
+          }}
+        >
+          Trend direction is classified once at least 4 completed trips are recorded.
+        </div>
+      )}
     </div>
   );
 }
 
-function BehaviourDistribution({ distribution }) {
-  if (!distribution) return null;
-
-  const items = [
-    { label: 'Smooth Driving', value: distribution.smoothDriving || 0, color: 'var(--color-green)' },
-    { label: 'Harsh Events', value: distribution.harshEvents || 0, color: 'var(--color-red)' },
-    { label: 'Overspeed', value: distribution.overspeed || 0, color: 'var(--color-amber)' },
-    { label: 'Idle', value: distribution.idle || 0, color: 'var(--color-accent)' },
-  ];
-
-  const total = items.reduce((s, i) => s + i.value, 0) || 1;
+function FleetBenchmark({ benchmark, compact }) {
+  if (!benchmark) {
+    return (
+      <div>
+        <SectionTitle>Fleet Benchmark</SectionTitle>
+        <EmptyState
+          title="Benchmark not available"
+          description="A fleet benchmark needs at least three drivers with recorded safety scores."
+          icon={<Trophy size={20} />}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <SectionTitle>Behaviour Distribution</SectionTitle>
+      <SectionTitle>Fleet Benchmark</SectionTitle>
       <div
         style={{
           padding: '12px 14px',
@@ -566,66 +1177,181 @@ function BehaviourDistribution({ distribution }) {
         <div
           style={{
             display: 'flex',
-            height: 8,
-            borderRadius: 4,
-            overflow: 'hidden',
-            marginBottom: 12,
+            alignItems: 'baseline',
+            gap: 8,
+            marginBottom: 10,
           }}
         >
-          {items.map((item) => (
-            <div
-              key={item.label}
-              style={{
-                width: `${(item.value / total) * 100}%`,
-                background: item.color,
-                transition: 'width 0.4s ease',
-              }}
-            />
-          ))}
+          <span
+            style={{
+              fontSize: 24,
+              fontWeight: 700,
+              color: 'var(--color-text-primary)',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {benchmark.percentile}
+            <span style={{ fontSize: 13, color: 'var(--color-text-muted)', fontWeight: 400 }}>
+              th percentile
+            </span>
+          </span>
+          <span
+            style={{
+              fontSize: 12,
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            vs {benchmark.fleetSize} scored drivers
+          </span>
         </div>
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            display: 'flex',
+            flexDirection: 'column',
             gap: 6,
           }}
         >
-          {items.map((item) => (
+          <BenchmarkRow
+            label="Fleet average safety"
+            value={`${benchmark.fleetAvg} / 100`}
+            highlight={benchmark.diff}
+          />
+          <BenchmarkRow
+            label="Event rate"
+            value={
+              benchmark.driverEventRate != null && benchmark.fleetEventRate != null
+                ? `${benchmark.driverEventRate.toFixed(1)} vs fleet ${benchmark.fleetEventRate.toFixed(1)} / 100 km`
+                : '—'
+            }
+          />
+          {benchmark.fleetFuelEfficiency != null && !compact && (
+            <BenchmarkRow
+              label="Fleet fuel efficiency"
+              value={`${benchmark.fleetFuelEfficiency.toFixed(1)} km/L`}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BenchmarkRow({ label, value, highlight }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 12,
+          color: 'var(--color-text-secondary)',
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color:
+            highlight == null ? 'var(--color-text-primary)' :
+            highlight > 0 ? 'var(--color-green)' :
+            highlight < 0 ? 'var(--color-red)' :
+            'var(--color-text-primary)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function DriverInsights({ insights }) {
+  return (
+    <div>
+      <SectionTitle>Insights</SectionTitle>
+      {insights.length === 0 ? (
+        <EmptyState
+          title="No insights available"
+          description="Insights will appear as this driver accumulates completed trips and behaviour events."
+          icon={<Lightbulb size={20} />}
+        />
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+          }}
+        >
+          {insights.map((insight) => (
             <div
-              key={item.label}
+              key={insight.id}
               style={{
+                padding: '10px 12px',
+                borderRadius: 8,
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border-light)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 6,
+                flexDirection: 'column',
+                gap: 4,
               }}
             >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Lightbulb
+                  size={12}
+                  style={{
+                    color:
+                      insight.severity === 'critical' || insight.severity === 'high'
+                        ? 'var(--color-amber)'
+                        : 'var(--color-accent)',
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  {insight.title}
+                </span>
+              </div>
               <span
                 style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 2,
-                  background: item.color,
-                  flexShrink: 0,
+                  fontSize: 11,
+                  color: 'var(--color-text-secondary)',
+                  lineHeight: 1.5,
                 }}
-              />
-              <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                {item.label}
+              >
+                {insight.observation}
               </span>
               <span
                 style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: 'var(--color-text-primary)',
-                  fontVariantNumeric: 'tabular-nums',
-                  marginLeft: 'auto',
+                  fontSize: 11,
+                  color: 'var(--color-text-muted)',
+                  fontStyle: 'italic',
                 }}
               >
-                {Math.round((item.value / total) * 100)}%
+                {insight.action}
               </span>
             </div>
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -655,6 +1381,8 @@ function Footer({ onClose }) {
         borderTop: '1px solid var(--color-border)',
         display: 'flex',
         gap: 8,
+        flexShrink: 0,
+        boxSizing: 'border-box',
       }}
     >
       <button

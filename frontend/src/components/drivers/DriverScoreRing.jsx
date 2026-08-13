@@ -1,12 +1,14 @@
 import { memo } from 'react';
 
 function scoreColor(score) {
+  if (score == null) return 'var(--color-text-muted)';
   if (score >= 90) return 'var(--color-green)';
   if (score >= 70) return 'var(--color-amber)';
   return 'var(--color-red)';
 }
 
 function scoreBg(score) {
+  if (score == null) return 'var(--color-surface-hover)';
   if (score >= 90) return 'var(--color-green-bg)';
   if (score >= 70) return 'var(--color-amber-bg)';
   return 'var(--color-red-bg)';
@@ -16,7 +18,8 @@ export const DriverScoreRing = memo(function DriverScoreRing({ score, size = 80,
   const s = strokeWidth || Math.max(4, Math.round(size * 0.08));
   const r = (size - s) / 2;
   const c = 2 * Math.PI * r;
-  const offset = c - (score / 100) * c;
+  const pct = score == null ? 0 : Math.max(0, Math.min(100, score));
+  const offset = c - (pct / 100) * c;
   const color = scoreColor(score);
   const bg = scoreBg(score);
 
@@ -72,7 +75,7 @@ export const DriverScoreRing = memo(function DriverScoreRing({ score, size = 80,
             lineHeight: 1,
           }}
         >
-          {Math.round(score)}
+          {score == null ? '—' : Math.round(score)}
         </span>
         <span
           style={{
@@ -82,7 +85,7 @@ export const DriverScoreRing = memo(function DriverScoreRing({ score, size = 80,
             marginTop: 1,
           }}
         >
-          /100
+          {score == null ? 'No data' : '/100'}
         </span>
       </div>
     </div>

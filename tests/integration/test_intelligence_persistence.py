@@ -18,7 +18,7 @@ loop.
 import os
 import sys
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from sqlalchemy import delete, select
@@ -70,8 +70,12 @@ from backend.application.consumers.driver_statistics_consumer import (
 from backend.application.consumers.vehicle_health_consumer import (
     VehicleHealthConsumer,
 )
+from backend.application.driver_statistics_reconciler import (
+    DriverStatisticsReconciler,
+)
 from backend.application.intelligence_state import IntelligenceState
 from backend.db.models.alert import Alert
+from backend.db.models.behaviour_event import BehaviourEvent as DBBehaviourEvent
 from backend.db.models.driver import Driver as DBDriver
 from backend.db.models.driver_statistics import (
     DriverStatistics as DBDriverStatistics,
@@ -85,7 +89,7 @@ from backend.db.models.trip import Trip as DBTrip
 from backend.db.models.vehicle import Vehicle as DBVehicle
 from backend.db.models.vehicle_health import VehicleHealth
 from backend.db.persistence_service import PersistenceService
-from backend.db.repositories import AlertRepository, MaintenanceRepository
+from backend.db.repositories import AlertRepository, BehaviourRepository, MaintenanceRepository
 from backend.db.session import async_session_factory, close_db, init_db
 from backend.fleet.models.driver import Driver as DomainDriver
 from backend.fleet.models.route import Route as DomainRoute
@@ -364,7 +368,11 @@ async def _scenario() -> None:
             vehicle_id=vehicle_id,
             driver_id=driver_id,
             route_id=route_id,
+            started_at=datetime(2026, 1, 1, 8, 0, 0, tzinfo=timezone.utc),
+            completed_at=datetime(2026, 1, 1, 8, 45, 0, tzinfo=timezone.utc),
             distance_travelled_km=25.0,
+            fuel_used_liters=5.0,
+            trip_score=82.0,
         )
         events = [
             _make_event(vehicle_id, driver_id, trip_id, "harsh_braking"),
@@ -390,6 +398,18 @@ async def _scenario() -> None:
         assert abs(stats_row.total_distance_km - statistics.total_distance) < 0.01
         assert stats_row.speeding_events == statistics.overspeed_count == 1
         assert stats_row.harsh_braking_events == statistics.harsh_braking_count == 1
+        assert stats_row.aggressive_throttle_events == (
+            statistics.harsh_acceleration_count
+        ) == 1
+        assert stats_row.high_rpm_events == statistics.high_rpm_count == 1
+        assert stats_row.total_driving_time_seconds == (
+            statistics.total_driving_time_seconds
+        ) == 2700
+        assert abs(statistics.total_fuel_used_liters - 5.0) < 0.01
+        assert stats_row.average_trip_score == (
+            statistics.average_trip_score
+        ) == 82.0
+        assert stats_row.fuel_efficiency == statistics.fuel_efficiency == 5.0
 
         # --------------------------------------------------------------
         # Flow 3 — MaintenanceService ──► maintenance_records
@@ -506,6 +526,188 @@ async def _scenario() -> None:
         await close_db()
 
 
+async def _reconcile_cleanup(
+    vehicle_id: str,
+    driver_id: str,
+    route_id: str,
+    trip_ids: list[str],
+) -> None:
+    async with async_session_factory() as session:
+        if trip_ids:
+            await session.execute(
+                delete(DBBehaviourEvent).where(
+                    DBBehaviourEvent.trip_id.in_(trip_ids)
+                )
+            )
+        await session.execute(
+            delete(DBDriverStatistics).where(
+                DBDriverStatistics.driver_id == driver_id
+            )
+        )
+        if trip_ids:
+            await session.execute(
+                delete(DBTrip).where(DBTrip.trip_id.in_(trip_ids))
+            )
+        await session.execute(
+            delete(DBRoute).where(DBRoute.route_id == route_id)
+        )
+        await session.execute(
+            delete(DBDriver).where(DBDriver.driver_id == driver_id)
+        )
+        await session.execute(
+            delete(DBVehicle).where(DBVehicle.vehicle_id == vehicle_id)
+        )
+        await session.commit()
+
+
+# ---------------------------------------------------------------------------
+# Scenario — driver statistics reconcile after a simulated restart
+# ---------------------------------------------------------------------------
+
+async def _scenario_reconcile() -> None:
+    await init_db()
+
+    svc = PersistenceService()
+
+    suffix = uuid4().hex[:8]
+    vehicle_id = f"v-{suffix}"
+    driver_id = f"d-{suffix}"
+    route_id = f"r-{suffix}"
+    trip_id = f"t-{suffix}"
+
+    await _reconcile_cleanup(vehicle_id, driver_id, route_id, [trip_id])
+
+    try:
+        vehicle = DomainVehicle(
+            vehicle_id=vehicle_id,
+            make="Test",
+            model="Transit",
+            year=2024,
+            odometer_km=50000.0,
+        )
+        driver = DomainDriver(driver_id=driver_id, name="Reconcile Driver")
+        route = DomainRoute(
+            route_id=route_id,
+            origin="A",
+            destination="B",
+            distance_km=10.0,
+            route_type="urban",
+            speed_limit_kmh=60.0,
+        )
+
+        await svc.persist_vehicle(vehicle)
+        await svc.persist_driver(driver)
+        await svc.persist_route(route)
+
+        started = datetime(2026, 1, 1, 8, 0, 0, tzinfo=timezone.utc)
+        completed = started + timedelta(minutes=30)
+
+        await svc.create_trip(
+            trip_id=trip_id,
+            vehicle_id=vehicle_id,
+            driver_id=driver_id,
+            route_id=route_id,
+            start_time=started,
+        )
+        await svc.complete_trip(
+            trip_id=trip_id,
+            end_time=completed,
+            distance_km=25.0,
+            duration_seconds=1800,
+            fuel_used_liters=5.0,
+            average_speed_kmh=50.0,
+            maximum_speed_kmh=70.0,
+            trip_score=82.0,
+        )
+
+        async with async_session_factory() as session:
+            repo = BehaviourRepository(session)
+            await repo.insert(
+                trip_id=trip_id,
+                vehicle_id=vehicle_id,
+                driver_id=driver_id,
+                event_type="harsh_braking",
+                severity="moderate",
+                started_at=started,
+                ended_at=started,
+                duration_seconds=5.0,
+                distance_km=0.1,
+                maximum_value=60.0,
+                average_value=0.0,
+            )
+            await repo.insert(
+                trip_id=trip_id,
+                vehicle_id=vehicle_id,
+                driver_id=driver_id,
+                event_type="speeding",
+                severity="moderate",
+                started_at=started,
+                ended_at=started,
+                duration_seconds=8.0,
+                distance_km=0.2,
+                maximum_value=15.0,
+                average_value=0.0,
+            )
+            await session.commit()
+
+        # A fresh runtime: a new consumer and reconciler must rebuild the
+        # persisted statistics from the completed trip + events, and seed
+        # the consumer so future completions aggregate over full history.
+        engine = DriverStatisticsEngine(
+            score_calculator=DriverScoreCalculator()
+        )
+        state = IntelligenceState()
+        consumer = DriverStatisticsConsumer(
+            engine=engine,
+            state=state,
+        )
+        reconciler = DriverStatisticsReconciler(
+            engine=engine,
+            consumer=consumer,
+        )
+
+        count = await reconciler.reconcile(svc)
+        assert count >= 1
+
+        stats_row = await _read_driver_statistics(driver_id)
+        assert stats_row.total_trips == 1
+        assert abs(stats_row.total_distance_km - 25.0) < 0.01
+        assert stats_row.harsh_braking_events == 1
+        assert stats_row.speeding_events == 1
+        assert stats_row.total_driving_time_seconds == 1800
+        assert stats_row.average_trip_score == 82.0
+        assert stats_row.fuel_efficiency == 5.0
+        assert 0.0 <= stats_row.safety_score <= 100.0
+
+        # A new trip completing after the restart must aggregate ON TOP of
+        # the reconciled history (2 trips total, 50 km) instead of
+        # overwriting it with a single-trip aggregate.
+        second_trip = DomainTrip(
+            trip_id=f"{trip_id}-2",
+            vehicle_id=vehicle_id,
+            driver_id=driver_id,
+            route_id=route_id,
+            started_at=completed,
+            completed_at=completed + timedelta(minutes=30),
+            distance_travelled_km=25.0,
+            fuel_used_liters=4.0,
+            trip_score=90.0,
+        )
+        statistics = consumer.record_trip(
+            driver_id=driver_id,
+            behaviour_events=(),
+            trip=second_trip,
+        )
+        assert statistics.total_trips == 2
+        assert abs(statistics.total_distance - 50.0) < 0.01
+        assert statistics.harsh_braking_count == 1
+        assert statistics.overspeed_count == 1
+        assert statistics.average_trip_score == 86.0
+    finally:
+        await _reconcile_cleanup(vehicle_id, driver_id, route_id, [trip_id, f"{trip_id}-2"])
+        await close_db()
+
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
@@ -513,3 +715,6 @@ async def _scenario() -> None:
 class TestIntelligencePersistence:
     async def test_intelligence_outputs_are_persisted(self) -> None:
         await _scenario()
+
+    async def test_driver_statistics_reconcile_after_restart(self) -> None:
+        await _scenario_reconcile()

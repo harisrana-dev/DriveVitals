@@ -56,6 +56,25 @@ class DriverStatisticsConsumer:
             list[Trip],
         ] = {}
 
+    def seed(
+        self,
+        *,
+        driver_id: str,
+        behaviour_events: list[BehaviourEvent],
+        trips: list[Trip],
+    ) -> None:
+        """
+        Seed the accumulator with persisted history before the runtime
+        produces new trips.
+
+        Replaces any prior session state so a freshly started runtime
+        continues aggregating over the full recorded history instead of
+        starting from zero.
+        """
+
+        self._events_by_driver[driver_id] = list(behaviour_events)
+        self._trips_by_driver[driver_id] = list(trips)
+
     def record_trip(
         self,
         *,

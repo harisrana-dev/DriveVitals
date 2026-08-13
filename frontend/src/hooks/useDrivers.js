@@ -1,41 +1,61 @@
 import { useMemo, useState } from 'react';
 import { useLiveData } from '../context/LiveDataContext';
-import { adaptDrivers, buildDriverRankings as buildRankingList } from '../services/driverAdapter';
-import { computeTrend } from '../utils/trend';
-
-const scoreCache = {};
-
-function trendDirection(direction) {
-  if (direction === 'up') return 'improving';
-  if (direction === 'down' || direction === 'warning') return 'declining';
-  return 'stable';
-}
+import {
+  adaptDrivers,
+  buildDriverRankings as buildRankingList,
+  driverRiskLevel,
+} from '../services/driverAdapter';
+import { computeDriverTrend } from '../utils/driverTrend';
+import { mapTrips } from '../utils/trips';
 
 function applyDriverTrends(mapped) {
-  for (const d of mapped) {
-    const prev = scoreCache[d.id];
-    const trend = computeTrend(d.safetyScore, prev?.score);
+  return mapped.map((d) => {
+    const trend = computeDriverTrend(d.historical.performanceHistory);
     if (trend) {
-      d.trend = trendDirection(trend.direction);
-      d.scoreDelta = trend.delta;
-      d.scoreTrend = trend;
-    } else {
-      d.trend = 'stable';
-      d.scoreDelta = 0;
-      d.scoreTrend = null;
+      return {
+        ...d,
+        historical: {
+          ...d.historical,
+          trend: trend.direction,
+          scoreDelta: trend.delta,
+          scoreTrend: trend,
+        },
+      };
     }
-    scoreCache[d.id] = { score: d.safetyScore };
-  }
-  return mapped;
+    return d;
+  });
+}
+
+function applyDriverPercentiles(drivers) {
+  const scored = drivers.filter((d) => d.historical?.safetyScore != null);
+  if (scored.length === 0) return drivers;
+  const sorted = [...scored].sort(
+    (a, b) => a.historical.safetyScore - b.historical.safetyScore
+  );
+  return drivers.map((d) => {
+    if (d.historical?.safetyScore == null) return d;
+    const percentile = Math.round(
+      (sorted.filter((x) => x.historical.safetyScore <= d.historical.safetyScore).length /
+        sorted.length) *
+        100
+    );
+    return { ...d, historical: { ...d.historical, percentile } };
+  });
 }
 
 export function useDrivers() {
-  const { drivers, driverStatistics, dashboard } = useLiveData();
+  const { drivers, driverStatistics, dashboard, trips } = useLiveData();
 
-  return useMemo(
-    () => applyDriverTrends(adaptDrivers(drivers, driverStatistics, dashboard?.vehicles)),
-    [drivers, driverStatistics, dashboard]
-  );
+  return useMemo(() => {
+    const mappedTrips = mapTrips(trips?.trips);
+    const adapted = adaptDrivers(
+      drivers,
+      driverStatistics,
+      dashboard?.vehicles,
+      mappedTrips
+    );
+    return applyDriverPercentiles(applyDriverTrends(adapted));
+  }, [drivers, driverStatistics, dashboard, trips]);
 }
 
 export function useDriver(id) {
@@ -43,8 +63,18 @@ export function useDriver(id) {
   return useMemo(() => drivers.find((d) => d.id === id) || null, [drivers, id]);
 }
 
-export function useDriverPerformance() {
-  return null;
+export function useDriverPerformance(driverId) {
+  const driver = useDriver(driverId);
+  return useMemo(() => {
+    if (!driver || driver.historical.performanceHistory.length < 2) return null;
+    return {
+      history: driver.historical.performanceHistory.map((t) => ({
+        score: t.safetyScore,
+        date: t.completedAt || null,
+        routeId: t.routeId || null,
+      })),
+    };
+  }, [driver]);
 }
 
 export function useDriverRanking() {
@@ -57,10 +87,17 @@ export function useDriversOverview() {
   return useMemo(() => {
     const total = drivers.length;
     const active = drivers.filter((d) => d.status === 'active').length;
-    const highRisk = drivers.filter((d) => d.riskLevel === 'high' || d.riskLevel === 'critical').length;
-    const avgScore = total > 0
-      ? Math.round(drivers.reduce((s, d) => s + d.safetyScore, 0) / total)
-      : 0;
+    const highRisk = drivers.filter(
+      (d) => {
+        const level = driverRiskLevel(d);
+        return level === 'high' || level === 'critical';
+      }
+    ).length;
+    const scored = drivers.filter((d) => d.historical?.safetyScore != null);
+    const avgScore =
+      scored.length > 0
+        ? Math.round(scored.reduce((s, d) => s + d.historical.safetyScore, 0) / scored.length)
+        : null;
     return { total, active, highRisk, avgScore };
   }, [drivers]);
 }
@@ -71,6 +108,7 @@ export function useDriversFilters() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [riskFilter, setRiskFilter] = useState('');
+  const [performanceFilter, setPerformanceFilter] = useState('');
 
   const filtered = useMemo(() => {
     let result = [...drivers];
@@ -88,18 +126,27 @@ export function useDriversFilters() {
       result = result.filter((d) => d.status === statusFilter);
     }
     if (riskFilter) {
-      result = result.filter((d) => d.riskLevel === riskFilter);
+      result = result.filter((d) => driverRiskLevel(d) === riskFilter);
+    }
+    if (performanceFilter === 'no_score') {
+      result = result.filter((d) => d.historical?.safetyScore == null);
+    } else if (performanceFilter) {
+      result = result.filter((d) => d.historical?.trend === performanceFilter);
     }
     return result;
-  }, [drivers, search, statusFilter, riskFilter]);
+  }, [drivers, search, statusFilter, riskFilter, performanceFilter]);
 
   return {
     drivers: filtered,
+    totalCount: drivers.length,
+    hasActiveFilters: !!(search || statusFilter || riskFilter || performanceFilter),
     search,
     setSearch,
     statusFilter,
     setStatusFilter,
     riskFilter,
     setRiskFilter,
+    performanceFilter,
+    setPerformanceFilter,
   };
 }

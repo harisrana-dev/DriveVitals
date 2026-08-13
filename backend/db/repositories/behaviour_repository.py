@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime
 
+from sqlalchemy import select
+
 from backend.db.models.behaviour_event import BehaviourEvent
 from backend.db.repositories.base_repository import BaseRepository
 
@@ -38,3 +40,17 @@ class BehaviourRepository(BaseRepository):
         self._session.add(event)
         await self._session.flush()
         return event
+
+    async def list_by_trip_ids(
+        self,
+        trip_ids: list[str],
+    ) -> list[BehaviourEvent]:
+        """Return behaviour events belonging to the given trip ids."""
+        if not trip_ids:
+            return []
+        result = await self._session.execute(
+            select(BehaviourEvent).where(
+                BehaviourEvent.trip_id.in_(trip_ids)
+            )
+        )
+        return list(result.scalars().all())

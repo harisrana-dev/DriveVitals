@@ -270,15 +270,14 @@ class PersistenceService:
                     aggressive_throttle_events=(
                         statistics.harsh_acceleration_count
                     ),
-                    high_rpm_events=max(
-                        0,
-                        statistics.total_events
-                        - statistics.harsh_braking_count
-                        - statistics.overspeed_count
-                        - statistics.harsh_acceleration_count,
-                    ),
+                    high_rpm_events=statistics.high_rpm_count,
                     total_distance_km=statistics.total_distance,
                     total_trips=statistics.total_trips,
+                    total_driving_time_seconds=(
+                        statistics.total_driving_time_seconds
+                    ),
+                    average_trip_score=statistics.average_trip_score,
+                    fuel_efficiency=statistics.fuel_efficiency,
                 )
                 await session.commit()
         except Exception:

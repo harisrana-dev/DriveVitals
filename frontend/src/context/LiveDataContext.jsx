@@ -159,6 +159,7 @@ export function LiveDataProvider({ children }) {
 
   const [lastUpdate, setLastUpdate] = useState(null);
   const [syncing, setSyncing] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   const mountedRef = useRef(true);
   const lastUpdateRef = useRef(0);
@@ -177,6 +178,18 @@ export function LiveDataProvider({ children }) {
     if (now - lastUpdateRef.current >= 1000) {
       lastUpdateRef.current = now;
       setLastUpdate(now);
+    }
+  }, []);
+
+  const refreshDriverStatistics = useCallback(async () => {
+    try {
+      const result = await listDriverStatistics();
+      if (mountedRef.current) {
+        setDriverStatistics(result?.data ?? []);
+        setLastUpdate(Date.now());
+      }
+    } catch (error) {
+      console.error("[drivers] statistics refresh failed", error);
     }
   }, []);
 
@@ -200,6 +213,17 @@ export function LiveDataProvider({ children }) {
         onMessage: (message) => {
           if (message.type === "trips_snapshot" && message.data) {
             setTripsSnapshot(message.data);
+            const liveTrips = Array.isArray(message.data.trips)
+              ? message.data.trips
+              : [];
+            const hasCompletion = liveTrips.some(
+              (t) =>
+                t &&
+                (t.status === "completed" || t.status === "aborted")
+            );
+            if (hasCompletion) {
+              refreshDriverStatistics();
+            }
           }
         },
         onState: setTripsConnectionState,
@@ -210,7 +234,7 @@ export function LiveDataProvider({ children }) {
       unsubscribeDashboard();
       unsubscribeTrips();
     };
-  }, [updateLastUpdate]);
+  }, [updateLastUpdate, refreshDriverStatistics]);
 
   const hydrate = useCallback(async () => {
     const results = await Promise.allSettled([
@@ -236,6 +260,7 @@ export function LiveDataProvider({ children }) {
     setAlerts(a.status === "fulfilled" ? a.value.data ?? [] : []);
     setTelemetry(t.status === "fulfilled" ? t.value.data ?? [] : []);
     setRestTrips(tr.status === "fulfilled" ? tr.value.data ?? [] : []);
+    setHydrated(true);
     if (results.some((r) => r.status === "fulfilled")) {
       updateLastUpdate();
     }
@@ -346,6 +371,7 @@ export function LiveDataProvider({ children }) {
     telemetry,
     connectionStatus,
     tripsConnectionState,
+    hydrated,
     lastUpdate,
     syncing,
     sync,

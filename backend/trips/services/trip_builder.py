@@ -125,9 +125,18 @@ class TripBuilder:
                 2,
             )
 
-        safety_score = compute_safety_score_for_summary(
-            summary,
-            distance_km=distance_km,
+        # The runtime stamps the final, rounded trip score on the Trip
+        # before any snapshot is built, so it is the single source of
+        # truth across the WS snapshot, DB persistence and driver
+        # statistics. Fall back to deriving it only when a trip object
+        # is unavailable (e.g. the no-runner completion path).
+        safety_score = (
+            trip.trip_score
+            if trip is not None and trip.trip_score is not None
+            else compute_safety_score_for_summary(
+                summary,
+                distance_km=distance_km,
+            )
         )
 
         event_dicts = tuple(

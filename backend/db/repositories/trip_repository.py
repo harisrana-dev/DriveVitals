@@ -19,6 +19,13 @@ class TripRepository(BaseRepository):
         )
         return result.scalar_one_or_none()
 
+    async def list_completed(self) -> list[Trip]:
+        """Return every trip whose status is ``completed``."""
+        result = await self._session.execute(
+            select(Trip).where(Trip.status == "completed")
+        )
+        return list(result.scalars().all())
+
     async def create(
         self,
         trip_id: str,

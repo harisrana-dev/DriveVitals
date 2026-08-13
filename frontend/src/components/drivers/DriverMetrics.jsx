@@ -1,13 +1,15 @@
 import { memo } from 'react';
-import { Route, Map, Gauge, Fuel, Clock } from 'lucide-react';
+import { Route, Map, Gauge, Fuel, Clock, ShieldCheck } from 'lucide-react';
 
 export const DriverMetrics = memo(function DriverMetrics({ driver }) {
+  const h = driver.historical || {};
   const metrics = [
-    { icon: <Route size={14} />, label: 'Total Distance', value: formatKm(driver.totalDistanceKm) },
-    { icon: <Map size={14} />, label: 'Trips Completed', value: driver.tripsCompleted.toString() },
-    { icon: <Gauge size={14} />, label: 'Average Speed', value: `${driver.averageSpeedKmh} km/h` },
-    { icon: <Fuel size={14} />, label: 'Fuel Efficiency', value: `${driver.fuelEfficiencyKmPerL} km/L` },
-    { icon: <Clock size={14} />, label: 'Driving Hours', value: formatHours(driver.drivingHours) },
+    { icon: <Route size={14} />, label: 'Total Distance', value: formatKm(h.totalDistanceKm) },
+    { icon: <Map size={14} />, label: 'Trips Completed', value: formatTrips(h.tripsCompleted) },
+    { icon: <Gauge size={14} />, label: 'Average Speed', value: formatSpeed(h.averageSpeedKmh) },
+    { icon: <Fuel size={14} />, label: 'Fuel Efficiency', value: formatFuelEfficiency(h.fuelEfficiency) },
+    { icon: <ShieldCheck size={14} />, label: 'Average Trip Score', value: formatScore(h.averageTripScore) },
+    { icon: <Clock size={14} />, label: 'Driving Hours', value: formatHours(h.drivingHours) },
   ];
 
   return (
@@ -51,11 +53,33 @@ export const DriverMetrics = memo(function DriverMetrics({ driver }) {
 });
 
 function formatKm(km) {
+  if (km == null) return '—';
   if (km >= 1000) return `${(km / 1000).toFixed(1)}k km`;
-  return `${km.toFixed(0)} km`;
+  return `${Math.round(km)} km`;
+}
+
+function formatTrips(trips) {
+  if (trips == null) return '—';
+  return trips.toString();
+}
+
+function formatSpeed(speed) {
+  if (speed == null) return '—';
+  return `${speed} km/h`;
+}
+
+function formatFuelEfficiency(kmPerL) {
+  if (kmPerL == null) return '—';
+  return `${kmPerL.toFixed(1)} km/L`;
+}
+
+function formatScore(score) {
+  if (score == null) return '—';
+  return `${Math.round(score)}/100`;
 }
 
 function formatHours(h) {
+  if (h == null) return '—';
   const hours = Math.floor(h);
   const mins = Math.round((h - hours) * 60);
   if (hours === 0) return `${mins}m`;

@@ -1,7 +1,8 @@
 import { memo, useState } from 'react';
-import { Gauge, Activity, Check, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Gauge, Activity, AlertTriangle, ChevronRight } from 'lucide-react';
 import { useRelativeTime } from '../../hooks/useRelativeTime';
 import { useSmoothValue } from '../../hooks/useSmoothValue';
+import { driverRiskLevel } from '../../services/driverAdapter';
 import { DriverScoreRing } from './DriverScoreRing';
 import { DriverRiskBadge } from './DriverRiskBadge';
 
@@ -11,30 +12,39 @@ const STATUS_MAP = {
   offline: { label: 'OFFLINE', color: 'var(--color-text-muted)', bg: 'var(--color-bg)' },
 };
 
-const BEHAVIOUR_INDICATORS = {
-  smoothDriving: { label: 'Smooth Driving', ok: true },
-  harshBraking: { label: 'Harsh Braking', ok: false },
-  aggressiveAcceleration: { label: 'Aggressive Acceleration', ok: false },
-  overspeedEvents: { label: 'Overspeed', ok: false },
-  highRpmEvents: { label: 'High RPM', ok: false },
+const LIVE_EVENT_LABELS = {
+  speeding: 'Speeding',
+  harsh_braking: 'Harsh Braking',
+  aggressive_throttle: 'Aggressive Acceleration',
+  high_rpm: 'High RPM',
 };
+
+function liveEventLabel(type) {
+  if (LIVE_EVENT_LABELS[type]) return LIVE_EVENT_LABELS[type];
+  return String(type).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function gradeColor(grade) {
+  if (!grade) return 'var(--color-text-muted)';
+  if (grade === 'A') return 'var(--color-green)';
+  if (grade === 'B') return 'var(--color-accent)';
+  if (grade === 'C' || grade === 'D') return 'var(--color-amber)';
+  return 'var(--color-red)';
+}
 
 export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
   const [hovered, setHovered] = useState(false);
   const relativeTime = useRelativeTime(driver.lastActive);
-  const smoothSpeed = useSmoothValue(driver.speed ?? 0);
-  const smoothRpm = useSmoothValue(driver.rpm ?? 0);
+  const smoothSpeed = useSmoothValue(driver.live.telemetry.speed ?? 0);
+  const smoothRpm = useSmoothValue(driver.live.telemetry.rpm ?? 0);
 
   const statusStyle = STATUS_MAP[driver.status] || STATUS_MAP.off_duty;
-
-  const liveBehaviours = driver.activeEventTypes || [];
-  const indicators = [
-    { ...BEHAVIOUR_INDICATORS.smoothDriving, active: liveBehaviours.length === 0 },
-    { ...BEHAVIOUR_INDICATORS.harshBraking, active: driver.harshBraking.active },
-    { ...BEHAVIOUR_INDICATORS.aggressiveAcceleration, active: driver.aggressiveAcceleration.active },
-    { ...BEHAVIOUR_INDICATORS.overspeedEvents, active: driver.overspeedEvents.active },
-    { ...BEHAVIOUR_INDICATORS.highRpmEvents, active: driver.highRpmEvents.active },
-  ];
+  const activeEvents = (driver.live.activeEvents || [])
+    .map(liveEventLabel)
+    .filter(Boolean);
+  const historicalScore = driver.historical?.safetyScore ?? null;
+  const grade = driver.historical?.grade || null;
+  const riskLevel = driverRiskLevel(driver);
 
   return (
     <div
@@ -152,7 +162,7 @@ export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
               whiteSpace: 'nowrap',
             }}
           >
-            {driver.vehicleName}
+            {driver.vehicleName || '—'}
           </div>
           <div
             style={{
@@ -161,10 +171,40 @@ export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
               fontFamily: 'monospace',
             }}
           >
-            {driver.vehicleId}
+            {driver.vehicleId || 'Not assigned'}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              marginTop: 6,
+            }}
+          >
+            <DriverRiskBadge level={riskLevel} size="sm" />
+            {grade && (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: 20,
+                  height: 20,
+                  padding: '0 6px',
+                  borderRadius: 6,
+                  background: `${gradeColor(grade)}1a`,
+                  color: gradeColor(grade),
+                  fontSize: 11,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                }}
+              >
+                {grade}
+              </span>
+            )}
           </div>
         </div>
-        <DriverScoreRing score={driver.safetyScore} size={68} />
+        <DriverScoreRing score={historicalScore} size={68} />
       </div>
 
       <div
@@ -177,24 +217,13 @@ export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
         <TelemetryItem
           icon={<Gauge size={12} />}
           label="Speed"
-          value={`${Math.round(smoothSpeed)} km/h`}
+          value={driver.live.telemetry.speed != null ? `${Math.round(smoothSpeed)} km/h` : '—'}
         />
         <TelemetryItem
           icon={<Activity size={12} />}
           label="RPM"
-          value={Math.round(smoothRpm).toLocaleString()}
+          value={driver.live.telemetry.rpm != null ? Math.round(smoothRpm).toLocaleString() : '—'}
         />
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          flexWrap: 'wrap',
-        }}
-      >
-        <DriverRiskBadge level={driver.riskLevel} size="sm" />
       </div>
 
       <div
@@ -204,27 +233,47 @@ export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
           gap: 3,
         }}
       >
-        {indicators.map((ind) => (
+        {driver.status === 'active' ? (
+          activeEvents.length > 0 ? (
+            activeEvents.map((label) => (
+              <div
+                key={label}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 11,
+                  color: 'var(--color-red)',
+                  fontWeight: 500,
+                  padding: '2px 0',
+                }}
+              >
+                <AlertTriangle size={10} style={{ flexShrink: 0 }} />
+                {label}
+              </div>
+            ))
+          ) : (
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--color-text-muted)',
+                padding: '2px 0',
+              }}
+            >
+              No active behaviour events
+            </div>
+          )
+        ) : (
           <div
-            key={ind.label}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
               fontSize: 11,
-              color: ind.active ? 'var(--color-red)' : 'var(--color-text-muted)',
-              fontWeight: ind.active ? 500 : 400,
+              color: 'var(--color-text-muted)',
               padding: '2px 0',
             }}
           >
-            {ind.active ? (
-              <AlertTriangle size={10} style={{ flexShrink: 0 }} />
-            ) : (
-              <Check size={10} style={{ flexShrink: 0, color: 'var(--color-green)' }} />
-            )}
-            {ind.active ? ind.label : `✓ ${ind.label}`}
+            No live data
           </div>
-        ))}
+        )}
       </div>
 
       <div
@@ -242,7 +291,7 @@ export const DriverCard = memo(function DriverCard({ driver, onClick, index }) {
             color: 'var(--color-text-muted)',
           }}
         >
-          {driver.tripsToday > 0 ? `${driver.tripsToday} trips today` : 'No trips today'}
+          {driver.tripsToday > 0 ? `${driver.tripsToday} trip${driver.tripsToday === 1 ? '' : 's'} today` : 'No trips today'}
           <span style={{ margin: '0 4px', opacity: 0.4 }}>·</span>
           <span>{relativeTime}</span>
         </div>

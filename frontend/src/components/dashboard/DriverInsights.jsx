@@ -93,7 +93,7 @@ export const DriverInsights = memo(function DriverInsights() {
                 {driver.name}
               </div>
               <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                {driver.tripsCompleted} trips · {driver.id}
+                {driver.tripsCompleted == null ? 'No trips' : `${driver.tripsCompleted} trips`} · {driver.id}
               </div>
             </div>
 
@@ -118,9 +118,11 @@ export const DriverInsights = memo(function DriverInsights() {
               }}>
                 {driver.score}
               </span>
-              <span style={{ color: trendColors[driver.trend] }}>
-                {trendIcons[driver.trend]}
-              </span>
+              {driver.trend && (
+                <span style={{ color: trendColors[driver.trend] }}>
+                  {trendIcons[driver.trend]}
+                </span>
+              )}
             </div>
           </div>
         ))}

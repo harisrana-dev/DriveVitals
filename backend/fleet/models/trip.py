@@ -55,6 +55,11 @@ class Trip:
     # it is never derived from the speed limit or behaviour summary.
     maximum_speed_kmh: float = field(default=0.0)
 
+    # Safety score (0-100) for this trip, derived from the behaviour
+    # summary when the trip is finalised. None until the runtime stamps
+    # the value so an unfinished trip can never report a score.
+    trip_score: Optional[float] = None
+
     def record_speed(self, speed_kmh: float) -> None:
         """Record an observed telemetry speed, keeping the peak."""
         if speed_kmh > self.maximum_speed_kmh:

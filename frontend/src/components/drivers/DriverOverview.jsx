@@ -6,7 +6,18 @@ import { useSmoothValue } from '../../hooks/useSmoothValue';
 export const DriverOverview = memo(function DriverOverview() {
   const overview = useDriversOverview();
 
-  const smoothScore = useSmoothValue(overview.avgScore);
+  const smoothScore = useSmoothValue(overview.avgScore ?? 0);
+  const displayScore = overview.avgScore == null ? '—' : Math.round(smoothScore);
+  const scoreColor =
+    overview.avgScore == null ? 'var(--color-text-muted)' :
+    overview.avgScore >= 80 ? 'var(--color-green)' :
+    overview.avgScore >= 60 ? 'var(--color-amber)' :
+    'var(--color-red)';
+  const scoreBg =
+    overview.avgScore == null ? 'var(--color-surface-hover)' :
+    overview.avgScore >= 80 ? 'var(--color-green-bg)' :
+    overview.avgScore >= 60 ? 'var(--color-amber-bg)' :
+    'var(--color-red-bg)';
 
   const cards = [
     {
@@ -19,11 +30,11 @@ export const DriverOverview = memo(function DriverOverview() {
     },
     {
       label: 'Average Safety Score',
-      value: smoothScore,
+      value: displayScore,
       icon: <Shield size={18} strokeWidth={1.8} />,
-      color: smoothScore >= 80 ? 'var(--color-green)' : smoothScore >= 60 ? 'var(--color-amber)' : 'var(--color-red)',
-      bgColor: smoothScore >= 80 ? 'var(--color-green-bg)' : smoothScore >= 60 ? 'var(--color-amber-bg)' : 'var(--color-red-bg)',
-      suffix: '/100',
+      color: scoreColor,
+      bgColor: scoreBg,
+      suffix: overview.avgScore == null ? '' : '/100',
     },
     {
       label: 'High Risk Drivers',

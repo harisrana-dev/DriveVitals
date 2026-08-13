@@ -98,6 +98,9 @@ from backend.application.consumers.driver_statistics_consumer import (
 from backend.application.consumers.vehicle_health_consumer import (
     VehicleHealthConsumer,
 )
+from backend.application.driver_statistics_reconciler import (
+    DriverStatisticsReconciler,
+)
 from backend.application.intelligence_state import (
     IntelligenceState,
 )
@@ -398,6 +401,17 @@ class DriveVitalsRuntime:
             )
         )
 
+        self._driver_statistics_reconciler = (
+            DriverStatisticsReconciler(
+                engine=(
+                    self._driver_statistics_engine
+                ),
+                consumer=(
+                    self._driver_statistics_consumer
+                ),
+            )
+        )
+
         # --------------------------------------------------------------
         # Fleet intelligence (maintenance + alerts)
         # --------------------------------------------------------------
@@ -631,6 +645,25 @@ class DriveVitalsRuntime:
             )
 
         # --------------------------------------------------------------
+        # Rebuild driver statistics from the canonical source of truth
+        # (completed trips + their behaviour events) and re-seed the
+        # consumer accumulator. Without this, the consumer starts empty
+        # on every restart and the first trip completion of this session
+        # would overwrite a driver's full history with a single-trip
+        # aggregate.
+        # --------------------------------------------------------------
+
+        if persistence is not None:
+            try:
+                await self._driver_statistics_reconciler.reconcile(
+                    persistence,
+                )
+            except Exception:
+                logger.exception(
+                    "Driver statistics reconcile failed at startup"
+                )
+
+        # --------------------------------------------------------------
         # Persist trip rows BEFORE starting fleet — DB rows must exist
         # before any telemetry is produced, otherwise persist_telemetry
         # will violate the telemetry_samples_trip_id_fkey constraint.
@@ -804,50 +837,18 @@ class DriveVitalsRuntime:
 
                 trip_obj = runner.trip
 
-                duration_seconds = 0
-                if (
-                    trip_obj.started_at is not None
-                    and trip_obj.completed_at is not None
-                ):
-                    duration_seconds = int(
-                        (
-                            trip_obj.completed_at - trip_obj.started_at
-                        ).total_seconds()
-                    )
+                (
+                    duration_seconds,
+                    average_speed_kmh,
+                    maximum_speed_kmh,
+                    fuel_used_liters,
+                    trip_score,
+                ) = self._finalize_trip_metrics(
+                    runner,
+                    summary,
+                )
 
                 distance_km = trip_obj.distance_travelled_km
-
-                average_speed_kmh = 0.0
-                if duration_seconds > 0:
-                    average_speed_kmh = round(
-                        distance_km / (duration_seconds / 3600), 2
-                    )
-
-                maximum_speed_kmh = trip_obj.maximum_speed_kmh
-
-                initial_fuel_pct = self._initial_fuel_levels.get(
-                    vehicle_id,
-                    runner.vehicle.fuel_level_percent,
-                )
-                final_fuel_pct = runner.vehicle.fuel_level_percent
-                fuel_used_pct = initial_fuel_pct - final_fuel_pct
-                tank_capacity_liters = 60.0
-                fuel_used_liters = round(
-                    (fuel_used_pct / 100.0) * tank_capacity_liters, 2
-                )
-
-                # Expose the final fuel total on the completed trip so
-                # the WebSocket path and the DB path report the same
-                # value.
-                trip_obj.fuel_used_liters = fuel_used_liters
-
-                trip_score = round(
-                    _compute_safety_score(
-                        summary,
-                        distance_km=distance_km,
-                    ),
-                    0,
-                )
 
                 logger.info(
                     "Completing trip %s: "
@@ -1013,6 +1014,75 @@ class DriveVitalsRuntime:
                 self._tick_seconds
             )
 
+    def _finalize_trip_metrics(
+        self,
+        runner: Any,
+        summary: DriverBehaviourSummary,
+    ) -> tuple[float, float, float, float, float]:
+        """
+        Compute a completed trip's final metrics and stamp them on the
+        domain Trip.
+
+        Fuel and trip_score are written onto the Trip itself so every
+        downstream consumer — driver-statistics aggregation, the
+        WebSocket snapshot and DB persistence — reads the same values.
+        This must run BEFORE record_trip so the engine sees real fuel
+        consumption and the real trip safety score.
+
+        Returns (duration_seconds, average_speed_kmh,
+        maximum_speed_kmh, fuel_used_liters, trip_score).
+        """
+        trip = runner.trip
+
+        duration_seconds = 0
+        if (
+            trip.started_at is not None
+            and trip.completed_at is not None
+        ):
+            duration_seconds = int(
+                (trip.completed_at - trip.started_at).total_seconds()
+            )
+
+        distance_km = trip.distance_travelled_km
+
+        average_speed_kmh = 0.0
+        if duration_seconds > 0:
+            average_speed_kmh = round(
+                distance_km / (duration_seconds / 3600), 2
+            )
+
+        maximum_speed_kmh = trip.maximum_speed_kmh
+
+        initial_fuel_pct = self._initial_fuel_levels.get(
+            runner.vehicle.vehicle_id,
+            runner.vehicle.fuel_level_percent,
+        )
+        final_fuel_pct = runner.vehicle.fuel_level_percent
+        fuel_used_pct = initial_fuel_pct - final_fuel_pct
+        tank_capacity_liters = 60.0
+        fuel_used_liters = round(
+            max(0.0, (fuel_used_pct / 100.0) * tank_capacity_liters), 2
+        )
+
+        trip_score = round(
+            _compute_safety_score(
+                summary,
+                distance_km=distance_km,
+            ),
+            0,
+        )
+
+        trip.fuel_used_liters = fuel_used_liters
+        trip.trip_score = trip_score
+
+        return (
+            duration_seconds,
+            average_speed_kmh,
+            maximum_speed_kmh,
+            fuel_used_liters,
+            trip_score,
+        )
+
     def _handle_trip_completions(
         self,
         vehicle_ids: set[str],
@@ -1058,6 +1128,15 @@ class DriveVitalsRuntime:
                 # ------------------------------------------------------
 
                 if runner is not None:
+                    summary = self._analytics_engine.get_summary(
+                        vehicle_id
+                    )
+                    if summary is not None:
+                        self._finalize_trip_metrics(
+                            runner,
+                            summary,
+                        )
+
                     statistics = (
                         self._driver_statistics_consumer.record_trip(
                             driver_id=runner.trip.driver_id,

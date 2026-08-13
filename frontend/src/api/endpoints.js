@@ -38,7 +38,6 @@ const endpoints = {
   },
   summary: {
     fleet: '/summary',
-    driver: '/driver-summary',
     vehicle: '/vehicle-summary',
   },
   health: {

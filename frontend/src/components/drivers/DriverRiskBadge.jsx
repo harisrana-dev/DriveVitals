@@ -5,10 +5,11 @@ const VARIANTS = {
   moderate: { label: 'Moderate', color: 'var(--color-amber)', bg: 'var(--color-amber-bg)' },
   high: { label: 'High Risk', color: 'var(--color-red)', bg: 'var(--color-red-bg)' },
   critical: { label: 'Critical', color: '#fff', bg: 'var(--color-red)' },
+  unknown: { label: 'No Score', color: 'var(--color-text-muted)', bg: 'var(--color-surface-hover)' },
 };
 
 export const DriverRiskBadge = memo(function DriverRiskBadge({ level, size = 'md' }) {
-  const v = VARIANTS[level] || VARIANTS.low;
+  const v = VARIANTS[level] || VARIANTS.unknown;
   const isCompact = size === 'sm';
 
   return (

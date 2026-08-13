@@ -8,6 +8,7 @@ the DriverScoreCalculator.
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Optional
 
 from backend.analytics.behaviour.events.event import BehaviourEvent
 from backend.analytics.driver_statistics.aggregators.driver_score_calculator import (
@@ -25,6 +26,20 @@ from backend.analytics.driver_statistics.models.driver_statistics import (
     DriverStatistics,
 )
 from backend.fleet.models.trip import Trip
+
+
+def _trip_duration_seconds(trip: Trip) -> int:
+    """Duration of a completed trip, or 0 when timestamps are missing."""
+    if trip.started_at is None or trip.completed_at is None:
+        return 0
+    return int((trip.completed_at - trip.started_at).total_seconds())
+
+
+def _average(values: list[float]) -> Optional[float]:
+    """Arithmetic mean of non-empty values, else None."""
+    if not values:
+        return None
+    return round(sum(values) / len(values), 2)
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,6 +103,17 @@ class DriverStatisticsEngine:
 
         total_trips = len(trips)
         total_distance = sum(trip.distance_travelled_km for trip in trips)
+        total_driving_time_seconds = sum(
+            _trip_duration_seconds(trip) for trip in trips
+        )
+        total_fuel_used_liters = sum(
+            trip.fuel_used_liters for trip in trips
+        )
+        scored_trips = [
+            trip.trip_score
+            for trip in trips
+            if trip.trip_score is not None
+        ]
         counters = self._aggregate_events(behaviour_events)
 
         scores = self._score_calculator.calculate(
@@ -109,8 +135,19 @@ class DriverStatisticsEngine:
             harsh_braking_count=counters.harsh_braking_count,
             overspeed_count=counters.overspeed_count,
             harsh_acceleration_count=counters.harsh_acceleration_count,
+            high_rpm_count=counters.high_rpm_count,
             total_distance=total_distance,
             total_trips=total_trips,
+            total_driving_time_seconds=total_driving_time_seconds,
+            total_fuel_used_liters=total_fuel_used_liters,
+            average_trip_score=_average(
+                scored_trips
+            ),
+            fuel_efficiency=(
+                round(total_distance / total_fuel_used_liters, 2)
+                if total_fuel_used_liters > 0
+                else None
+            ),
         )
 
     @staticmethod

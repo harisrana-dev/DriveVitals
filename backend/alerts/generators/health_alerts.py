@@ -10,6 +10,7 @@ from backend.alerts.alerts_config import (
     DEFAULT_ALERT_CONFIG,
     AlertConfig,
     HealthAlertConfig,
+    health_category,
 )
 from backend.alerts.generators import (
     AlertContext,
@@ -121,6 +122,13 @@ class HealthAlertsGenerator(AlertGenerator):
             vehicle_id=snapshot.vehicle_id,
             alert_type=self.alert_type,
             severity=severity,
+            category=health_category(slug),
+            evidence={
+                "subsystem": slug,
+                "status": status.value,
+                "score": score,
+                "timestamp": snapshot.timestamp.isoformat(),
+            },
             message=(
                 f"{slug.replace('_', ' ')} health is {status.value} "
                 f"(score {score:.0f}/100)"

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
@@ -14,5 +15,11 @@ class AlertRead(BaseModel):
     severity: str
     status: str
     acknowledged: bool
+    acknowledged_at: datetime | None
     created_at: datetime
     resolved_at: datetime | None
+    condition: str | None
+    category: str | None
+    message: str | None
+    evidence: dict[str, Any] | None
+    source: str

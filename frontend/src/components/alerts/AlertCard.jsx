@@ -7,13 +7,14 @@ import { useRelativeTime } from '../../hooks/useRelativeTime';
 
 const SEV_ICONS = {
   critical: <AlertTriangle size={14} strokeWidth={2} />,
-  warning: <Bell size={14} strokeWidth={2} />,
+  high: <AlertTriangle size={14} strokeWidth={2} />,
+  medium: <Bell size={14} strokeWidth={2} />,
+  low: <Bell size={14} strokeWidth={2} />,
   info: <Info size={14} strokeWidth={2} />,
-  resolved: <Info size={14} strokeWidth={2} />,
 };
 
-export const AlertCard = memo(function AlertCard({ alert, onClick }) {
-  const timeAgo = useRelativeTime(alert.started_at);
+export const AlertCard = memo(function AlertCard({ alert, onClick, stale }) {
+  const timeAgo = useRelativeTime(alert.created_at);
   const color = severityColor(alert.severity);
   const bg = severityBg(alert.severity);
 
@@ -30,6 +31,7 @@ export const AlertCard = memo(function AlertCard({ alert, onClick }) {
         alignItems: 'flex-start',
         gap: 12,
         cursor: onClick ? 'pointer' : 'default',
+        opacity: stale ? 0.65 : 1,
         transition: 'all 0.15s ease',
       }}
       onMouseEnter={(e) => {
@@ -60,20 +62,36 @@ export const AlertCard = memo(function AlertCard({ alert, onClick }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
-            {alert.vehicle_name}
+            {alert.vehicle_name || alert.vehicle_id}
           </span>
           <SeverityBadge severity={alert.severity} size="sm" />
           <AlertStatusBadge status={alert.status} size="sm" />
+          {stale && (
+            <span
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              Stale
+            </span>
+          )}
         </div>
         <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 2 }}>
-          {alert.eventType}
+          {alert.title}
         </div>
         <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-          {alert.driver_name} · {alert.vehicle_id} · {timeAgo}
+          {alert.driver_name ? `${alert.driver_name} · ` : ''}{alert.vehicle_id}
+          {alert.created_at ? ` · ${timeAgo}` : ''}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
-          {alert.description}
-        </div>
+        {alert.message && (
+          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+            {alert.message}
+          </div>
+        )}
       </div>
     </div>
   );

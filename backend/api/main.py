@@ -31,6 +31,12 @@ from backend.api.websocket.trips import (
     trips_worker,
 )
 
+from backend.api.websocket.alerts import (
+    router as alerts_router,
+    alerts_queue,
+    alerts_worker,
+)
+
 from backend.api.v1 import (
     api_router,
 )
@@ -55,10 +61,11 @@ from backend.trips.services.trip_builder import (
     TripBuilder,
 )
 
+persistence_service = PersistenceService()
 
 runtime = (
     DriveVitalsRuntime(
-        persistence_service=PersistenceService()
+        persistence_service=persistence_service
     )
 )
 
@@ -83,6 +90,8 @@ snapshot_worker_task: asyncio.Task | None = None
 
 trips_worker_task: asyncio.Task | None = None
 
+alerts_worker_task: asyncio.Task | None = None
+
 
 @asynccontextmanager
 async def lifespan(
@@ -92,6 +101,15 @@ async def lifespan(
     global runtime_task
     global snapshot_worker_task
     global trips_worker_task
+    global alerts_worker_task
+
+    # --------------------------------------------------------------
+    # Wire persistence alert events to the alerts WebSocket queue
+    # --------------------------------------------------------------
+
+    persistence_service.set_alert_event_callback(
+        alerts_queue.put_nowait
+    )
 
     # --------------------------------------------------------------
     # Connect analytics snapshot stream to dashboard queue
@@ -173,6 +191,12 @@ async def lifespan(
         )
     )
 
+    alerts_worker_task = (
+        asyncio.create_task(
+            alerts_worker()
+        )
+    )
+
     # --------------------------------------------------------------
     # Start DriveVitals runtime
     # --------------------------------------------------------------
@@ -235,6 +259,18 @@ async def lifespan(
 
             pass
 
+    if alerts_worker_task is not None:
+
+        alerts_worker_task.cancel()
+
+        try:
+
+            await alerts_worker_task
+
+        except asyncio.CancelledError:
+
+            pass
+
     # --------------------------------------------------------------
     # Unsubscribe dashboard publisher
     # --------------------------------------------------------------
@@ -279,6 +315,10 @@ app.include_router(
 
 app.include_router(
     trips_router
+)
+
+app.include_router(
+    alerts_router
 )
 
 app.include_router(

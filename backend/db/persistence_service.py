@@ -1,6 +1,7 @@
 import logging
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Callable
 
 from backend.analytics.driver_statistics.models.driver_statistics import (
     DriverStatistics,
@@ -39,9 +40,56 @@ logger = logging.getLogger(__name__)
 
 
 class PersistenceService:
-
     def __init__(self) -> None:
-        pass
+        self._alert_event_callback: Callable[[dict], None] | None = None
+
+    def set_alert_event_callback(self, callback: Callable[[dict], None] | None) -> None:
+        """Set a callback to receive alert events for WebSocket broadcast."""
+        self._alert_event_callback = callback
+
+    def _emit_alert_event(
+        self,
+        event_type: str,
+        alert: FleetAlert,
+        stored_alert_id: str | None = None,
+    ) -> None:
+        """Emit a serialized alert lifecycle event to the callback.
+
+        ``stored_alert_id`` is the vehicle-scoped id used by the REST API
+        and the DB (e.g. ``trip_unsafe:v-101``). The frontend reconciles
+        WebSocket events against REST rows by that id, so it must be the
+        same value; the canonical ``condition`` key is emitted alongside.
+        """
+        if self._alert_event_callback is not None:
+            self._alert_event_callback(
+                {
+                    "type": event_type,
+                    "alert_id": stored_alert_id or alert.alert_id,
+                    "condition": alert.condition,
+                    "vehicle_id": alert.vehicle_id,
+                    "driver_id": alert.driver_id,
+                    "trip_id": alert.trip_id,
+                    "alert_type": (
+                        alert.alert_type.value
+                        if hasattr(alert.alert_type, "value")
+                        else str(alert.alert_type)
+                    ),
+                    "severity": (
+                        alert.severity.value
+                        if hasattr(alert.severity, "value")
+                        else str(alert.severity)
+                    ),
+                    "category": (
+                        alert.category.value
+                        if hasattr(alert.category, "value")
+                        else str(alert.category)
+                    ),
+                    "message": alert.message,
+                    "evidence": alert.evidence,
+                    "source": alert.source,
+                    "created_at": alert.created_at.isoformat(),
+                }
+            )
 
     async def persist_vehicle(self, vehicle: DomainVehicle) -> None:
         try:
@@ -330,7 +378,7 @@ class PersistenceService:
             async with async_session_factory() as session:
                 repo = AlertRepository(session)
                 for alert in alerts:
-                    await repo.upsert(
+                    row = await repo.upsert(
                         alert_id=alert.alert_id,
                         vehicle_id=alert.vehicle_id,
                         alert_type=(
@@ -347,6 +395,21 @@ class PersistenceService:
                         created_at=alert.created_at,
                         driver_id=alert.driver_id,
                         trip_id=alert.trip_id,
+                        condition=alert.condition,
+                        category=(
+                            alert.category.value
+                            if hasattr(alert.category, "value")
+                            else str(alert.category)
+                        ),
+                        evidence=alert.evidence,
+                        source=alert.source,
+                    )
+                    # Emit event for created/updated, keyed by the stored
+                    # (vehicle-scoped) id so the frontend can reconcile.
+                    self._emit_alert_event(
+                        "alert_created",
+                        alert,
+                        stored_alert_id=row.alert_id,
                     )
                 await session.commit()
         except Exception:
@@ -371,19 +434,52 @@ class PersistenceService:
         try:
             async with async_session_factory() as session:
                 repo = AlertRepository(session)
-                resolved = await repo.resolve_stale(
+                resolved_count, resolved_alerts = await repo.resolve_stale(
                     vehicle_id=vehicle_id,
                     categories=categories,
                     active_alert_ids=active_alert_ids,
                 )
-                if resolved:
+                if resolved_count:
                     await session.commit()
                     logger.info(
                         "Resolved %d cleared alert(s) for vehicle %s",
-                        resolved,
+                        resolved_count,
                         vehicle_id,
                     )
-                return resolved
+                    # Emit events for resolved alerts (row.alert_id is the
+                    # stored, vehicle-scoped id used by the REST API).
+                    for alert in resolved_alerts:
+                        self._emit_alert_event(
+                            "alert_resolved",
+                            FleetAlert(
+                                alert_id=alert.alert_id,
+                                vehicle_id=alert.vehicle_id,
+                                alert_type=(
+                                    alert.alert_type.value
+                                    if hasattr(alert.alert_type, "value")
+                                    else alert.alert_type
+                                ),
+                                severity=(
+                                    alert.severity.value
+                                    if hasattr(alert.severity, "value")
+                                    else alert.severity
+                                ),
+                                message=alert.message or "",
+                                created_at=alert.created_at,
+                                driver_id=alert.driver_id,
+                                trip_id=alert.trip_id,
+                                condition=alert.condition,
+                                category=(
+                                    alert.category.value
+                                    if hasattr(alert.category, "value")
+                                    else alert.category
+                                ),
+                                evidence=alert.evidence,
+                                source=alert.source,
+                            ),
+                            stored_alert_id=alert.alert_id,
+                        )
+                return resolved_count
         except Exception:
             logger.exception(
                 "Failed to resolve cleared alerts for vehicle %s",

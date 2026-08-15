@@ -1,11 +1,20 @@
 import asyncio
+import time
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from starlette.testclient import TestClient
 
+import backend.api.main as main
 import backend.api.websocket.trips as trips_module
+from backend.alerts.models.fleet_alert import (
+    AlertCategory,
+    AlertSeverity,
+    AlertType,
+    FleetAlert,
+)
 from backend.analytics.behaviour.aggregation.summary import (
     DriverBehaviourSummary,
 )
@@ -45,6 +54,114 @@ class TestWebSockets:
 
         with client.websocket_connect("/ws/trips") as websocket:
             websocket.send_text("ping")
+
+    def test_alerts_websocket_connects(self) -> None:
+        client = TestClient(app)
+
+        with client.websocket_connect("/ws/alerts") as websocket:
+            websocket.send_text("ping")
+
+
+class TestAlertsLifecycleWiring:
+    """Regression for the FastAPI startup crash.
+
+    The Alerts page wiring in ``backend/api/main.py`` originally called
+    ``runtime.persistence.set_alert_event_callback(...)`` during lifespan
+    startup, but ``DriveVitalsRuntime`` stores its persistence service as
+    the private ``_persistence_service`` attribute and exposes no
+    ``.persistence`` attribute, so startup raised ``AttributeError``.
+
+    The alert-event callback is owned by the shared ``PersistenceService``
+    instance that ``backend/api/main.py`` constructs for the runtime. The
+    lifespan must register the callback on that same instance and wire it to
+    the alerts WebSocket queue.
+
+    ``TestClient.websocket_connect`` alone does not run the app lifespan, so
+    this test drives the real ``lifespan`` async generator directly. The
+    heavy ``runtime.run`` loop is stubbed out so the test stays fast,
+    deterministic and touches no real database.
+    """
+
+    def test_lifespan_wires_alert_callback_to_alerts_queue(self) -> None:
+        async def _scenario() -> None:
+            from backend.api.websocket import alerts as alerts_module
+
+            manager = _RecordingManager()
+            original_manager = alerts_module.websocket_manager
+            alerts_module.websocket_manager = manager
+
+            async def _noop() -> None:
+                return None
+
+            gen = None
+            try:
+                with patch.object(main.runtime, "run", _noop):
+                    # Drain any alert events other tests enqueued into the
+                    # shared module-level queue while no worker was running,
+                    # so this test only observes the event it emits.
+                    while not main.alerts_queue.empty():
+                        with suppress(asyncio.QueueEmpty):
+                            main.alerts_queue.get_nowait()
+
+                    gen = main.lifespan(main.app)
+                    try:
+                        # Start lifespan. Regression (AttributeError on
+                        # runtime.persistence) surfaces here.
+                        await gen.__aenter__()
+
+                        # The callback must be registered on the shared
+                        # persistence service instance and point at the
+                        # alerts WebSocket queue.
+                        callback = main.persistence_service._alert_event_callback
+                        assert callback == main.alerts_queue.put_nowait
+                        assert callback.__self__ is main.alerts_queue
+
+                        # End to end: an emitted alert lifecycle event is
+                        # serialized, queued by the callback, drained by the
+                        # alerts worker and broadcast to connected clients.
+                        alert = FleetAlert(
+                            alert_id="trip_unsafe:v-101",
+                            vehicle_id="v-101",
+                            driver_id="d-7",
+                            trip_id="t-9",
+                            alert_type=AlertType.TRIP,
+                            severity=AlertSeverity.CRITICAL,
+                            message="Harsh braking detected on route",
+                            created_at=datetime.now(timezone.utc),
+                            condition="trip_unsafe",
+                            category=AlertCategory.SAFETY_DRIVING,
+                            evidence={"event_counts": {"harsh_braking": 3}},
+                        )
+                        main.persistence_service._emit_alert_event(
+                            "alert_created",
+                            alert,
+                            stored_alert_id="trip_unsafe:v-101",
+                        )
+
+                        deadline = time.monotonic() + 1.0
+                        while not manager.messages and time.monotonic() < deadline:
+                            await asyncio.sleep(0.01)
+
+                        assert len(manager.messages) == 1
+                        event = manager.messages[0]
+                        assert event["type"] == "alert_event"
+                        data = event["data"]
+                        assert data["alert_id"] == "trip_unsafe:v-101"
+                        assert data["condition"] == "trip_unsafe"
+                        assert data["category"] == "safety_driving"
+                        assert data["severity"] == "critical"
+                        assert data["message"] == "Harsh braking detected on route"
+                    finally:
+                        # Drive shutdown (cancels the lifespan's worker and
+                        # runtime tasks). Idempotent if startup failed and
+                        # closed the generator.
+                        if gen is not None:
+                            with suppress(StopAsyncIteration, RuntimeError):
+                                await gen.__aexit__(None, None, None)
+            finally:
+                alerts_module.websocket_manager = original_manager
+
+        asyncio.run(_scenario())
 
 
 class _RecordingManager:

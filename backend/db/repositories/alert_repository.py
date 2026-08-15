@@ -30,6 +30,10 @@ class AlertRepository(BaseRepository):
         driver_id: str | None = None,
         trip_id: str | None = None,
         status: str = "active",
+        condition: str | None = None,
+        category: str | None = None,
+        evidence: dict | None = None,
+        source: str = "alert_engine",
     ) -> Alert:
         alert = Alert(
             alert_id=alert_id,
@@ -42,6 +46,12 @@ class AlertRepository(BaseRepository):
             acknowledged=False,
             created_at=created_at or datetime.now(timezone.utc),
             resolved_at=None,
+            acknowledged_at=None,
+            condition=condition,
+            category=category,
+            message=message,
+            evidence=evidence,
+            source=source,
         )
         self._session.add(alert)
         await self._session.flush()
@@ -58,6 +68,10 @@ class AlertRepository(BaseRepository):
         driver_id: str | None = None,
         trip_id: str | None = None,
         status: str = "active",
+        condition: str | None = None,
+        category: str | None = None,
+        evidence: dict | None = None,
+        source: str = "alert_engine",
     ) -> Alert:
         """Idempotently persist one alert keyed by a stable identity.
 
@@ -95,9 +109,15 @@ class AlertRepository(BaseRepository):
                     driver_id=driver_id,
                     trip_id=trip_id,
                     status=status,
+                    condition=condition,
+                    category=category,
+                    message=message,
+                    evidence=evidence,
                 )
             )
             await self._session.flush()
+            # Refresh to get updated values
+            await self._session.refresh(existing_row)
             return existing_row
 
         stored_id = (
@@ -116,6 +136,12 @@ class AlertRepository(BaseRepository):
             acknowledged=False,
             created_at=created_at,
             resolved_at=None,
+            acknowledged_at=None,
+            condition=condition,
+            category=category,
+            message=message,
+            evidence=evidence,
+            source=source,
         )
         self._session.add(alert)
         await self._session.flush()
@@ -138,19 +164,25 @@ class AlertRepository(BaseRepository):
         if row is None:
             return None
         row.acknowledged = True
+        if row.acknowledged_at is None:
+            row.acknowledged_at = datetime.now(timezone.utc)
         if row.resolved_at is None and row.status != "resolved":
             row.status = "active"
         await self._session.flush()
         return row
 
     async def resolve(self, alert_id: str) -> Alert | None:
-        """Manually resolve an open alert."""
+        """Manually resolve an open alert (idempotent)."""
         row = await self._session.get(Alert, alert_id)
         if row is None:
             return None
         row.acknowledged = True
-        row.status = "resolved"
-        row.resolved_at = datetime.now(timezone.utc)
+        if row.acknowledged_at is None:
+            row.acknowledged_at = datetime.now(timezone.utc)
+        if row.status != "resolved":
+            row.status = "resolved"
+        if row.resolved_at is None:
+            row.resolved_at = datetime.now(timezone.utc)
         await self._session.flush()
         return row
 
@@ -159,7 +191,7 @@ class AlertRepository(BaseRepository):
         vehicle_id: str,
         categories: Sequence[str],
         active_alert_ids: Sequence[str],
-    ) -> int:
+    ) -> tuple[int, list[Alert]]:
         """Resolve open alerts whose condition is no longer active.
 
         Alerts are scoped by their canonical condition key (the generator's
@@ -167,6 +199,8 @@ class AlertRepository(BaseRepository):
         stored id shares the scoped prefix with one of ``active_alert_ids``.
         Everything else in ``categories`` for the vehicle that is still open
         is marked resolved (history is preserved, the row is not deleted).
+        
+        Returns a tuple of (resolved_count, resolved_alerts).
         """
         active_scoped = {
             self._scope_alert_id(alert_id, vehicle_id)
@@ -183,6 +217,7 @@ class AlertRepository(BaseRepository):
 
         resolved_at = datetime.now(timezone.utc)
         resolved = 0
+        resolved_alerts: list[Alert] = []
         for row in result.scalars():
             stored = row.alert_id
             active = False
@@ -198,7 +233,8 @@ class AlertRepository(BaseRepository):
             row.status = "resolved"
             row.resolved_at = resolved_at
             resolved += 1
+            resolved_alerts.append(row)
 
         if resolved:
             await self._session.flush()
-        return resolved
+        return resolved, resolved_alerts

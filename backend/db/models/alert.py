@@ -1,7 +1,8 @@
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db.base import Base
@@ -31,6 +32,24 @@ class Alert(Base):
     )
     resolved_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    condition: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, index=True
+    )
+    category: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, index=True
+    )
+    message: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )
+    evidence: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True
+    )
+    source: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="alert_engine"
     )
 
     vehicle = relationship("Vehicle", back_populates="alerts")

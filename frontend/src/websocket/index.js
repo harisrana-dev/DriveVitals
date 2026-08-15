@@ -4,6 +4,7 @@ import { subscribeToUrl, getChannelState, reconnectAll } from './connectionManag
 const channels = {
   dashboard: `${WS_BASE}/ws/dashboard`,
   trips: `${WS_BASE}/ws/trips`,
+  alerts: `${WS_BASE}/ws/alerts`,
 };
 
 function subscribeToChannel(channelName, handlers) {

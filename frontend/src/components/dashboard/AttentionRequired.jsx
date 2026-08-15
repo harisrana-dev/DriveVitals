@@ -6,11 +6,13 @@ import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
 
 const severityConfig = {
   critical: { bg: 'var(--color-red-light)', color: 'var(--color-red)', border: 'var(--color-red)', label: 'Critical' },
-  warning: { bg: 'var(--color-amber-light)', color: 'var(--color-amber)', border: 'var(--color-amber)', label: 'Warning' },
+  high: { bg: 'var(--color-amber-light)', color: 'var(--color-amber)', border: 'var(--color-amber)', label: 'High' },
+  medium: { bg: 'var(--color-blue-bg)', color: 'var(--color-blue)', border: 'var(--color-blue)', label: 'Medium' },
+  low: { bg: 'var(--color-accent-light)', color: 'var(--color-accent)', border: 'var(--color-accent)', label: 'Low' },
   info: { bg: 'var(--color-accent-light)', color: 'var(--color-accent)', border: 'var(--color-accent)', label: 'Info' },
 };
 
-const severityOrder = { critical: 0, warning: 1, info: 2 };
+const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 const LIST_HEIGHT = 360;
 
 export function AttentionRequired() {
@@ -95,7 +97,9 @@ export function AttentionRequired() {
                 marginTop: 2,
               }}>
                 {alert.severity === 'critical' && <AlertTriangle size={16} />}
-                {alert.severity === 'warning' && <Clock size={16} />}
+                {alert.severity === 'high' && <AlertTriangle size={16} />}
+                {alert.severity === 'medium' && <Clock size={16} />}
+                {alert.severity === 'low' && <Clock size={16} />}
                 {alert.severity === 'info' && <User size={16} />}
               </div>
 

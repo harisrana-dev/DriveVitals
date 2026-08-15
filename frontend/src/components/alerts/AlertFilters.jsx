@@ -1,11 +1,38 @@
 import { memo } from 'react';
-import { Search, Filter } from 'lucide-react';
-import { useAlertFilters } from '../../hooks/useAlerts';
+import { Search, Filter, RotateCcw } from 'lucide-react';
 import { SEVERITIES, CATEGORIES, TIME_RANGES } from '../../utils/alerts';
+import { categoryLabel } from '../../services/alertAdapter';
 
-const SEV_LABELS = { all: 'All', critical: 'Critical', warning: 'Warning', info: 'Information', resolved: 'Resolved' };
-const CAT_LABELS = { all: 'All Categories', Driving: 'Driving', Engine: 'Engine', Fuel: 'Fuel', Cooling: 'Cooling', Electrical: 'Electrical' };
-const TIME_LABELS = { live: 'Live', '1h': '1 Hour', today: 'Today', week: 'This Week', all: 'All Time' };
+const SEV_LABELS = {
+  all: 'All',
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  info: 'Info',
+};
+const CAT_LABELS = {
+  all: 'All Categories',
+  safety_driving: 'Safety & Driving',
+  vehicle_health: 'Vehicle Health',
+  cooling: 'Cooling',
+  fuel: 'Fuel',
+  engine: 'Engine',
+  electrical: 'Electrical',
+  transmission: 'Transmission',
+  brakes: 'Brakes',
+  maintenance: 'Maintenance',
+  trip: 'Trip',
+  other: 'Other',
+};
+const TIME_LABELS = {
+  live: 'Live',
+  '1h': '1 Hour',
+  today: 'Today',
+  '7d': '7 Days',
+  '30d': '30 Days',
+  all: 'All Time',
+};
 
 const btnBase = {
   padding: '5px 10px',
@@ -18,6 +45,7 @@ const btnBase = {
   cursor: 'pointer',
   transition: 'all 0.12s ease',
   lineHeight: 1,
+  fontFamily: 'inherit',
 };
 
 const btnActive = {
@@ -26,11 +54,35 @@ const btnActive = {
   borderColor: 'var(--color-accent)',
 };
 
-export const AlertFilters = memo(function AlertFilters() {
+/**
+ * Filters bar. Pure presentational: reads the lifted filter API from the
+ * page and calls its setters, so the state is shared with the KPI strip,
+ * tabs and table. Unclassified is a first-class filter value for the
+ * legacy NULL-category alerts.
+ */
+export const AlertFilters = memo(function AlertFilters({ filtersApi }) {
   const {
     filters, setSeverity, setCategory,
     setVehicleSearch, setDriverSearch, setTimeRange,
-  } = useAlertFilters();
+  } = filtersApi;
+
+  const isDefault =
+    filters.severity === 'all' &&
+    filters.category === 'all' &&
+    filters.vehicleSearch === '' &&
+    filters.driverSearch === '' &&
+    filters.timeRange === 'all' &&
+    filters.statusTab === 'active' &&
+    !filters.unacknowledgedOnly &&
+    !filters.resolvedWithinH;
+
+  const handleReset = () => {
+    setSeverity('all');
+    setCategory('all');
+    setVehicleSearch('');
+    setDriverSearch('');
+    setTimeRange('all');
+  };
 
   return (
     <div
@@ -70,9 +122,20 @@ export const AlertFilters = memo(function AlertFilters() {
             onClick={() => setCategory(filters.category === c ? 'all' : c)}
             style={{ ...btnBase, ...(filters.category === c ? btnActive : {}) }}
           >
-            {CAT_LABELS[c]}
+            {CAT_LABELS[c] || categoryLabel(c)}
           </button>
         ))}
+        <button
+          onClick={() => setCategory(filters.category === '__unclassified__' ? 'all' : '__unclassified__')}
+          style={{
+            ...btnBase,
+            ...(filters.category === '__unclassified__' ? btnActive : {}),
+            fontStyle: filters.category === '__unclassified__' ? 'normal' : 'italic',
+            color: filters.category === '__unclassified__' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+          }}
+        >
+          Unclassified
+        </button>
       </div>
 
       <div style={{ width: 1, height: 20, background: 'var(--color-border)', flexShrink: 0 }} />
@@ -92,7 +155,7 @@ export const AlertFilters = memo(function AlertFilters() {
 
       <div style={{ flex: 1, minWidth: 120 }} />
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <div
           style={{
             display: 'flex',
@@ -147,6 +210,39 @@ export const AlertFilters = memo(function AlertFilters() {
             }}
           />
         </div>
+        {!isDefault && (
+          <button
+            onClick={handleReset}
+            title="Reset filters"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '5px 10px',
+              borderRadius: 6,
+              border: '1px solid var(--color-border)',
+              background: 'transparent',
+              color: 'var(--color-text-muted)',
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              lineHeight: 1,
+              transition: 'all 0.12s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--color-text-primary)';
+              e.currentTarget.style.background = 'var(--color-surface-hover)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--color-text-muted)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <RotateCcw size={12} />
+            Reset
+          </button>
+        )}
       </div>
     </div>
   );

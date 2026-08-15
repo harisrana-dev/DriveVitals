@@ -6,6 +6,7 @@ import { listMaintenance } from "../services/api/maintenanceApi";
 import { listAlerts, acknowledgeAlert, resolveAlert } from "../services/api/alertApi";
 import { listTelemetry } from "../services/api/telemetryApi";
 import { listTrips } from "../services/api/tripApi";
+import { applyAlertEvent } from "../services/alertAdapter";
 
 const LiveDataContext = createContext(null);
 
@@ -147,6 +148,7 @@ export function LiveDataProvider({ children }) {
   const [restTrips, setRestTrips] = useState([]);
   const [dashboardConnectionState, setDashboardConnectionState] = useState("connecting");
   const [tripsConnectionState, setTripsConnectionState] = useState("connecting");
+  const [alertsConnectionState, setAlertsConnectionState] = useState("connecting");
 
   const [vehicles, setVehicles] = useState([]);
   const [drivers, setDrivers] = useState([]);
@@ -230,9 +232,22 @@ export function LiveDataProvider({ children }) {
       }
     );
 
+    const unsubscribeAlerts = subscribeToChannel(
+      "alerts",
+      {
+        onMessage: (message) => {
+          if (message.type === "alert_event" && message.data) {
+            setAlerts((prev) => applyAlertEvent(prev, message.data));
+          }
+        },
+        onState: setAlertsConnectionState,
+      }
+    );
+
     return () => {
       unsubscribeDashboard();
       unsubscribeTrips();
+      unsubscribeAlerts();
     };
   }, [updateLastUpdate, refreshDriverStatistics]);
 
@@ -335,7 +350,6 @@ export function LiveDataProvider({ children }) {
     try {
       const result = await acknowledgeAlert(alertId);
       if (result?.data) patchAlert(alertId, result.data);
-      else patchAlert(alertId, { acknowledged: true });
     } catch (error) {
       console.error("[alerts] acknowledge failed", alertId, error);
     }
@@ -345,7 +359,6 @@ export function LiveDataProvider({ children }) {
     try {
       const result = await resolveAlert(alertId);
       if (result?.data) patchAlert(alertId, result.data);
-      else patchAlert(alertId, { status: "resolved", acknowledged: true, resolved_at: new Date().toISOString() });
     } catch (error) {
       console.error("[alerts] resolve failed", alertId, error);
     }
@@ -371,6 +384,7 @@ export function LiveDataProvider({ children }) {
     telemetry,
     connectionStatus,
     tripsConnectionState,
+    alertsConnectionState,
     hydrated,
     lastUpdate,
     syncing,

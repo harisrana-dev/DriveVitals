@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLiveData } from '../context/LiveDataContext';
 import { normalizeHealthReasons } from '../utils/health';
+import { adaptAlert } from '../services/alertAdapter';
 
 function mapStatus(s) {
   if (s === 'ACTIVE') return 'active';
@@ -245,26 +246,6 @@ export function useUnacknowledgedAlertCount() {
   }, [alerts]);
 }
 
-const LEGACY_ALERT_TITLES = {
-  engine_overheat: 'Engine coolant overheat',
-  coolant_warning: 'Elevated coolant temperature',
-  fuel_critical: 'Fuel level critical',
-  low_fuel: 'Low fuel level',
-  health_critical: 'Vehicle health critical',
-  health_warning: 'Vehicle health warning',
-  high_engine_load: 'High engine load',
-  harsh_braking: 'Repeated harsh braking',
-  aggressive_throttle: 'Aggressive throttle use',
-  high_rpm: 'Excessive engine RPM',
-  speeding: 'Speeding detected',
-};
-
-function normalizeSeverity(sev) {
-  const s = String(sev || 'warning').toLowerCase();
-  if (s === 'critical' || s === 'warning' || s === 'info') return s;
-  return 'warning';
-}
-
 function relativeTime(iso) {
   if (!iso) return '—';
   const then = new Date(iso).getTime();
@@ -279,22 +260,23 @@ function relativeTime(iso) {
 }
 
 function mapLegacyAlert(a, meta) {
+  const view = adaptAlert(a, meta);
   return {
-    id: a.alert_id,
-    severity: normalizeSeverity(a.severity),
-    vehicleId: a.vehicle_id,
-    vehicleName: meta?.vehicle_name || a.vehicle_id,
-    driverId: a.driver_id,
-    driverName: meta?.driver_name || '—',
-    title: LEGACY_ALERT_TITLES[a.alert_type] || titleCase(a.alert_type),
-    description: 'Active alert requiring review.',
+    id: view.alert_id,
+    severity: view.severity,
+    vehicleId: view.vehicle_id,
+    vehicleName: view.vehicle_name || view.vehicle_id,
+    driverId: view.driver_id,
+    driverName: view.driver_name || null,
+    title: view.message || view.title,
+    description: view.category_label || null,
     value: null,
     threshold: null,
-    timestamp: relativeTime(a.created_at),
-    createdAt: a.created_at,
-    acknowledged: !!a.acknowledged,
-    status: a.status === 'resolved' ? 'resolved' : 'active',
-    resolvedAt: a.resolved_at || null,
+    timestamp: relativeTime(view.created_at),
+    createdAt: view.created_at,
+    acknowledged: view.acknowledged,
+    status: view.status,
+    resolvedAt: view.resolved_at,
     actionLabel: 'View Vehicle',
   };
 }

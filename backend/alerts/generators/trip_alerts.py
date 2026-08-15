@@ -20,6 +20,7 @@ from backend.alerts.alerts_config import (
     TRIP_UNSAFE,
     AlertConfig,
     TripAlertConfig,
+    category_for,
 )
 from backend.alerts.generators import (
     AlertContext,
@@ -103,6 +104,10 @@ class TripAlertsGenerator(AlertGenerator):
                     vehicle_id=vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.overspeed_severity,
+                    category=category_for(
+                        TRIP_OVERSPEEDING, self.alert_type
+                    ),
+                    evidence=self._evidence(counts, vehicle_id, trip_id),
                     message=(
                         f"Overspeeding detected ({counts.overspeeding} "
                         "event(s))"
@@ -120,6 +125,10 @@ class TripAlertsGenerator(AlertGenerator):
                     vehicle_id=vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.repeated_harsh_braking_severity,
+                    category=category_for(
+                        TRIP_REPEATED_HARSH_BRAKING, self.alert_type
+                    ),
+                    evidence=self._evidence(counts, vehicle_id, trip_id),
                     message=(
                         "Repeated harsh braking "
                         f"({counts.harsh_braking} events)"
@@ -137,6 +146,10 @@ class TripAlertsGenerator(AlertGenerator):
                     vehicle_id=vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.repeated_harsh_acceleration_severity,
+                    category=category_for(
+                        TRIP_REPEATED_HARSH_ACCELERATION, self.alert_type
+                    ),
+                    evidence=self._evidence(counts, vehicle_id, trip_id),
                     message=(
                         "Repeated harsh acceleration "
                         f"({counts.harsh_acceleration} events)"
@@ -154,6 +167,10 @@ class TripAlertsGenerator(AlertGenerator):
                     vehicle_id=vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.aggressive_driving_severity,
+                    category=category_for(
+                        TRIP_AGGRESSIVE_DRIVING, self.alert_type
+                    ),
+                    evidence=self._evidence(counts, vehicle_id, trip_id),
                     message=(
                         f"Aggressive driving detected ({counts.severe} "
                         "severe event(s))"
@@ -171,6 +188,10 @@ class TripAlertsGenerator(AlertGenerator):
                     vehicle_id=vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.unsafe_trip_severity,
+                    category=category_for(
+                        TRIP_UNSAFE, self.alert_type
+                    ),
+                    evidence=self._evidence(counts, vehicle_id, trip_id),
                     message=(
                         f"Unsafe trip: {counts.total} behaviour events "
                         "recorded"
@@ -182,6 +203,24 @@ class TripAlertsGenerator(AlertGenerator):
             )
 
         return tuple(alerts)
+
+    @staticmethod
+    def _evidence(
+        counts: "_EventCounts",
+        vehicle_id: str,
+        trip_id: str | None,
+    ) -> dict:
+        return {
+            "event_counts": {
+                "total": counts.total,
+                "overspeeding": counts.overspeeding,
+                "harsh_braking": counts.harsh_braking,
+                "harsh_acceleration": counts.harsh_acceleration,
+                "severe": counts.severe,
+            },
+            "vehicle_id": vehicle_id,
+            "trip_id": trip_id,
+        }
 
     def _count_events(
         self,

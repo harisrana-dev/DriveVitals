@@ -23,6 +23,7 @@ from backend.maintenance.models.maintenance_recommendation import (
 )
 
 from backend.alerts.models.fleet_alert import (
+    AlertCategory,
     AlertSeverity,
     AlertType,
     FleetAlert,
@@ -103,6 +104,15 @@ class MaintenanceAlertsGenerator(AlertGenerator):
                     vehicle_id=recommendation.vehicle_id,
                     alert_type=self.alert_type,
                     severity=severity,
+                    category=AlertCategory.MAINTENANCE,
+                    evidence={
+                        "component": recommendation.component,
+                        "maintenance_type": recommendation.maintenance_type.value,
+                        "priority": recommendation.priority.value,
+                        "remaining_km": recommendation.remaining_km,
+                        "recommended_action": recommendation.recommended_action,
+                        "reason": recommendation.reason,
+                    },
                     message=(
                         f"{recommendation.recommended_action}: "
                         f"{recommendation.reason}"

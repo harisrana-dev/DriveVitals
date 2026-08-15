@@ -16,7 +16,10 @@ introduced here first and consumed through AlertConfig.
 
 from dataclasses import dataclass, field
 
-from backend.alerts.models.fleet_alert import AlertSeverity
+from backend.alerts.models.fleet_alert import (
+    AlertCategory,
+    AlertSeverity,
+)
 from backend.analytics.vehicle_health.models.subsystem_health import (
     HealthStatus,
 )
@@ -63,6 +66,56 @@ TRIP_REPEATED_HARSH_BRAKING = "trip_repeated_harsh_braking"
 TRIP_REPEATED_HARSH_ACCELERATION = "trip_repeated_harsh_acceleration"
 TRIP_AGGRESSIVE_DRIVING = "trip_aggressive_driving"
 TRIP_UNSAFE = "trip_unsafe"
+
+# ---------------------------------------------------------------------------
+# Canonical alert categories
+# ---------------------------------------------------------------------------
+
+# Assigns one canonical category to every fixed alert id. Health alerts are
+# categorized by subsystem slug (see ``health_category``) and maintenance
+# alerts are always MAINTENANCE.
+ALERT_CATEGORY: dict[str, AlertCategory] = {
+    TELEMETRY_ENGINE_OVERHEATING: AlertCategory.COOLING,
+    TELEMETRY_COOLANT_CRITICAL: AlertCategory.COOLING,
+    TELEMETRY_FUEL_CRITICAL: AlertCategory.FUEL,
+    TELEMETRY_RPM_REDLINE: AlertCategory.SAFETY_DRIVING,
+    TRIP_OVERSPEEDING: AlertCategory.SAFETY_DRIVING,
+    TRIP_REPEATED_HARSH_BRAKING: AlertCategory.SAFETY_DRIVING,
+    TRIP_REPEATED_HARSH_ACCELERATION: AlertCategory.SAFETY_DRIVING,
+    TRIP_AGGRESSIVE_DRIVING: AlertCategory.SAFETY_DRIVING,
+    TRIP_UNSAFE: AlertCategory.SAFETY_DRIVING,
+}
+
+_HEALTH_SUBSYSTEM_CATEGORY: dict[str, AlertCategory] = {
+    "engine": AlertCategory.ENGINE,
+    "cooling": AlertCategory.COOLING,
+    "transmission": AlertCategory.TRANSMISSION,
+    "brakes": AlertCategory.BRAKES,
+    "fuel_system": AlertCategory.FUEL,
+    "overall": AlertCategory.VEHICLE_HEALTH,
+}
+
+
+def health_category(slug: str) -> AlertCategory:
+    """Canonical category for a health alert by subsystem slug."""
+    return _HEALTH_SUBSYSTEM_CATEGORY.get(
+        slug, AlertCategory.VEHICLE_HEALTH
+    )
+
+
+def category_for(alert_id: str, alert_type) -> AlertCategory:
+    """Canonical category for a generator alert id.
+
+    Health ids follow ``health_{subsystem}_{status}`` so they are routed
+    through ``health_category``; maintenance ids always map to
+    MAINTENANCE. Anything unrecognized falls back to OTHER.
+    """
+    if alert_id.startswith("health_"):
+        slug = alert_id.split("_")[1]
+        return health_category(slug)
+    if alert_id.startswith("maintenance_"):
+        return AlertCategory.MAINTENANCE
+    return ALERT_CATEGORY.get(alert_id, AlertCategory.OTHER)
 
 # ---------------------------------------------------------------------------
 # Health generator
@@ -209,6 +262,9 @@ __all__ = [
     "TRIP_REPEATED_HARSH_ACCELERATION",
     "TRIP_AGGRESSIVE_DRIVING",
     "TRIP_UNSAFE",
+    "ALERT_CATEGORY",
+    "health_category",
+    "category_for",
     "HealthAlertConfig",
     "MaintenanceAlertConfig",
     "TelemetryAlertConfig",

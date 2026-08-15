@@ -1,5 +1,9 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from backend.api.websocket.alerts import (
+    publish_alert_row,
+)
 from backend.api.v1.dependencies import (
     get_alert_service,
     validate_pagination,
@@ -17,7 +21,7 @@ router = APIRouter(prefix="/alerts")
     summary="List alerts",
     description=(
         "Return a paginated list of alerts. Optionally filter by severity, "
-        "type and acknowledgement status."
+        "type, acknowledgement status, status, category, driver, and time range."
     ),
     tags=["Alerts"],
 )
@@ -33,6 +37,26 @@ async def list_alerts(
     acknowledged: bool | None = Query(
         default=None,
         description="Filter alerts by acknowledgement status.",
+    ),
+    status: str | None = Query(
+        default=None,
+        description="Filter alerts by status (active, resolved).",
+    ),
+    category: str | None = Query(
+        default=None,
+        description="Filter alerts by category.",
+    ),
+    driver_id: str | None = Query(
+        default=None,
+        description="Filter alerts by driver ID.",
+    ),
+    start_time: datetime | None = Query(
+        default=None,
+        description="Filter alerts created after this timestamp (ISO 8601).",
+    ),
+    end_time: datetime | None = Query(
+        default=None,
+        description="Filter alerts created before this timestamp (ISO 8601).",
     ),
     limit: int = Query(
         default=100,
@@ -51,6 +75,11 @@ async def list_alerts(
         severity=severity,
         alert_type=type,
         acknowledged=acknowledged,
+        status=status,
+        category=category,
+        driver_id=driver_id,
+        start_time=start_time,
+        end_time=end_time,
         limit=limit,
         offset=offset,
     )
@@ -59,6 +88,68 @@ async def list_alerts(
         data=[AlertRead.model_validate(alert) for alert in alerts],
         count=count,
     )
+
+
+@router.get(
+    "/stats",
+    summary="Get alert statistics",
+    description=(
+        "Return aggregate statistics for alerts matching the optional filters. "
+        "Includes total count, critical/high severity counts, active, acknowledged, and resolved counts."
+    ),
+    tags=["Alerts"],
+)
+async def alert_stats(
+    severity: str | None = Query(
+        default=None,
+        description="Filter alerts by severity.",
+    ),
+    type: str | None = Query(
+        default=None,
+        description="Filter alerts by alert type.",
+    ),
+    acknowledged: bool | None = Query(
+        default=None,
+        description="Filter alerts by acknowledgement status.",
+    ),
+    status: str | None = Query(
+        default=None,
+        description="Filter alerts by status (active, resolved).",
+    ),
+    category: str | None = Query(
+        default=None,
+        description="Filter alerts by category.",
+    ),
+    driver_id: str | None = Query(
+        default=None,
+        description="Filter alerts by driver ID.",
+    ),
+    vehicle_id: str | None = Query(
+        default=None,
+        description="Filter alerts by vehicle ID.",
+    ),
+    start_time: datetime | None = Query(
+        default=None,
+        description="Filter alerts created after this timestamp (ISO 8601).",
+    ),
+    end_time: datetime | None = Query(
+        default=None,
+        description="Filter alerts created before this timestamp (ISO 8601).",
+    ),
+    service: AlertService = Depends(get_alert_service),
+) -> dict:
+    stats = await service.stats(
+        vehicle_id=vehicle_id,
+        severity=severity,
+        alert_type=type,
+        acknowledged=acknowledged,
+        status=status,
+        category=category,
+        driver_id=driver_id,
+        start_time=start_time,
+        end_time=end_time,
+    )
+    return stats
 
 
 @router.get(
@@ -85,6 +176,26 @@ async def list_vehicle_alerts(
         default=None,
         description="Filter alerts by acknowledgement status.",
     ),
+    status: str | None = Query(
+        default=None,
+        description="Filter alerts by status (active, resolved).",
+    ),
+    category: str | None = Query(
+        default=None,
+        description="Filter alerts by category.",
+    ),
+    driver_id: str | None = Query(
+        default=None,
+        description="Filter alerts by driver ID.",
+    ),
+    start_time: datetime | None = Query(
+        default=None,
+        description="Filter alerts created after this timestamp (ISO 8601).",
+    ),
+    end_time: datetime | None = Query(
+        default=None,
+        description="Filter alerts created before this timestamp (ISO 8601).",
+    ),
     limit: int = Query(
         default=100,
         description="Maximum number of alerts to return.",
@@ -102,6 +213,11 @@ async def list_vehicle_alerts(
         severity=severity,
         alert_type=type,
         acknowledged=acknowledged,
+        status=status,
+        category=category,
+        driver_id=driver_id,
+        start_time=start_time,
+        end_time=end_time,
         limit=limit,
         offset=offset,
     )
@@ -130,6 +246,7 @@ async def acknowledge_alert(
     alert = await service.acknowledge(alert_id)
     if alert is None:
         raise HTTPException(status_code=404, detail="Alert not found")
+    publish_alert_row("alert_acknowledged", alert)
     return AlertRead.model_validate(alert)
 
 
@@ -150,4 +267,5 @@ async def resolve_alert(
     alert = await service.resolve(alert_id)
     if alert is None:
         raise HTTPException(status_code=404, detail="Alert not found")
+    publish_alert_row("alert_resolved", alert)
     return AlertRead.model_validate(alert)

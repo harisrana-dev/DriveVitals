@@ -1,160 +1,196 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useLiveData } from '../context/LiveDataContext';
+import { adaptAlerts, severityRank } from '../services/alertAdapter';
 import {
-  deriveIncidents,
-  deriveDrivingEvents,
   computeAlertKpis,
-  computeSummaryDistribution,
-  computeCategoryDistribution,
-  buildAlertTimeline,
+  computeActiveSeverityDistribution,
+  computeActiveCategoryDistribution,
+  computeVehicleRisk,
+  computeInsights,
+  groupAlertsIntoIncidents,
+  filterAlertsByTimeRange,
+  withinHours,
+  severityLabel,
 } from '../utils/alerts';
 
-const ALERT_TYPE_LABELS = {
-  engine_overheat: 'Engine Overheat',
-  coolant_warning: 'Coolant Warning',
-  fuel_critical: 'Fuel Critical',
-  low_fuel: 'Low Fuel',
-  health_critical: 'Health Critical',
-  health_warning: 'Health Warning',
-  high_engine_load: 'High Engine Load',
+const LIVE_EVENT_LABELS = {
   harsh_braking: 'Harsh Braking',
   aggressive_throttle: 'Aggressive Throttle',
   high_rpm: 'High RPM',
   speeding: 'Speeding',
 };
 
-const ALERT_TYPE_CATEGORY = {
-  engine_overheat: 'Cooling',
-  coolant_warning: 'Cooling',
-  fuel_critical: 'Fuel',
-  low_fuel: 'Fuel',
-  health_critical: 'Electrical',
-  health_warning: 'Electrical',
-  high_engine_load: 'Engine',
-  harsh_braking: 'Driving',
-  aggressive_throttle: 'Driving',
-  high_rpm: 'Driving',
-  speeding: 'Driving',
-};
-
 function titleCase(value) {
-  if (!value) return 'Alert';
+  if (!value) return 'Event';
   return String(value).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function normalizeSeverity(sev) {
-  const s = String(sev || 'warning').toLowerCase();
-  if (s === 'critical' || s === 'warning' || s === 'info') return s;
-  return 'warning';
+/**
+ * Live driving events are read directly from the backend dashboard
+ * snapshot's ``active_event_types`` for each vehicle. No event is ever
+ * synthesised on the client: no fabricated timestamps, ids or events.
+ * The key is a stable ``vehicle:event_type`` pair (not a timestamp).
+ */
+function buildLiveEvents(vehicles) {
+  if (!Array.isArray(vehicles)) return [];
+  const events = [];
+  for (const v of vehicles) {
+    const types = v.active_event_types || [];
+    for (const eventType of types) {
+      events.push({
+        id: `${v.vehicle_id}:${eventType}`,
+        vehicle_id: v.vehicle_id,
+        vehicle_name: v.vehicle_name || v.vehicle_id,
+        driver_name: v.driver_name || null,
+        event_type: eventType,
+        label: LIVE_EVENT_LABELS[eventType] || titleCase(eventType),
+      });
+    }
+  }
+  return events;
 }
 
-function mapRestAlert(a, meta) {
-  return {
-    id: a.alert_id,
-    alert_id: a.alert_id,
-    vehicle_id: a.vehicle_id,
-    vehicle_name: meta?.vehicle_name || a.vehicle_id,
-    driver_name: meta?.driver_name || a.driver_id || '—',
-    event_type: a.alert_type,
-    eventType: ALERT_TYPE_LABELS[a.alert_type] || titleCase(a.alert_type),
-    severity: normalizeSeverity(a.severity),
-    category: ALERT_TYPE_CATEGORY[a.alert_type] || 'Engine',
-    status: a.status === 'resolved' ? 'resolved' : 'active',
-    acknowledged: !!a.acknowledged,
-    started_at: a.created_at || new Date().toISOString(),
-    resolved_at: a.resolved_at || null,
-    description: titleCase(a.alert_type),
-    speed: 0,
-    rpm: 0,
-    throttle_position_percent: 0,
-    brake_percent: 0,
-    engine_load_percent: 0,
-    fuel_level_percent: 0,
-    coolant_temperature_c: 0,
-    overall_health_score: meta?.overall_health_score ?? 100,
-  };
-}
-
-function mapRestAlerts(alerts, fleetMeta) {
-  if (!Array.isArray(alerts)) return [];
-  return alerts.map((a) => mapRestAlert(a, fleetMeta?.[a.vehicle_id]));
-}
-
-const REST_CONDITION_KEYS = {
-  telemetry_engine_overheating: 'engine_overheat',
-  telemetry_coolant_critical: 'coolant_warning',
-  telemetry_fuel_critical: 'fuel_critical',
-  telemetry_rpm_redline: 'high_rpm',
-  health_overall_critical: 'health_critical',
-  health_overall_warning: 'health_warning',
-  health_engine_critical: 'health_critical',
-  health_engine_warning: 'health_warning',
-  health_cooling_critical: 'health_critical',
-  health_cooling_warning: 'health_warning',
-  health_transmission_critical: 'health_critical',
-  health_transmission_warning: 'health_warning',
-  health_brakes_critical: 'health_critical',
-  health_brakes_warning: 'health_warning',
-  health_fuel_system_critical: 'health_critical',
-  health_fuel_system_warning: 'health_warning',
-};
-
-function restConditionKey(a) {
-  const canonical = String(a.alert_id || '').split(':')[0];
-  return REST_CONDITION_KEYS[canonical] || null;
-}
-
+/**
+ * Canonical Alerts hook. Every consumer on the Alerts page derives from
+ * the same adapted rows and selectors so all counts reconcile.
+ */
 export function useAlerts() {
-  const { dashboard, alerts: restAlerts, fleetMeta } = useLiveData();
+  const { alerts: restAlerts, fleetMeta, dashboard } = useLiveData();
   const vehicles = dashboard?.vehicles;
 
-  const incidents = useMemo(() => {
-    const rest = mapRestAlerts(restAlerts, fleetMeta);
+  const alerts = useMemo(
+    () => adaptAlerts(restAlerts, fleetMeta),
+    [restAlerts, fleetMeta]
+  );
 
-    const activeRestKeys = new Set();
-    for (const a of rest) {
-      if (a.status === 'resolved') continue;
-      const condition = restConditionKey(a);
-      if (condition) activeRestKeys.add(`${a.vehicle_id}:${condition}`);
-    }
+  const liveEvents = useMemo(() => buildLiveEvents(vehicles), [vehicles]);
 
-    const fresh = deriveIncidents(vehicles)
-      .filter((inc) => !activeRestKeys.has(`${inc.vehicle_id}:${inc.event_type}`))
-      .map((inc) => ({
-        ...inc,
-        started_at: inc.started_at || new Date().toISOString(),
-      }));
-
-    return [...fresh, ...rest];
-  }, [vehicles, restAlerts, fleetMeta]);
-
-  const drivingEvents = useMemo(() => deriveDrivingEvents(vehicles), [vehicles]);
+  const sorted = useMemo(
+    () =>
+      [...alerts].sort((a, b) => {
+        const rank = severityRank(a.severity) - severityRank(b.severity);
+        if (rank !== 0) return rank;
+        return (
+          (new Date(b.created_at).getTime() || 0) -
+          (new Date(a.created_at).getTime() || 0)
+        );
+      }),
+    [alerts]
+  );
 
   return useMemo(
-    () => ({
-      incidents,
-      drivingEvents,
-      kpis: computeAlertKpis(incidents),
-      distribution: computeSummaryDistribution(incidents),
-      categoryDist: computeCategoryDistribution(incidents),
-      timeline: buildAlertTimeline(incidents),
-    }),
-    [incidents, drivingEvents]
+    () => {
+      const incidents = groupAlertsIntoIncidents(sorted);
+      return {
+        alerts: sorted,
+        incidents,
+        liveEvents,
+        kpis: computeAlertKpis(sorted),
+        activeSeverityDist: computeActiveSeverityDistribution(sorted),
+        categoryDist: computeActiveCategoryDistribution(sorted),
+        vehicleRisk: computeVehicleRisk(sorted),
+        insights: computeInsights(sorted),
+      };
+    },
+    [sorted, liveEvents]
   );
 }
 
 export function useAlert(alertId) {
-  const { incidents } = useAlerts();
-  return useMemo(() => incidents.find((a) => a.id === alertId) || null, [incidents, alertId]);
+  const { alerts } = useAlerts();
+  return useMemo(
+    () => alerts.find((a) => a.alert_id === alertId) || null,
+    [alerts, alertId]
+  );
 }
 
+function applyBaseFilters(alerts, filters) {
+  let result = filterAlertsByTimeRange(alerts, filters.timeRange);
+
+  if (filters.severity !== 'all') {
+    result = result.filter((a) => a.severity === filters.severity);
+  }
+
+  if (filters.category === '__unclassified__') {
+    result = result.filter((a) => a.category == null);
+  } else if (filters.category !== 'all') {
+    result = result.filter((a) => a.category === filters.category);
+  }
+
+  if (filters.vehicleSearch) {
+    const search = filters.vehicleSearch.toLowerCase();
+    result = result.filter(
+      (a) =>
+        a.vehicle_name?.toLowerCase().includes(search) ||
+        a.vehicle_id?.toLowerCase().includes(search)
+    );
+  }
+
+  if (filters.driverSearch) {
+    const search = filters.driverSearch.toLowerCase();
+    result = result.filter((a) => a.driver_name?.toLowerCase().includes(search));
+  }
+
+  return result;
+}
+
+function applyStatusFilters(list, filters) {
+  let result = list;
+  if (filters.statusTab === 'active') {
+    result = result.filter((a) => a.status === 'active');
+  } else if (filters.statusTab === 'acknowledged') {
+    result = result.filter((a) => a.status === 'active' && a.acknowledged);
+  } else if (filters.statusTab === 'resolved') {
+    result = result.filter((a) => a.status === 'resolved');
+  }
+
+  if (filters.unacknowledgedOnly) {
+    result = result.filter((a) => a.status === 'active' && !a.acknowledged);
+  }
+  if (filters.resolvedWithinH) {
+    result = result.filter(
+      (a) => a.status === 'resolved' && withinHours(a.resolved_at, filters.resolvedWithinH)
+    );
+  }
+  return result;
+}
+
+function describeResult(count, filters) {
+  const plural = count === 1 ? 'alert' : 'alerts';
+  if (filters.resolvedWithinH) {
+    return `${count} resolved ${plural} (last ${filters.resolvedWithinH}h)`;
+  }
+  if (filters.unacknowledgedOnly) {
+    return `${count} unacknowledged ${plural}`;
+  }
+  const sev = filters.severity !== 'all' ? severityLabel(filters.severity)?.toLowerCase() : null;
+  switch (filters.statusTab) {
+    case 'active':
+      return sev ? `${count} ${sev} ${plural}` : `${count} active ${plural}`;
+    case 'acknowledged':
+      return `${count} acknowledged ${plural}`;
+    case 'resolved':
+      return `${count} resolved ${plural}`;
+    default:
+      return sev ? `${count} ${sev} ${plural}` : `${count} ${plural}`;
+  }
+}
+
+/**
+ * Full filter API for the Alerts page. The state lives here and is lifted
+ * to the page so the KPI strip, tabs, filters bar and table all share one
+ * source of truth (the previous per-component hook instances did not).
+ */
 export function useAlertFilters() {
   const [filters, setFilters] = useState({
     severity: 'all',
     category: 'all',
     vehicleSearch: '',
     driverSearch: '',
-    timeRange: 'live',
+    timeRange: 'all',
+    statusTab: 'active',
+    unacknowledgedOnly: false,
+    resolvedWithinH: null,
   });
 
   const setSeverity = useCallback((v) => setFilters((f) => ({ ...f, severity: v })), []);
@@ -162,38 +198,72 @@ export function useAlertFilters() {
   const setVehicleSearch = useCallback((v) => setFilters((f) => ({ ...f, vehicleSearch: v })), []);
   const setDriverSearch = useCallback((v) => setFilters((f) => ({ ...f, driverSearch: v })), []);
   const setTimeRange = useCallback((v) => setFilters((f) => ({ ...f, timeRange: v })), []);
+  const setStatusTab = useCallback((v) => setFilters((f) => ({ ...f, statusTab: v })), []);
 
-  const { incidents } = useAlerts();
+  const { alerts } = useAlerts();
 
-  const filtered = useMemo(() => {
-    let result = incidents;
+  /**
+   * Clicking a KPI navigates the history table to the matching population.
+   * Presets reset the time range so the window is the full dataset.
+   */
+  const applyKpiPreset = useCallback((key) => {
+    setFilters((f) => {
+      const base = { ...f, timeRange: 'all', unacknowledgedOnly: false, resolvedWithinH: null };
+      switch (key) {
+        case 'critical':
+          return { ...base, statusTab: 'active', severity: 'critical' };
+        case 'high':
+          return { ...base, statusTab: 'active', severity: 'high' };
+        case 'unacknowledged':
+          return { ...base, statusTab: 'active', severity: 'all', unacknowledgedOnly: true };
+        case 'resolved24h':
+          return { ...base, statusTab: 'resolved', severity: 'all', resolvedWithinH: 24 };
+        case 'active':
+        default:
+          return { ...base, statusTab: 'active', severity: 'all' };
+      }
+    });
+  }, []);
 
-    if (filters.severity !== 'all') {
-      result = result.filter((a) => a.severity === filters.severity);
-    }
+  const filtered = useMemo(
+    () => applyStatusFilters(applyBaseFilters(alerts, filters), filters),
+    [alerts, filters]
+  );
 
-    if (filters.category !== 'all') {
-      result = result.filter((a) => a.category === filters.category);
-    }
+  const filteredIncidents = useMemo(
+    () => groupAlertsIntoIncidents(filtered),
+    [filtered]
+  );
 
-    if (filters.vehicleSearch) {
-      const search = filters.vehicleSearch.toLowerCase();
-      result = result.filter((a) =>
-        a.vehicle_name?.toLowerCase().includes(search) || a.vehicle_id?.toLowerCase().includes(search)
-      );
-    }
+  const baseForTabs = useMemo(
+    () => applyBaseFilters(alerts, filters),
+    [alerts, filters]
+  );
 
-    if (filters.driverSearch) {
-      const search = filters.driverSearch.toLowerCase();
-      result = result.filter((a) => a.driver_name?.toLowerCase().includes(search));
-    }
+  const activeTabCounts = useMemo(
+    () => ({
+      active: baseForTabs.filter((a) => a.status === 'active').length,
+      acknowledged: baseForTabs.filter((a) => a.status === 'active' && a.acknowledged).length,
+      resolved: baseForTabs.filter((a) => a.status === 'resolved').length,
+      all: baseForTabs.length,
+    }),
+    [baseForTabs]
+  );
 
-    if (filters.timeRange === 'live') {
-      result = result.filter((a) => a.status === 'active');
-    }
+  const resultLabel = useMemo(
+    () => describeResult(filtered.length, filters),
+    [filtered, filters]
+  );
 
-    return result;
-  }, [incidents, filters]);
+  const activeKpi = useMemo(() => {
+    const f = filters;
+    if (f.resolvedWithinH === 24 && f.statusTab === 'resolved') return 'resolved24h';
+    if (f.statusTab === 'active' && f.unacknowledgedOnly) return 'unacknowledged';
+    if (f.statusTab === 'active' && f.severity === 'critical') return 'critical';
+    if (f.statusTab === 'active' && f.severity === 'high') return 'high';
+    if (f.statusTab === 'active' && f.severity === 'all') return 'active';
+    return null;
+  }, [filters]);
 
   return {
     filters,
@@ -202,7 +272,12 @@ export function useAlertFilters() {
     setVehicleSearch,
     setDriverSearch,
     setTimeRange,
+    setStatusTab,
+    applyKpiPreset,
+    filteredIncidents,
     filteredAlerts: filtered,
-    totalAlerts: incidents,
+    activeTabCounts,
+    resultLabel,
+    activeKpi,
   };
 }

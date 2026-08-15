@@ -14,6 +14,7 @@ from backend.alerts.alerts_config import (
     TELEMETRY_RPM_REDLINE,
     AlertConfig,
     TelemetryAlertConfig,
+    category_for,
 )
 from backend.alerts.generators import (
     AlertContext,
@@ -86,6 +87,16 @@ class TelemetryAlertsGenerator(AlertGenerator):
                     vehicle_id=sample.vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.engine_overheat_severity,
+                    category=category_for(
+                        TELEMETRY_ENGINE_OVERHEATING, self.alert_type
+                    ),
+                    evidence={
+                        "signal": "coolant_temperature_c",
+                        "value": sample.coolant_temperature_c,
+                        "unit": "C",
+                        "threshold": config.engine_overheat_temp_c,
+                        "timestamp": sample.timestamp.isoformat(),
+                    },
                     message=(
                         "Engine overheating: coolant "
                         f"{sample.coolant_temperature_c:.1f} C exceeds "
@@ -104,6 +115,16 @@ class TelemetryAlertsGenerator(AlertGenerator):
                     vehicle_id=sample.vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.coolant_critical_severity,
+                    category=category_for(
+                        TELEMETRY_COOLANT_CRITICAL, self.alert_type
+                    ),
+                    evidence={
+                        "signal": "coolant_temperature_c",
+                        "value": sample.coolant_temperature_c,
+                        "unit": "C",
+                        "threshold": config.coolant_critical_temp_c,
+                        "timestamp": sample.timestamp.isoformat(),
+                    },
                     message=(
                         "Coolant critical: temperature "
                         f"{sample.coolant_temperature_c:.1f} C exceeds "
@@ -122,6 +143,16 @@ class TelemetryAlertsGenerator(AlertGenerator):
                     vehicle_id=sample.vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.fuel_critical_severity,
+                    category=category_for(
+                        TELEMETRY_FUEL_CRITICAL, self.alert_type
+                    ),
+                    evidence={
+                        "signal": "fuel_level_percent",
+                        "value": sample.fuel_level_percent,
+                        "unit": "%",
+                        "threshold": config.fuel_critical_percent,
+                        "timestamp": sample.timestamp.isoformat(),
+                    },
                     message=(
                         "Fuel critically low: "
                         f"{sample.fuel_level_percent:.1f}% is at or below "
@@ -140,6 +171,16 @@ class TelemetryAlertsGenerator(AlertGenerator):
                     vehicle_id=sample.vehicle_id,
                     alert_type=self.alert_type,
                     severity=config.redline_severity,
+                    category=category_for(
+                        TELEMETRY_RPM_REDLINE, self.alert_type
+                    ),
+                    evidence={
+                        "signal": "rpm",
+                        "value": sample.rpm,
+                        "unit": "rpm",
+                        "threshold": config.redline_rpm,
+                        "timestamp": sample.timestamp.isoformat(),
+                    },
                     message=(
                         f"RPM at redline: {sample.rpm:.0f} exceeds "
                         f"{config.redline_rpm:.0f}"

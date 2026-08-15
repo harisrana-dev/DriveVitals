@@ -16,6 +16,7 @@ from backend.analytics.vehicle_health.models.health_snapshot import (
     HealthSnapshot,
 )
 from backend.alerts.models.fleet_alert import (
+    AlertCategory,
     AlertSeverity,
     AlertType,
     FleetAlert,
@@ -55,8 +56,16 @@ def make_alert(
     created_at: datetime,
     driver_id: str | None = None,
     trip_id: str | None = None,
+    condition: str | None = None,
+    category: AlertCategory = AlertCategory.OTHER,
+    evidence: dict | None = None,
+    source: str = "alert_engine",
 ) -> FleetAlert:
-    """Assemble one FleetAlert from the generator's findings."""
+    """Assemble one FleetAlert from the generator's findings.
+
+    ``condition`` defaults to the canonical ``alert_id`` so callers only
+    pass it when the condition key differs from the emitted id.
+    """
     return FleetAlert(
         alert_id=alert_id,
         vehicle_id=vehicle_id,
@@ -66,6 +75,10 @@ def make_alert(
         created_at=created_at,
         driver_id=driver_id,
         trip_id=trip_id,
+        condition=condition if condition is not None else alert_id,
+        category=category,
+        evidence=evidence,
+        source=source,
     )
 
 

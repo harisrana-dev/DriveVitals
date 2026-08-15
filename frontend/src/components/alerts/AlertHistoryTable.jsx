@@ -89,53 +89,52 @@ export const AlertHistoryTable = memo(function AlertHistoryTable({
       </div>
 
       <div className="alerts-history-desktop">
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: GRID,
-            gap: 10,
-            padding: '0 12px 6px',
-            fontSize: 10,
-            fontWeight: 600,
-            color: 'var(--color-text-muted)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.04em',
-          }}
-        >
-          <span>Time</span>
-          <span>Vehicle</span>
-          <span>Driver</span>
-          <span>Incident</span>
-          <span>Category</span>
-          <span>Severity</span>
-          <span>Status</span>
-          <span>Evidence</span>
-          <span style={{ textAlign: 'right' }}>Action</span>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            border: '1px solid var(--color-border)',
-            borderRadius: 10,
-            overflow: 'hidden',
-          }}
-        >
-          {list.length === 0 ? (
-            <div style={{ padding: '28px 16px', textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)' }}>
-              No alerts match the current filters.
+        <div style={{ border: '1px solid var(--color-border)', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ maxHeight: 460, overflowY: 'auto', scrollbarGutter: 'stable' }}>
+            <div
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 2,
+                display: 'grid',
+                gridTemplateColumns: GRID,
+                gap: 10,
+                padding: '10px 12px 8px',
+                fontSize: 10,
+                fontWeight: 600,
+                color: 'var(--color-text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                background: 'var(--color-surface)',
+                borderBottom: '1px solid var(--color-border)',
+              }}
+            >
+              <span>Time</span>
+              <span>Vehicle</span>
+              <span>Driver</span>
+              <span>Incident</span>
+              <span>Category</span>
+              <span>Severity</span>
+              <span>Status</span>
+              <span>Evidence</span>
+              <span style={{ textAlign: 'right' }}>Action</span>
             </div>
-          ) : (
-            list.map((incident) => (
-              <HistoryRow
-                key={incident.key}
-                incident={incident}
-                selected={incident.key === selectedKey}
-                onClick={() => onIncidentClick && onIncidentClick(incident)}
-              />
-            ))
-          )}
+
+            {list.length === 0 ? (
+              <div style={{ padding: '28px 16px', textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)' }}>
+                No alerts match the current filters.
+              </div>
+            ) : (
+              list.map((incident) => (
+                <HistoryRow
+                  key={incident.key}
+                  incident={incident}
+                  selected={incident.key === selectedKey}
+                  onClick={() => onIncidentClick && onIncidentClick(incident)}
+                />
+              ))
+            )}
+          </div>
         </div>
       </div>
 

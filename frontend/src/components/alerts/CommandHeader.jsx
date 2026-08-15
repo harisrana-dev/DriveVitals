@@ -24,6 +24,7 @@ export const CommandHeader = memo(function CommandHeader() {
 
   return (
     <div
+      className="fade-in"
       style={{
         display: 'flex',
         alignItems: 'center',

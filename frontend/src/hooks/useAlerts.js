@@ -55,15 +55,12 @@ function buildLiveEvents(vehicles) {
  * the same adapted rows and selectors so all counts reconcile.
  */
 export function useAlerts() {
-  const { alerts: restAlerts, fleetMeta, dashboard } = useLiveData();
-  const vehicles = dashboard?.vehicles;
+  const { alerts: restAlerts, fleetMeta } = useLiveData();
 
   const alerts = useMemo(
     () => adaptAlerts(restAlerts, fleetMeta),
     [restAlerts, fleetMeta]
   );
-
-  const liveEvents = useMemo(() => buildLiveEvents(vehicles), [vehicles]);
 
   const sorted = useMemo(
     () =>
@@ -84,7 +81,6 @@ export function useAlerts() {
       return {
         alerts: sorted,
         incidents,
-        liveEvents,
         kpis: computeAlertKpis(sorted),
         activeSeverityDist: computeActiveSeverityDistribution(sorted),
         categoryDist: computeActiveCategoryDistribution(sorted),
@@ -92,8 +88,19 @@ export function useAlerts() {
         insights: computeInsights(sorted),
       };
     },
-    [sorted, liveEvents]
+    [sorted]
   );
+}
+
+/**
+ * Live presence, isolated from persisted-alert derived data. The band is
+ * the only consumer; a dashboard snapshot can change LIVE NOW without
+ * churning the KPI/queue/intelligence/history selectors returned above.
+ */
+export function useLiveEvents() {
+  const { dashboard } = useLiveData();
+  const vehicles = dashboard?.vehicles;
+  return useMemo(() => buildLiveEvents(vehicles), [vehicles]);
 }
 
 export function useAlert(alertId) {
@@ -265,19 +272,36 @@ export function useAlertFilters() {
     return null;
   }, [filters]);
 
-  return {
-    filters,
-    setSeverity,
-    setCategory,
-    setVehicleSearch,
-    setDriverSearch,
-    setTimeRange,
-    setStatusTab,
-    applyKpiPreset,
-    filteredIncidents,
-    filteredAlerts: filtered,
-    activeTabCounts,
-    resultLabel,
-    activeKpi,
-  };
+  return useMemo(
+    () => ({
+      filters,
+      setSeverity,
+      setCategory,
+      setVehicleSearch,
+      setDriverSearch,
+      setTimeRange,
+      setStatusTab,
+      applyKpiPreset,
+      filteredIncidents,
+      filteredAlerts: filtered,
+      activeTabCounts,
+      resultLabel,
+      activeKpi,
+    }),
+    [
+      filters,
+      setSeverity,
+      setCategory,
+      setVehicleSearch,
+      setDriverSearch,
+      setTimeRange,
+      setStatusTab,
+      applyKpiPreset,
+      filteredIncidents,
+      filtered,
+      activeTabCounts,
+      resultLabel,
+      activeKpi,
+    ]
+  );
 }

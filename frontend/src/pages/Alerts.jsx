@@ -27,7 +27,7 @@ import { TripDrawer } from '../components/trips/TripDrawer';
 export function AlertsPage() {
   const alertsApi = useAlerts();
   const filtersApi = useAlertFilters();
-  const { connectionStatus, trips } = useLiveData();
+  const { trips } = useLiveData();
   const { openDrawer: openVehicleDrawer } = useVehicleDrawer();
   const navigate = useNavigate();
 
@@ -120,7 +120,7 @@ export function AlertsPage() {
         insights={alertsApi.insights}
       />
 
-      <LiveNowBand liveEvents={alertsApi.liveEvents} connected={connectionStatus === 'live'} />
+      <LiveNowBand />
 
       <AlertHistory
         filtersApi={filtersApi}

@@ -1,5 +1,7 @@
 import { memo } from 'react';
 import { Radio } from 'lucide-react';
+import { useLiveEvents } from '../../hooks/useAlerts';
+import { useLiveData } from '../../context/LiveDataContext';
 
 /**
  * LIVE NOW band. The single place on the page allowed a pulse. It renders
@@ -7,9 +9,16 @@ import { Radio } from 'lucide-react';
  * `active_event_types`; there are no timestamps for these events, so they
  * are shown as presence, never as "3 min ago". When the socket is not
  * connected the pulse is removed and the state is labelled Disconnected.
+ *
+ * Live presence is subscribed here in isolation (via `useLiveEvents`), so
+ * a new dashboard snapshot updates only this island and never disturbs the
+ * persisted-alert surfaces (KPIs, queue, intelligence, history).
  */
-export const LiveNowBand = memo(function LiveNowBand({ liveEvents, connected }) {
+export const LiveNowBand = memo(function LiveNowBand() {
+  const liveEvents = useLiveEvents();
+  const { connectionStatus } = useLiveData();
   const events = Array.isArray(liveEvents) ? liveEvents : [];
+  const connected = connectionStatus === 'live';
 
   return (
     <div style={{ border: '1px solid var(--color-red)', borderRadius: 12, overflow: 'hidden' }}>

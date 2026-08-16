@@ -159,6 +159,10 @@ class MaintenanceService:
                     odometer_km=projected_odometer,
                     performed_at=recommendation.estimated_due_date,
                     priority=recommendation.priority,
+                    component=recommendation.component,
+                    reason=recommendation.reason,
+                    recommended_action=recommendation.recommended_action,
+                    estimated_cost=recommendation.estimated_cost,
                 )
             )
         return tuple(records)

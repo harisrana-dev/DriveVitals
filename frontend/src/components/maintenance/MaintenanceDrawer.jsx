@@ -1,19 +1,13 @@
-import { X } from 'lucide-react';
+import { useState } from 'react';
+import { X, Check, AlertTriangle } from 'lucide-react';
 import { useMaintenanceVehicle } from '../../hooks/useMaintenance';
-import { HealthStatusBadge } from '../vehicleHealth/HealthStatusBadge';
-import { DueBadge } from './DueBadge';
+import { useLiveData } from '../../context/LiveDataContext';
+import { StatusBadge } from './StatusBadge';
+import { PriorityBadge } from './PriorityBadge';
+import { formatMaintenanceDue } from '../../utils/maintenance';
 import { healthColor } from '../../utils/health';
 
-const COMPONENT_STATUS = {
-  overdue: { color: 'var(--color-red)', bg: 'var(--color-red-bg)', label: 'Overdue' },
-  due: { color: 'var(--color-amber)', bg: 'var(--color-amber-bg)', label: 'Due' },
-  ok: { color: 'var(--color-green)', bg: 'var(--color-green-bg)', label: 'OK' },
-};
-
-export function MaintenanceDrawer({ vehicleId, onClose }) {
-  const result = useMaintenanceVehicle(vehicleId);
-  if (!result) return null;
-
+export function MaintenanceDrawer({ vehicleId, onClose, onViewVehicle }) {
   return (
     <>
       <div
@@ -31,8 +25,8 @@ export function MaintenanceDrawer({ vehicleId, onClose }) {
           position: 'fixed',
           top: 0,
           right: 0,
-          width: 480,
-          maxWidth: '90vw',
+          width: 520,
+          maxWidth: '92vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
@@ -43,18 +37,22 @@ export function MaintenanceDrawer({ vehicleId, onClose }) {
           animation: 'slideInRight 0.2s ease-out',
         }}
       >
-        <DrawerContent result={result} onClose={onClose} />
+        <DrawerContent vehicleId={vehicleId} onClose={onClose} onViewVehicle={onViewVehicle} />
       </div>
     </>
   );
 }
 
-function DrawerContent({ result, onClose }) {
-  const { vehicle, drawerData } = result;
+function DrawerContent({ vehicleId, onClose, onViewVehicle }) {
+  const { vehicle, workItems, completed, relatedAlerts, kpis } = useMaintenanceVehicle(vehicleId);
 
   return (
     <>
-      <Header vehicle={vehicle} onClose={onClose} />
+      <Header
+        vehicle={vehicle}
+        onClose={onClose}
+        onViewVehicle={onViewVehicle}
+      />
       <div
         style={{
           flex: 1,
@@ -65,17 +63,37 @@ function DrawerContent({ result, onClose }) {
           gap: 20,
         }}
       >
-        <VehicleInfo vehicle={vehicle} drawerData={drawerData} />
-        <MaintenanceStatus drawerData={drawerData} />
-        <RecommendedActions drawerData={drawerData} />
-        <ServiceHistory drawerData={drawerData} />
+        <VehicleInfo vehicle={vehicle} kpis={kpis} />
+        <PendingWork workItems={workItems} />
+        {relatedAlerts.length > 0 && <RelatedAlerts alerts={relatedAlerts} />}
+        <CompletedHistory completed={completed} />
       </div>
-      <Footer onClose={onClose} />
     </>
   );
 }
 
-function Header({ vehicle, onClose }) {
+function Header({ vehicle, onClose, onViewVehicle }) {
+  if (!vehicle) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+          Maintenance
+        </div>
+        <button onClick={onClose} aria-label="Close" style={closeBtn}>
+          <X size={18} />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -86,7 +104,7 @@ function Header({ vehicle, onClose }) {
         borderBottom: '1px solid var(--color-border)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
         <div
           style={{
             width: 40,
@@ -104,8 +122,8 @@ function Header({ vehicle, onClose }) {
         >
           {(vehicle.vehicle_name || vehicle.vehicle_id).split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
         </div>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {vehicle.vehicle_name || vehicle.vehicle_id}
           </div>
           <div style={{ fontSize: 11, color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
@@ -113,33 +131,73 @@ function Header({ vehicle, onClose }) {
           </div>
         </div>
       </div>
-      <button
-        onClick={onClose}
-        aria-label="Close"
-        style={{
-          width: 32, height: 32, borderRadius: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--color-text-muted)', background: 'transparent',
-          border: 'none', cursor: 'pointer',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--color-surface-hover)';
-          e.currentTarget.style.color = 'var(--color-text-primary)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = 'var(--color-text-muted)';
-        }}
-      >
-        <X size={18} />
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {onViewVehicle && (
+          <button
+            onClick={() => onViewVehicle(vehicle.vehicle_id)}
+            title="Open full vehicle profile"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '5px 10px',
+              borderRadius: 8,
+              border: '1px solid var(--color-border)',
+              background: 'transparent',
+              color: 'var(--color-text-secondary)',
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              lineHeight: 1,
+              transition: 'all 0.12s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--color-surface-hover)';
+              e.currentTarget.style.color = 'var(--color-text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--color-text-secondary)';
+            }}
+          >
+            Vehicle profile
+          </button>
+        )}
+        <button onClick={onClose} aria-label="Close" style={closeBtn}>
+          <X size={18} />
+        </button>
+      </div>
     </div>
   );
 }
 
-function VehicleInfo({ vehicle, drawerData }) {
-  const color = healthColor(drawerData.health);
+const closeBtn = {
+  width: 32,
+  height: 32,
+  borderRadius: 8,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'var(--color-text-muted)',
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  transition: 'all 0.15s ease',
+};
+
+function VehicleInfo({ vehicle, kpis }) {
+  if (!vehicle) {
+    return (
+      <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+        Vehicle not found.
+      </div>
+    );
+  }
+  const score = vehicle.overall_health_score;
+  const color = healthColor(score);
+  const odometer = vehicle.odometer_km;
+
   return (
     <Section title="Vehicle Information">
       <div
@@ -150,35 +208,50 @@ function VehicleInfo({ vehicle, drawerData }) {
           border: '1px solid var(--color-border-light)',
         }}
       >
-        <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 14 }}>
           <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
             <svg width={72} height={72} viewBox="0 0 72 72">
               <circle cx={36} cy={36} r={30} fill="none" stroke="var(--color-border-light)" strokeWidth={5} />
               <circle
                 cx={36} cy={36} r={30} fill="none" stroke={color} strokeWidth={5}
-                strokeDasharray={`${(drawerData.health / 100) * 188.5} 188.5`}
+                strokeDasharray={`${(score != null ? score / 100 : 0) * 188.5} 188.5`}
                 strokeLinecap="round"
                 transform="rotate(-90 36 36)"
                 style={{ transition: 'stroke-dasharray 0.4s ease' }}
               />
               <text x={36} y={36} textAnchor="middle" dy="5" fontSize="16" fontWeight="700" fill="var(--color-text-primary)">
-                {Math.round(drawerData.health)}
+                {score != null ? Math.round(score) : '\u2014'}
               </text>
             </svg>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
-            <HealthStatusBadge category={vehicle.overall_health_score >= 80 ? 'healthy' : vehicle.overall_health_score >= 50 ? 'warning' : 'critical'} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center', minWidth: 0 }}>
+            <span
+              style={{
+                display: 'inline-block',
+                padding: '2px 8px',
+                borderRadius: 4,
+                background: color === 'var(--color-text-muted)' ? 'var(--color-surface-hover)' : `${color}1a`,
+                color,
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+                alignSelf: 'flex-start',
+              }}
+            >
+              {score != null ? (score >= 80 ? 'Healthy' : score >= 50 ? 'Warning' : 'Critical') : 'Unknown health'}
+            </span>
             <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
-              {vehicle.driver_name || '\u2014'}
+              {vehicle.driver_name ? `Driver: ${vehicle.driver_name}` : '\u2014'}
             </div>
           </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', fontSize: 12 }}>
-          <DetailRow label="Odometer" value={`${drawerData.odometer.toLocaleString()} km`} />
-          <DetailRow label="Fuel" value={`${Math.round(drawerData.fuelLevel)}%`} />
-          <DetailRow label="Coolant" value={`${drawerData.coolantTemp.toFixed(1)} °C`} />
-          <DetailRow label="Health" value={`${Math.round(drawerData.health)}%`} />
+          <DetailRow label="Odometer" value={odometer != null ? `${odometer.toLocaleString()} km` : '\u2014'} />
+          <DetailRow label="Work items" value={`${kpis.total} pending`} />
+          <DetailRow label="Overdue" value={String(kpis.overdue)} />
+          <DetailRow label="Due soon" value={String(kpis.dueSoon)} />
         </div>
       </div>
     </Section>
@@ -194,126 +267,199 @@ function DetailRow({ label, value }) {
   );
 }
 
-function MaintenanceStatus({ drawerData }) {
+function PendingWork({ workItems }) {
+  const { completeMaintenance } = useLiveData();
+  const [completing, setCompleting] = useState(null);
+  const [error, setError] = useState(null);
+
+  const handleComplete = async (item) => {
+    setError(null);
+    setCompleting(item.id);
+    try {
+      await completeMaintenance(item.id, item.odometer_km);
+    } catch {
+      setError(`Could not complete "${item.maintenanceTypeLabel}" — the record may have changed.`);
+    } finally {
+      setCompleting(null);
+    }
+  };
+
   return (
-    <Section title="Maintenance Status">
-      <div
-        style={{
-          padding: '14px 16px',
-          borderRadius: 8,
-          background: 'var(--color-bg)',
-          border: '1px solid var(--color-border-light)',
-        }}
-      >
-        {drawerData.outstanding.length === 0 && drawerData.upcomingServices.length === 0 ? (
-          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>No outstanding services.</div>
+    <Section title={`Pending Work${workItems.length ? ` (${workItems.length})` : ''}`}>
+      {error && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            marginBottom: 8,
+            padding: '8px 10px',
+            borderRadius: 8,
+            background: 'var(--color-red-bg)',
+            color: 'var(--color-red)',
+            fontSize: 11,
+          }}
+        >
+          <AlertTriangle size={12} />
+          {error}
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {workItems.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '6px 0' }}>
+            No pending maintenance for this vehicle.
+          </div>
         ) : (
-          <>
-            {drawerData.outstanding.length > 0 && (
-              <div style={{ marginBottom: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Outstanding
-                </div>
-                {drawerData.outstanding.map((svc) => (
-                  <div key={svc.serviceType} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <DueBadge status={svc.dueStatus} />
-                      <span style={{ fontSize: 12, color: 'var(--color-text-primary)', fontWeight: 500 }}>{svc.serviceType}</span>
-                    </div>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                      {svc.remainingKm > 0 ? `${svc.remainingKm.toLocaleString()} km` : 'Overdue'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {drawerData.upcomingServices.length > 0 && (
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Upcoming
-                </div>
-                {drawerData.upcomingServices.map((svc) => (
-                  <div key={svc.type} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 0' }}>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-primary)' }}>{svc.type}</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                      {svc.remainingKm > 0 ? `${svc.remainingKm.toLocaleString()} km` : 'Due'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+          workItems.map((item) => (
+            <WorkItemRow
+              key={item.workKey}
+              item={item}
+              completing={completing === item.id}
+              onComplete={() => handleComplete(item)}
+            />
+          ))
         )}
       </div>
     </Section>
   );
 }
 
-function RecommendedActions({ drawerData }) {
+function WorkItemRow({ item, completing, onComplete }) {
   return (
-    <Section title="Recommended Actions">
+    <div
+      style={{
+        padding: '12px 14px',
+        borderRadius: 10,
+        background: 'var(--color-bg)',
+        border: '1px solid var(--color-border-light)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+              {item.maintenanceTypeLabel}
+            </span>
+            <StatusBadge status={item.dueStatus} size="sm" />
+            <PriorityBadge priority={item.priority} size="sm" />
+            {item.projectionCount > 1 && (
+              <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                {item.projectionCount} projections
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 4, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <span>
+              Due <strong style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{formatMaintenanceDue(item)}</strong>
+            </span>
+            {item.component && <span>{item.component}</span>}
+          </div>
+          {item.reason && (
+            <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+              {item.reason}
+            </div>
+          )}
+          {item.recommended_action && (
+            <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+              {item.recommended_action}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={onComplete}
+          disabled={completing}
+          title="Mark as completed"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: '6px 10px',
+            borderRadius: 6,
+            border: '1px solid var(--color-accent)',
+            background: 'transparent',
+            color: 'var(--color-accent)',
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            transition: 'all 0.12s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--color-accent-subtle)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <Check size={12} />
+          {completing ? 'Completing' : 'Complete'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RelatedAlerts({ alerts }) {
+  return (
+    <Section title={`Related Alerts (${alerts.length})`}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {drawerData.recommendations.map((rec) => {
-          const st = COMPONENT_STATUS[rec.status] || COMPONENT_STATUS.ok;
-          return (
-            <div
-              key={rec.component}
+        {alerts.slice(0, 5).map((a) => (
+          <div
+            key={a.alert_id}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 12px',
+              borderRadius: 8,
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border-light)',
+            }}
+          >
+            <span
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '10px 12px',
-                borderRadius: 8,
-                background: 'var(--color-bg)',
-                border: '1px solid var(--color-border-light)',
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: a.severity === 'critical' ? 'var(--color-red)' : a.severity === 'high' ? 'var(--color-amber)' : 'var(--color-blue)',
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {a.alert_type || a.category || 'Maintenance'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {a.message || a.condition || '\u2014'}
+              </div>
+            </div>
+            <span
+              style={{
+                flexShrink: 0,
+                fontSize: 10,
+                fontWeight: 600,
+                padding: '1px 6px',
+                borderRadius: 3,
+                background: 'var(--color-surface-hover)',
+                color: 'var(--color-text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
               }}
             >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: st.color,
-                  flexShrink: 0,
-                }}
-              />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                    {rec.component}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      padding: '1px 5px',
-                      borderRadius: 3,
-                      background: st.bg,
-                      color: st.color,
-                      letterSpacing: '0.03em',
-                    }}
-                  >
-                    {st.label}
-                  </span>
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                  {rec.recommendation}
-                </div>
-              </div>
-              <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                {rec.remainingKm > 0 ? `${rec.remainingKm.toLocaleString()} km` : 'Due'}
-              </span>
-            </div>
-          );
-        })}
+              {a.status}
+            </span>
+          </div>
+        ))}
       </div>
     </Section>
   );
 }
 
-function ServiceHistory({ drawerData }) {
+function CompletedHistory({ completed }) {
   return (
-    <Section title="Service History">
+    <Section title={`Service History${completed.length ? ` (${completed.length})` : ''}`}>
       <div
         style={{
           padding: '14px 16px',
@@ -322,18 +468,20 @@ function ServiceHistory({ drawerData }) {
           border: '1px solid var(--color-border-light)',
         }}
       >
-        {drawerData.history.length === 0 ? (
-          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>No service history.</div>
+        {completed.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+            No completed service records for this vehicle.
+          </div>
         ) : (
-          drawerData.history.map((h, i) => (
+          completed.slice(0, 8).map((h, i) => (
             <div
-              key={i}
+              key={h.id || `${h.maintenance_type}-${h.completed_at}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
                 padding: '6px 0',
-                borderBottom: i < drawerData.history.length - 1 ? '1px solid var(--color-border-light)' : 'none',
+                borderBottom: i < completed.length - 1 ? '1px solid var(--color-border-light)' : 'none',
               }}
             >
               <div
@@ -347,14 +495,14 @@ function ServiceHistory({ drawerData }) {
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-primary)' }}>
-                  {h.serviceType}
+                  {h.maintenanceTypeLabel}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                  {h.date}
+                  {h.completed_at ? new Date(h.completed_at).toLocaleString() : '\u2014'}
                 </div>
               </div>
               <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums' }}>
-                {h.mileage.toLocaleString()} km
+                {h.completed_odometer_km != null ? `${h.completed_odometer_km.toLocaleString()} km` : '\u2014'}
               </span>
             </div>
           ))
@@ -380,63 +528,6 @@ function Section({ title, children }) {
         {title}
       </div>
       {children}
-    </div>
-  );
-}
-
-function Footer({ onClose }) {
-  return (
-    <div
-      style={{
-        padding: '12px 20px',
-        borderTop: '1px solid var(--color-border)',
-        display: 'flex',
-        gap: 8,
-      }}
-    >
-      <button
-        style={{
-          flex: 1,
-          padding: '8px 12px',
-          borderRadius: 8,
-          border: 'none',
-          background: 'var(--color-accent)',
-          color: '#fff',
-          fontSize: 13,
-          fontWeight: 500,
-          cursor: 'pointer',
-          transition: 'opacity 0.15s ease',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-      >
-        Schedule Service
-      </button>
-      <button
-        onClick={onClose}
-        style={{
-          flex: 1,
-          padding: '8px 12px',
-          borderRadius: 8,
-          border: '1px solid var(--color-border)',
-          background: 'transparent',
-          color: 'var(--color-text-secondary)',
-          fontSize: 13,
-          fontWeight: 500,
-          cursor: 'pointer',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--color-surface-hover)';
-          e.currentTarget.style.color = 'var(--color-text-primary)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = 'var(--color-text-secondary)';
-        }}
-      >
-        Export Record
-      </button>
     </div>
   );
 }

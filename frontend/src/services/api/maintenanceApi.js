@@ -8,3 +8,9 @@ export async function listMaintenance(params = {}) {
 export async function listVehicleMaintenance(vehicleId, params = {}) {
   return apiClient.get(endpoints.maintenance.item(vehicleId), { params: { limit: 100, ...params } });
 }
+
+export async function completeMaintenance(maintenanceId, completedOdometerKm = null) {
+  return apiClient.patch(endpoints.maintenance.complete(maintenanceId), {
+    completed_odometer_km: completedOdometerKm,
+  });
+}

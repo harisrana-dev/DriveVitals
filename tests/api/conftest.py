@@ -518,6 +518,13 @@ async def client(ids: dict[str, str]) -> AsyncClient:
 
 
 @pytest.fixture
+async def session(ids: dict[str, str]):
+    """Direct async session on the seeded test database."""
+    async with test_session_factory() as session:
+        yield session
+
+
+@pytest.fixture
 async def empty_client() -> AsyncClient:
     await _reset_database()
     app = _build_app()

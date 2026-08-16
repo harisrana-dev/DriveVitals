@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useCallback, use
 import { subscribeToChannel, reconnectAll, getState } from "../websocket";
 import { listVehicles, listVehicleHealth, getHealthConfig } from "../services/api/vehicleApi";
 import { listDrivers, listDriverStatistics } from "../services/api/driverApi";
-import { listMaintenance } from "../services/api/maintenanceApi";
+import { listMaintenance, completeMaintenance } from "../services/api/maintenanceApi";
 import { listAlerts, acknowledgeAlert, resolveAlert } from "../services/api/alertApi";
 import { listTelemetry } from "../services/api/telemetryApi";
 import { listTrips } from "../services/api/tripApi";
@@ -156,6 +156,7 @@ export function LiveDataProvider({ children }) {
   const [vehicleHealth, setVehicleHealth] = useState([]);
   const [healthConfig, setHealthConfig] = useState(null);
   const [maintenance, setMaintenance] = useState([]);
+  const [maintenanceSyncedAt, setMaintenanceSyncedAt] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [telemetry, setTelemetry] = useState([]);
 
@@ -271,7 +272,12 @@ export function LiveDataProvider({ children }) {
     setDriverStatistics(ds.status === "fulfilled" ? ds.value.data ?? [] : []);
     setVehicleHealth(vh.status === "fulfilled" ? vh.value.data ?? [] : []);
     setHealthConfig(hc.status === "fulfilled" ? hc.value.data ?? null : null);
-    setMaintenance(m.status === "fulfilled" ? m.value.data ?? [] : []);
+    if (m.status === "fulfilled") {
+      setMaintenance(m.value.data ?? []);
+      setMaintenanceSyncedAt(Date.now());
+    } else {
+      setMaintenance([]);
+    }
     setAlerts(a.status === "fulfilled" ? a.value.data ?? [] : []);
     setTelemetry(t.status === "fulfilled" ? t.value.data ?? [] : []);
     setRestTrips(tr.status === "fulfilled" ? tr.value.data ?? [] : []);
@@ -370,6 +376,37 @@ export function LiveDataProvider({ children }) {
     );
   }, []);
 
+  const refreshMaintenance = useCallback(async () => {
+    try {
+      const result = await listMaintenance();
+      if (mountedRef.current) {
+        setMaintenance(result?.data ?? []);
+        setMaintenanceSyncedAt(Date.now());
+      }
+    } catch (error) {
+      console.error("[maintenance] refresh failed", error);
+    }
+  }, []);
+
+  const handleCompleteMaintenance = useCallback(
+    async (maintenanceId, completedOdometerKm = null) => {
+      const result = await completeMaintenance(maintenanceId, completedOdometerKm);
+      if (mountedRef.current) {
+        const updated = result?.data;
+        if (updated) {
+          setMaintenance((prev) =>
+            (prev || []).map((r) =>
+              r.id === maintenanceId ? { ...r, ...updated } : r
+            )
+          );
+        }
+        await refreshMaintenance();
+      }
+      return result;
+    },
+    [refreshMaintenance]
+  );
+
   const value = {
     dashboard,
     trips,
@@ -380,6 +417,7 @@ export function LiveDataProvider({ children }) {
     vehicleHealth,
     healthConfig,
     maintenance,
+    maintenanceSyncedAt,
     alerts,
     telemetry,
     connectionStatus,
@@ -393,6 +431,8 @@ export function LiveDataProvider({ children }) {
     fleetMeta,
     acknowledgeAlert: handleAcknowledgeAlert,
     resolveAlert: handleResolveAlert,
+    refreshMaintenance,
+    completeMaintenance: handleCompleteMaintenance,
   };
 
   return (

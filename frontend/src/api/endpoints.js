@@ -18,6 +18,7 @@ const endpoints = {
   maintenance: {
     list: '/maintenance',
     item: (id) => `/maintenance/${id}`,
+    complete: (id) => `/maintenance/${id}/complete`,
   },
   trips: {
     list: '/trips',

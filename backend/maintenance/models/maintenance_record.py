@@ -22,3 +22,7 @@ class MaintenanceRecord:
     odometer_km: float
     performed_at: datetime
     priority: MaintenancePriority = MaintenancePriority.MEDIUM
+    component: str | None = None
+    reason: str | None = None
+    recommended_action: str | None = None
+    estimated_cost: float | None = None

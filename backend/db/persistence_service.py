@@ -359,7 +359,11 @@ class PersistenceService:
                         ),
                         status="pending",
                         due_odometer_km=record.odometer_km,
-                        created_at=record.performed_at,
+                        due_date=record.performed_at,
+                        component=record.component,
+                        reason=record.reason,
+                        recommended_action=record.recommended_action,
+                        estimated_cost=record.estimated_cost,
                     )
                 await session.commit()
         except Exception:
@@ -367,6 +371,32 @@ class PersistenceService:
                 "Failed to persist %d maintenance record(s)",
                 len(records),
             )
+
+    async def reconcile_maintenance_duplicates(self) -> dict[str, int]:
+        """Consolidate legacy duplicate pending maintenance records.
+
+        Runs the repository's idempotent reconciliation in its own session
+        and commits. Safe to call on every startup: it only removes exact
+        duplicate pending projections per (vehicle_id, maintenance_type).
+        """
+        try:
+            async with async_session_factory() as session:
+                repo = MaintenanceRepository(session)
+                result = await repo.reconcile_duplicates()
+                await session.commit()
+                if result["removed"] > 0:
+                    logger.info(
+                        "Maintenance reconciliation removed %d duplicate "
+                        "pending record(s); %d work item(s) remain",
+                        result["removed"],
+                        result["remaining"],
+                    )
+                return result
+        except Exception:
+            logger.exception(
+                "Failed to reconcile maintenance duplicate records"
+            )
+            return {"removed": 0, "remaining": 0}
 
     async def persist_alerts(
         self,

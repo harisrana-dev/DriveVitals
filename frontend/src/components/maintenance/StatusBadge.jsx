@@ -1,9 +1,9 @@
 import { memo } from 'react';
-import { MAINTENANCE_PRIORITY_META } from '../../utils/maintenance';
+import { MAINTENANCE_STATUS_META } from '../../utils/maintenance';
 
-export const PriorityBadge = memo(function PriorityBadge({ priority, size = 'sm' }) {
-  const meta = MAINTENANCE_PRIORITY_META[priority] || {
-    label: priority || 'Unknown',
+export const StatusBadge = memo(function StatusBadge({ status, size = 'sm' }) {
+  const meta = MAINTENANCE_STATUS_META[status] || {
+    label: status || 'Unknown',
     color: 'var(--color-text-muted)',
     bg: 'var(--color-surface-hover)',
   };
@@ -25,6 +25,7 @@ export const PriorityBadge = memo(function PriorityBadge({ priority, size = 'sm'
         lineHeight: 1.4,
       }}
     >
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: meta.color, flexShrink: 0 }} />
       {meta.label}
     </span>
   );

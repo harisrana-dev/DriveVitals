@@ -176,6 +176,19 @@ async def lifespan(
     )
 
     # --------------------------------------------------------------
+    # Reconcile legacy duplicate pending maintenance records. Safe to
+    # run on every boot: it only removes exact duplicate pending
+    # projections per (vehicle_id, maintenance_type).
+    # --------------------------------------------------------------
+
+    try:
+        await persistence_service.reconcile_maintenance_duplicates()
+    except Exception:
+        print(
+            "⚠️ Maintenance reconciliation failed at startup"
+        )
+
+    # --------------------------------------------------------------
     # Start background workers
     # --------------------------------------------------------------
 

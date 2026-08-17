@@ -98,6 +98,13 @@
   height: 6px;
 }
 
+/* Keyboard focus for clickable rows/panels */
+.row-focusable:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
 .dashboard-scroll::-webkit-scrollbar-track {
   background: transparent;
 }

@@ -1,55 +1,56 @@
-import { FleetPulse } from '../components/dashboard/FleetPulse';
-import { KpiCards } from '../components/dashboard/KpiCards';
+import { WifiOff } from 'lucide-react';
+import { DashboardCommandHeader } from '../components/dashboard/DashboardCommandHeader';
 import { AttentionRequired } from '../components/dashboard/AttentionRequired';
-import { LiveFleetActivity } from '../components/dashboard/LiveFleetActivity';
-import { FleetHealthMatrix } from '../components/dashboard/FleetHealthMatrix';
+import { DashboardKpiStrip } from '../components/dashboard/DashboardKpiStrip';
+import { LiveFleetTable } from '../components/dashboard/LiveFleetTable';
+import { TopRiskVehicles } from '../components/dashboard/TopRiskVehicles';
+import { MaintenancePressure } from '../components/dashboard/MaintenancePressure';
 import { DriverInsights } from '../components/dashboard/DriverInsights';
-import { MaintenanceQueue } from '../components/dashboard/MaintenanceQueue';
-import { FleetTrends } from '../components/dashboard/FleetTrends';
+import { useDashboard } from '../hooks/useDashboard';
 
 export function Dashboard() {
+  const { connState } = useDashboard();
+  const dataLimited = connState === 'offline' || connState === 'stale';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 1400 }}>
-      {/* Dashboard Header */}
-      <div className="fade-in" style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        marginBottom: 4,
-      }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>
-            Dashboard
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
-            Real-time fleet intelligence and operational insights
-          </p>
+      <DashboardCommandHeader />
+
+      {dataLimited && (
+        <div
+          className="fade-in"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 16px',
+            borderRadius: 12,
+            background: 'var(--color-amber-bg)',
+            border: '1px solid var(--color-amber)',
+            fontSize: 12,
+            fontWeight: 500,
+            color: 'var(--color-text-primary)',
+          }}
+        >
+          <WifiOff size={14} style={{ color: 'var(--color-amber)', flexShrink: 0 }} />
+          <span>
+            Live data {connState === 'stale' ? 'is stale' : 'is unavailable'} — showing the last known state of the fleet.
+          </span>
         </div>
-      </div>
+      )}
 
-      {/* KPI Cards */}
-      <KpiCards />
+      <AttentionRequired />
 
-      {/* Fleet Pulse */}
-      <FleetPulse />
+      <DashboardKpiStrip />
 
-      {/* Two-column: Attention + Health Matrix */}
+      <LiveFleetTable />
+
       <div className="two-col-grid">
-        <AttentionRequired />
-        <FleetHealthMatrix />
+        <TopRiskVehicles />
+        <MaintenancePressure />
       </div>
 
-      {/* Live Fleet Activity */}
-      <LiveFleetActivity />
-
-      {/* Fleet Trends */}
-      <FleetTrends />
-
-      {/* Two-column: Drivers + Maintenance */}
-      <div className="two-col-grid">
-        <DriverInsights />
-        <MaintenanceQueue />
-      </div>
+      <DriverInsights />
     </div>
   );
 }

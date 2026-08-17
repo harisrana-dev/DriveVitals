@@ -2,12 +2,16 @@ import { memo } from 'react';
 import { Truck, Activity, Power, AlertTriangle } from 'lucide-react';
 import { useDashboardSummary } from '../../hooks/useFleetData';
 import { useVehicles } from '../../hooks/useFleetData';
+import { useAlerts } from '../../hooks/useAlerts';
 
 export const FleetSummary = memo(function FleetSummary() {
   const summary = useDashboardSummary();
   const vehicles = useVehicles();
+  const { kpis } = useAlerts();
 
+  const activeCount = vehicles.filter((v) => v.displayStatus === 'ACTIVE').length;
   const idleCount = vehicles.filter((v) => v.displayStatus === 'IDLE').length;
+  const openAlerts = kpis.active;
 
   const cards = [
     {
@@ -19,7 +23,7 @@ export const FleetSummary = memo(function FleetSummary() {
     },
     {
       label: 'Active',
-      value: summary.activeVehicles,
+      value: activeCount,
       icon: <Activity size={18} strokeWidth={1.8} />,
       color: 'var(--color-green)',
       bgColor: 'var(--color-green-bg)',
@@ -32,11 +36,11 @@ export const FleetSummary = memo(function FleetSummary() {
       bgColor: 'var(--color-amber-bg)',
     },
     {
-      label: 'Needs Attention',
-      value: summary.attentionRequired,
+      label: 'Open Alerts',
+      value: openAlerts,
       icon: <AlertTriangle size={18} strokeWidth={1.8} />,
-      color: summary.attentionRequired > 0 ? 'var(--color-red)' : 'var(--color-green)',
-      bgColor: summary.attentionRequired > 0 ? 'var(--color-red-bg)' : 'var(--color-green-bg)',
+      color: openAlerts > 0 ? 'var(--color-red)' : 'var(--color-accent)',
+      bgColor: openAlerts > 0 ? 'var(--color-red-bg)' : 'var(--color-accent-subtle)',
     },
   ];
 

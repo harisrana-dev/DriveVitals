@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from uuid import NAMESPACE_OID, uuid4, uuid5
 
 from sqlalchemy import select, update
+import sqlalchemy as sa
 
 from backend.db.models.alert import Alert
 from backend.db.repositories.base_repository import BaseRepository
@@ -113,6 +114,7 @@ class AlertRepository(BaseRepository):
                     category=category,
                     message=message,
                     evidence=evidence,
+                    last_triggered_at=created_at,
                 )
             )
             await self._session.flush()
@@ -135,6 +137,7 @@ class AlertRepository(BaseRepository):
             status=status,
             acknowledged=False,
             created_at=created_at,
+            last_triggered_at=created_at,
             resolved_at=None,
             acknowledged_at=None,
             condition=condition,
@@ -230,6 +233,55 @@ class AlertRepository(BaseRepository):
                     break
             if active:
                 continue
+            row.status = "resolved"
+            row.resolved_at = resolved_at
+            resolved += 1
+            resolved_alerts.append(row)
+
+        if resolved:
+            await self._session.flush()
+        return resolved, resolved_alerts
+
+    async def resolve_stale_trip_alerts(
+        self,
+        stale_after_seconds: float,
+    ) -> tuple[int, list[Alert]]:
+        """Resolve active trip alerts that haven't been re-triggered within
+        the staleness window.
+
+        A trip alert is considered stale when:
+        - alert_type is 'trip'
+        - status is 'active' (resolved_at IS NULL)
+        - last_triggered_at (or created_at if NULL) is older than now - stale_after_seconds
+
+        This prevents trip alerts from remaining active indefinitely when:
+        - The triggering trip completed
+        - No subsequent trip re-triggered the condition
+        - The vehicle is idle
+
+        Returns a tuple of (resolved_count, resolved_alerts).
+        """
+        from sqlalchemy import case, func
+
+        stale_threshold = func.now() - sa.text(f"interval '{int(stale_after_seconds)} seconds'")
+
+        trigger_time = case(
+            (Alert.last_triggered_at.isnot(None), Alert.last_triggered_at),
+            else_=Alert.created_at,
+        )
+
+        result = await self._session.execute(
+            select(Alert).where(
+                Alert.alert_type == "trip",
+                Alert.resolved_at.is_(None),
+                trigger_time < stale_threshold,
+            )
+        )
+
+        resolved_at = datetime.now(timezone.utc)
+        resolved = 0
+        resolved_alerts: list[Alert] = []
+        for row in result.scalars():
             row.status = "resolved"
             row.resolved_at = resolved_at
             resolved += 1

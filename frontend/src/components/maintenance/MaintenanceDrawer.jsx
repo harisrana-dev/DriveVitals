@@ -6,8 +6,10 @@ import { StatusBadge } from './StatusBadge';
 import { PriorityBadge } from './PriorityBadge';
 import { formatMaintenanceDue } from '../../utils/maintenance';
 import { healthColor } from '../../utils/health';
+import { drawerStackOffset, drawerZIndex, overlayZIndex } from '../../utils/drawerLayout';
 
-export function MaintenanceDrawer({ vehicleId, onClose, onViewVehicle }) {
+export function MaintenanceDrawer({ vehicleId, onClose, onViewVehicle, depth = 0 }) {
+  const right = drawerStackOffset(depth, 520);
   return (
     <>
       <div
@@ -16,7 +18,7 @@ export function MaintenanceDrawer({ vehicleId, onClose, onViewVehicle }) {
           position: 'fixed',
           inset: 0,
           background: 'rgba(0,0,0,0.3)',
-          zIndex: 300,
+          zIndex: overlayZIndex(depth),
           animation: 'fadeIn 0.15s ease-out',
         }}
       />
@@ -24,14 +26,14 @@ export function MaintenanceDrawer({ vehicleId, onClose, onViewVehicle }) {
         style={{
           position: 'fixed',
           top: 0,
-          right: 0,
+          right,
           width: 520,
           maxWidth: '92vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
           boxShadow: 'var(--color-shadow-lg)',
-          zIndex: 301,
+          zIndex: drawerZIndex(depth),
           display: 'flex',
           flexDirection: 'column',
           animation: 'slideInRight 0.2s ease-out',

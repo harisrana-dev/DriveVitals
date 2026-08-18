@@ -19,6 +19,19 @@ import { tripIsHistorical } from '../utils/trips';
  * NOT the same as a score of 100.
  */
 
+/**
+ * Minimum distance (km) required for driver scores to be considered
+ * meaningful. Below this threshold, scores are marked as degraded
+ * because event density normalisation is unreliable.
+ */
+export const MIN_SCORE_DISTANCE_KM = 1.0;
+
+/**
+ * Minimum number of trips required for driver scores to be considered
+ * meaningful for ranking/benchmarking purposes.
+ */
+export const MIN_SCORE_TRIPS = 1;
+
 function getInitials(name) {
   if (!name) return '--';
   return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -58,8 +71,10 @@ function severityFor(count) {
   return 'none';
 }
 
+const MIN_DISTANCE_FOR_RATE = 1.0;
+
 function ratePer100Km(count, distanceKm) {
-  if (distanceKm == null || distanceKm <= 0) return null;
+  if (distanceKm == null || distanceKm <= MIN_DISTANCE_FOR_RATE) return null;
   return Math.round((count / distanceKm) * 1000) / 10;
 }
 
@@ -164,15 +179,26 @@ function adaptDriver(driver, stats, live, driverTrips) {
 
   const liveBlock = buildLive(driver, live);
 
+  const hasSufficientDistance = totalDistanceKm != null && totalDistanceKm >= MIN_SCORE_DISTANCE_KM;
+  const hasSufficientTrips = (stats?.total_trips ?? 0) >= MIN_SCORE_TRIPS;
+  const scoreIsValid = safetyScore != null && hasSufficientDistance && hasSufficientTrips;
+
   const historical = {
-    safetyScore: safetyScore == null ? null : Math.round(safetyScore),
-    grade: computeGrade(safetyScore),
-    riskLevel: riskFor(safetyScore, aggressionScore),
+    safetyScore: scoreIsValid ? Math.round(safetyScore) : null,
+    grade: scoreIsValid ? computeGrade(safetyScore) : null,
+    riskLevel: scoreIsValid ? riskFor(safetyScore, aggressionScore) : 'unknown',
     scores: {
-      safety: safetyScore == null ? null : Math.round(safetyScore),
+      safety: scoreIsValid ? Math.round(safetyScore) : null,
       efficiency: efficiencyScore == null ? null : Math.round(efficiencyScore),
       aggression: aggressionScore == null ? null : Math.round(aggressionScore),
     },
+    scoreQuality: !hasSufficientDistance
+      ? 'insufficient_distance'
+      : !hasSufficientTrips
+        ? 'insufficient_trips'
+        : safetyScore == null
+          ? 'no_data'
+          : 'valid',
     tripsCompleted: stats?.total_trips ?? null,
     totalDistanceKm,
     drivingHours: drivingTimeSeconds > 0 ? drivingTimeSeconds / 3600 : null,
@@ -183,7 +209,7 @@ function adaptDriver(driver, stats, live, driverTrips) {
         ? stats.fuel_efficiency
         : null,
     averageSpeedKmh:
-      drivingTimeSeconds > 0
+      drivingTimeSeconds > 0 && totalDistanceKm != null
         ? Math.round(totalDistanceKm / (drivingTimeSeconds / 3600))
         : null,
     performanceHistory: [...scoredTrips].sort(

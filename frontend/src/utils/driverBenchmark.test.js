@@ -7,6 +7,7 @@ function driver(id, safetyScore, overrides = {}) {
     name: `Driver ${id}`,
     historical: {
       safetyScore,
+      scoreQuality: 'valid',
       totalDistanceKm: 300,
       fuelEfficiency: 14,
       percentile: null,

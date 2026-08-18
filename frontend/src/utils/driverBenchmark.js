@@ -3,20 +3,24 @@
  *
  * Percentiles and fleet averages are computed from real historical
  * driver safety scores only. The benchmark is intentionally null until
- * the fleet has enough scored drivers to be meaningful — never a
- * fabricated "top of fleet" badge.
+ * the fleet has enough scored drivers with meaningful data to be
+ * meaningful — never a fabricated "top of fleet" badge.
  */
 
 export const BENCHMARK_MIN_SCORED_DRIVERS = 3;
+const MIN_DISTANCE_FOR_EVENT_RATE = 1.0;
 
 function fleetScored(allDrivers) {
   return (allDrivers || []).filter(
-    (d) => d && d.historical?.safetyScore != null
+    (d) =>
+      d &&
+      d.historical?.safetyScore != null &&
+      d.historical?.scoreQuality === 'valid'
   );
 }
 
 export function computeDriverBenchmark(driver, allDrivers) {
-  if (!driver || driver.historical?.safetyScore == null) return null;
+  if (!driver || driver.historical?.safetyScore == null || driver.historical?.scoreQuality !== 'valid') return null;
 
   const scored = fleetScored(allDrivers);
   if (scored.length < BENCHMARK_MIN_SCORED_DRIVERS) return null;
@@ -38,12 +42,12 @@ export function computeDriverBenchmark(driver, allDrivers) {
   );
   const driverDistance = driver.historical.totalDistanceKm || 0;
   const fleetEventRate =
-    fleetDistance > 0
+    fleetDistance > MIN_DISTANCE_FOR_EVENT_RATE
       ? (scored.reduce((sum, d) => sum + d.behaviour.totalEvents, 0) / fleetDistance) *
         100
       : null;
   const driverEventRate =
-    driverDistance > 0
+    driverDistance > MIN_DISTANCE_FOR_EVENT_RATE
       ? (driver.behaviour.totalEvents / driverDistance) * 100
       : null;
 

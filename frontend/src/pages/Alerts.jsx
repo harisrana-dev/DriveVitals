@@ -20,20 +20,22 @@ import { TripDrawer } from '../components/trips/TripDrawer';
  *   -> Fleet Alert Intelligence (vehicle risk + distribution + insights)
  *   -> Live Now band -> Alert History (tabs + filters + table) -> drawer.
  *
- * One click = one context surface. Vehicle uses the global vehicle
- * drawer; driver and trip are rendered locally here (there is no global
- * driver drawer and no nested drawers).
+ * Comparison-oriented UX: opening a target drawer from the Alert Drawer
+ * keeps the Alert Drawer visible side-by-side. All drawers use the unified
+ * stacking model via drawerLayout.js.
  */
 export function AlertsPage() {
   const alertsApi = useAlerts();
   const filtersApi = useAlertFilters();
-  const { trips } = useLiveData();
+  const { trips, acknowledgeAllPassive } = useLiveData();
   const { openDrawer: openVehicleDrawer } = useVehicleDrawer();
   const navigate = useNavigate();
 
   const [selectedKey, setSelectedKey] = useState(null);
   const [selectedDriverId, setSelectedDriverId] = useState(null);
   const [selectedTripId, setSelectedTripId] = useState(null);
+
+  const hasAlertDrawer = !!selectedKey;
 
   const selectedIncident = useMemo(
     () => alertsApi.incidents.find((i) => i.key === selectedKey) || null,
@@ -57,15 +59,13 @@ export function AlertsPage() {
 
   const handleViewVehicle = useCallback(
     (vehicleId) => {
-      setSelectedKey(null);
-      openVehicleDrawer({ id: vehicleId });
+      openVehicleDrawer({ id: vehicleId }, hasAlertDrawer ? 1 : 0);
     },
-    [openVehicleDrawer]
+    [openVehicleDrawer, hasAlertDrawer]
   );
 
   const handleViewDriver = useCallback(
     (driverId) => {
-      setSelectedKey(null);
       setSelectedDriverId(driverId);
     },
     []
@@ -73,7 +73,6 @@ export function AlertsPage() {
 
   const handleViewTrip = useCallback(
     (tripId) => {
-      setSelectedKey(null);
       setSelectedTripId(tripId);
     },
     []
@@ -81,7 +80,6 @@ export function AlertsPage() {
 
   const handleViewMaintenance = useCallback(
     (vehicleId) => {
-      setSelectedKey(null);
       navigate(`/maintenance?vehicle=${encodeURIComponent(vehicleId || '')}`);
     },
     [navigate]
@@ -91,6 +89,9 @@ export function AlertsPage() {
     (categoryKey) => filtersApi.setCategory(categoryKey),
     [filtersApi]
   );
+
+  const alertDrawerDepth = hasAlertDrawer ? 0 : -1;
+  const targetDrawerDepth = hasAlertDrawer ? 1 : 0;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1400 }}>
@@ -126,6 +127,7 @@ export function AlertsPage() {
         filtersApi={filtersApi}
         onIncidentClick={handleIncidentClick}
         selectedKey={selectedKey}
+        onAcknowledgeAllPassive={acknowledgeAllPassive}
       />
 
       {selectedIncident && (
@@ -136,6 +138,7 @@ export function AlertsPage() {
           onViewDriver={handleViewDriver}
           onViewTrip={handleViewTrip}
           onViewMaintenance={handleViewMaintenance}
+          depth={alertDrawerDepth}
         />
       )}
 
@@ -144,11 +147,16 @@ export function AlertsPage() {
           key={selectedDriverId}
           driverId={selectedDriverId}
           onClose={() => setSelectedDriverId(null)}
+          depth={targetDrawerDepth}
         />
       )}
 
       {selectedTripId && tripForDrawer && (
-        <TripDrawer trip={tripForDrawer} onClose={() => setSelectedTripId(null)} />
+        <TripDrawer
+          trip={tripForDrawer}
+          onClose={() => setSelectedTripId(null)}
+          depth={targetDrawerDepth}
+        />
       )}
     </div>
   );

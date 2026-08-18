@@ -88,6 +88,7 @@ class PersistenceService:
                     "evidence": alert.evidence,
                     "source": alert.source,
                     "created_at": alert.created_at.isoformat(),
+                    "last_triggered_at": alert.last_triggered_at.isoformat() if alert.last_triggered_at is not None else None,
                 }
             )
 
@@ -496,6 +497,7 @@ class PersistenceService:
                                 ),
                                 message=alert.message or "",
                                 created_at=alert.created_at,
+                                last_triggered_at=alert.last_triggered_at,
                                 driver_id=alert.driver_id,
                                 trip_id=alert.trip_id,
                                 condition=alert.condition,
@@ -515,4 +517,62 @@ class PersistenceService:
                 "Failed to resolve cleared alerts for vehicle %s",
                 vehicle_id,
             )
+            return 0
+
+    async def resolve_stale_trip_alerts(
+        self,
+        stale_after_seconds: float,
+    ) -> int:
+        """Resolve trip alerts that haven't been re-triggered within the
+        staleness window.
+
+        Called periodically to prevent trip alerts from remaining active
+        indefinitely when the triggering condition is no longer present.
+        """
+        try:
+            async with async_session_factory() as session:
+                repo = AlertRepository(session)
+                resolved_count, resolved_alerts = await repo.resolve_stale_trip_alerts(
+                    stale_after_seconds=stale_after_seconds,
+                )
+                if resolved_count:
+                    await session.commit()
+                    logger.info(
+                        "Resolved %d stale trip alert(s)",
+                        resolved_count,
+                    )
+                    for alert in resolved_alerts:
+                        self._emit_alert_event(
+                            "alert_resolved",
+                            FleetAlert(
+                                alert_id=alert.alert_id,
+                                vehicle_id=alert.vehicle_id,
+                                alert_type=(
+                                    alert.alert_type.value
+                                    if hasattr(alert.alert_type, "value")
+                                    else alert.alert_type
+                                ),
+                                severity=(
+                                    alert.severity.value
+                                    if hasattr(alert.severity, "value")
+                                    else alert.severity
+                                ),
+                                message=alert.message or "",
+                                created_at=alert.created_at,
+                                last_triggered_at=alert.last_triggered_at,
+                                driver_id=alert.driver_id,
+                                trip_id=alert.trip_id,
+                                condition=alert.condition,
+                                category=(
+                                    alert.category.value
+                                    if hasattr(alert.category, "value")
+                                    else alert.category
+                                ),
+                                evidence=alert.evidence,
+                                source=alert.source,
+                            ),
+                        )
+                return resolved_count
+        except Exception:
+            logger.exception("Failed to resolve stale trip alerts")
             return 0

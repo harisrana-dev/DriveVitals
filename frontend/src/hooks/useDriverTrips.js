@@ -23,7 +23,7 @@ export function useDriverTrips(driverId) {
     listTrips({ driver_id: driverId, status: 'completed', limit: DRIVER_TRIP_LIMIT })
       .then((res) => {
         if (cancelled) return;
-        setTrips(mapTrips(res?.data?.trips || res?.trips || []));
+        setTrips(mapTrips(res?.data || []));
       })
       .catch(() => {
         if (!cancelled) setTrips([]);

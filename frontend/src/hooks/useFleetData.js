@@ -10,17 +10,18 @@ function mapStatus(s) {
   return 'offline';
 }
 
-const DISPLAY_STATUS_DEBOUNCE_MS = 2000;
+export const DISPLAY_STATUS_DEBOUNCE_MS = 2000;
 const OFFLINE_AFTER_MS = 60000;
 const _statusMemory = new Map();
 
 function computeRawDisplayStatus(v, now) {
   const lastUpdate = v.lastUpdate ? new Date(v.lastUpdate).getTime() : 0;
   const stale = !lastUpdate || now - lastUpdate > OFFLINE_AFTER_MS;
-  if (stale) return 'OFFLINE';
-  if (v.status === 'active') return 'ACTIVE';
+  if (!lastUpdate) return 'OFFLINE';
   if (v.status === 'trip_completed') return 'TRIP_COMPLETED';
-  if (v.status === 'idle') return 'IDLE';
+  if (v.status === 'active') return 'ACTIVE';
+  if (v.status === 'idle') return stale ? 'STALE' : 'IDLE';
+  if (stale) return 'STALE';
   return 'OFFLINE';
 }
 
@@ -125,7 +126,7 @@ function computeSummaryFallback(mergedFleet) {
     : null;
   return {
     totalVehicles: mergedFleet.length,
-    activeVehicles: mergedFleet.filter((v) => v.operational_status === 'ACTIVE').length,
+    activeVehicles: mergedFleet.filter((v) => v.operational_status === 'ACTIVE' || v.operational_status === 'IDLE').length,
     fleetHealthScore: avgScore,
     attentionRequired: mergedFleet.filter((v) => (v.active_alert_count ?? 0) > 0).length,
   };

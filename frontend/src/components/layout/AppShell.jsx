@@ -4,10 +4,15 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { VehicleDrawerProvider } from '../../context/VehicleDrawerContext';
 import { VehicleDrawer } from '../fleet/VehicleDrawer';
+import { MaintenanceDrawer } from '../maintenance/MaintenanceDrawer';
 import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
 
 function AppShellInner() {
-  const { selectedVehicleId, closeDrawer } = useVehicleDrawer();
+  const {
+    selectedVehicleId, drawerDepth, closeDrawer,
+    maintenanceVehicleId, maintenanceDepth, closeMaintenance,
+    openMaintenance,
+  } = useVehicleDrawer();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -60,7 +65,21 @@ function AppShellInner() {
         </main>
       </div>
 
-      <VehicleDrawer vehicleId={selectedVehicleId} onClose={closeDrawer} />
+      {selectedVehicleId && (
+        <VehicleDrawer
+          vehicleId={selectedVehicleId}
+          onClose={closeDrawer}
+          depth={drawerDepth}
+          onOpenMaintenance={openMaintenance}
+        />
+      )}
+      {maintenanceVehicleId && (
+        <MaintenanceDrawer
+          vehicleId={maintenanceVehicleId}
+          onClose={closeMaintenance}
+          depth={maintenanceDepth}
+        />
+      )}
     </>
   );
 }

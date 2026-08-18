@@ -1224,12 +1224,17 @@ class DriveVitalsRuntime:
                         # Resolve trip/maintenance alerts for the vehicle that
                         # are no longer triggered by this trip's behaviour or
                         # the latest maintenance recommendations.
-                        active_keys = [
-                            alert.alert_id
-                            for alert in trip_alerts
-                            if alert.alert_type
-                            in (AlertType.TRIP, AlertType.MAINTENANCE)
-                        ]
+                        #
+                        # Use active_alert_keys (pre-dedup) so that alerts
+                        # inside the duplicate-suppression cooldown window are
+                        # NOT incorrectly resolved.
+                        active_keys_raw = self._alert_engine.active_alert_keys(
+                            recommendations=recommendations,
+                            health_snapshot=health,
+                            trip=runner.trip,
+                            behaviour_events=all_events,
+                        )
+                        active_keys = [alert_id for _, alert_id in active_keys_raw]
                         asyncio.ensure_future(
                             persistence.resolve_cleared_alerts(
                                 vehicle_id,
@@ -1238,6 +1243,18 @@ class DriveVitalsRuntime:
                                     AlertType.MAINTENANCE.value,
                                 ),
                                 active_keys,
+                            )
+                        )
+
+                        # Resolve trip alerts that are stale: the
+                        # condition hasn't been re-triggered within
+                        # the staleness window.  24 hours is chosen
+                        # as a reasonable default: a trip alert
+                        # that hasn't re-fired in a full day is
+                        # likely no longer relevant.
+                        asyncio.ensure_future(
+                            persistence.resolve_stale_trip_alerts(
+                                stale_after_seconds=24 * 3600,
                             )
                         )
 

@@ -200,7 +200,7 @@ const REASON_THRESHOLDS = [
     match: 'engine overheating',
     configKey: 'engine',
     key: 'overheat_temp_c',
-    labelFor: (v) => `overheating at ${Math.round(v)}\u00b0C`,
+    labelFor: (v) => `overheating at ${Math.round(v)} \u00B0C`,
   },
   {
     match: 'sustained high engine load',
@@ -224,19 +224,19 @@ const REASON_THRESHOLDS = [
     match: 'overheating',
     configKey: 'cooling',
     key: 'overheat_temp_c',
-    labelFor: (v) => `overheating at ${Math.round(v)}\u00b0C`,
+    labelFor: (v) => `overheating at ${Math.round(v)} \u00B0C`,
   },
   {
     match: 'elevated coolant temperature',
     configKey: 'cooling',
     key: 'elevated_temp_c',
-    labelFor: (v) => `elevated above ${Math.round(v)}\u00b0C`,
+    labelFor: (v) => `elevated above ${Math.round(v)} \u00B0C`,
   },
   {
     match: 'unstable coolant temperature',
     configKey: 'cooling',
     key: 'stability_stddev_c',
-    labelFor: (v) => `stable within ${v.toFixed(1)}\u00b0C`,
+    labelFor: (v) => `stable within ${v.toFixed(1)} \u00B0C`,
   },
   {
     match: 'high thermal load',

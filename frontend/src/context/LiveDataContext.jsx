@@ -219,12 +219,25 @@ export function LiveDataProvider({ children }) {
             const liveTrips = Array.isArray(message.data.trips)
               ? message.data.trips
               : [];
-            const hasCompletion = liveTrips.some(
+            const completedTrips = liveTrips.filter(
               (t) =>
                 t &&
+                t.trip_id &&
                 (t.status === "completed" || t.status === "aborted")
             );
-            if (hasCompletion) {
+            if (completedTrips.length > 0) {
+              setRestTrips((prev) => {
+                const prevById = new Map(
+                  (prev || []).map((t) => [t.trip_id, t])
+                );
+                for (const ct of completedTrips) {
+                  const existing = prevById.get(ct.trip_id);
+                  if (existing && existing.status !== ct.status) {
+                    prevById.set(ct.trip_id, { ...existing, ...ct });
+                  }
+                }
+                return Array.from(prevById.values());
+              });
               refreshDriverStatistics();
             }
           }
@@ -370,6 +383,23 @@ export function LiveDataProvider({ children }) {
     }
   }, [patchAlert]);
 
+  const handleAcknowledgeAllPassive = useCallback(async () => {
+    const passive = (alerts || []).filter(
+      (a) => a.status === 'resolved' && !a.acknowledged
+    );
+    if (passive.length === 0) return;
+    await Promise.allSettled(
+      passive.map(async (a) => {
+        try {
+          const result = await acknowledgeAlert(a.alert_id);
+          if (result?.data) patchAlert(a.alert_id, result.data);
+        } catch (error) {
+          console.error("[alerts] batch acknowledge failed", a.alert_id, error);
+        }
+      })
+    );
+  }, [alerts, patchAlert]);
+
   const removeTrip = useCallback((tripId) => {
     setRestTrips((prev) =>
       (prev || []).filter((t) => t?.trip_id !== tripId)
@@ -431,6 +461,7 @@ export function LiveDataProvider({ children }) {
     fleetMeta,
     acknowledgeAlert: handleAcknowledgeAlert,
     resolveAlert: handleResolveAlert,
+    acknowledgeAllPassive: handleAcknowledgeAllPassive,
     refreshMaintenance,
     completeMaintenance: handleCompleteMaintenance,
   };

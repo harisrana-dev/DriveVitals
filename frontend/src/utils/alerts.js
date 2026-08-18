@@ -11,6 +11,7 @@
  */
 
 import { severityRank, categoryLabel } from '../services/alertAdapter';
+import { formatDuration } from './formatters';
 
 const H_MS = 60 * 60 * 1000;
 
@@ -247,6 +248,18 @@ export function alertStaleness(a, now = Date.now()) {
   if (hours < STALE_AFTER_H) return { level: 'fresh', hours };
   if (hours < STALE_HARD_H) return { level: 'stale', hours };
   return { level: 'hard-stale', hours };
+}
+
+/**
+ * Human-readable age for an alert, derived from its created_at.
+ * Uses the canonical formatDuration formatter.
+ */
+export function alertAge(createdAt, now = Date.now()) {
+  if (!createdAt) return '\u2014';
+  const t = parseTime(createdAt);
+  if (t == null) return '\u2014';
+  const elapsedSeconds = (now - t) / 1000;
+  return formatDuration(elapsedSeconds);
 }
 
 export function isStaleActive(a, now = Date.now()) {

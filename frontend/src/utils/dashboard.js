@@ -115,6 +115,7 @@ export function rankVehiclesForTriage(vehicles, { alerts, liveEvents, workItems 
       else if (overdue > 0 || dueSoon > 0 || healthCategory === 'critical') level = 'high';
       else if (activeAlerts.length > 0 || healthCategory === 'warning' || scheduled > 0) level = 'medium';
       else if (v.displayStatus === 'OFFLINE') level = 'stale';
+      else if (v.displayStatus === 'STALE') level = 'stale';
 
       const reasons = [];
       if (events.length > 0) {
@@ -212,7 +213,9 @@ export function buildMaintenancePressureRows(workItems, fleetMeta) {
  */
 export function driverRankingQuality(drivers) {
   const list = Array.isArray(drivers) ? drivers : [];
-  const scored = list.filter((d) => d?.historical?.safetyScore != null);
+  const scored = list.filter(
+    (d) => d?.historical?.safetyScore != null && d?.historical?.scoreQuality === 'valid'
+  );
   if (scored.length === 0) return 'no-data';
   const maxScore = Math.max(...scored.map((d) => d.historical.safetyScore));
   if (maxScore < 10) return 'degraded';

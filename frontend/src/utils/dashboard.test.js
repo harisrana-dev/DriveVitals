@@ -261,7 +261,7 @@ describe('buildMaintenancePressureRows', () => {
 
 describe('driverRankingQuality', () => {
   function driver(score) {
-    return { historical: { safetyScore: score } };
+    return { historical: { safetyScore: score, scoreQuality: 'valid' } };
   }
 
   it('returns no-data when no driver is scored', () => {

@@ -200,7 +200,7 @@ describe('adaptDrivers with no live snapshot', () => {
   it('emits a null live score — never a fabricated 100', () => {
     const [d] = adaptDrivers(
       [{ driver_id: 'D2', first_name: 'Bob', last_name: 'Oden' }],
-      [{ driver_id: 'D2', safety_score: 55, total_trips: 1 }],
+      [{ driver_id: 'D2', safety_score: 55, total_trips: 1, total_distance_km: 10 }],
       [],
       []
     );
@@ -208,6 +208,7 @@ describe('adaptDrivers with no live snapshot', () => {
     expect(d.historical.safetyScore).toBe(55);
     expect(d.historical.grade).toBe('F');
     expect(d.historical.riskLevel).toBe('critical');
+    expect(d.historical.scoreQuality).toBe('valid');
     expect(d.historical.performanceHistory).toEqual([]);
     expect(d.behaviour.totalEvents).toBe(0);
   });

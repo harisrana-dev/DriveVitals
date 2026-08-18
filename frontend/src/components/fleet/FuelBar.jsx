@@ -15,7 +15,7 @@ export function FuelBar({ level }) {
           marginBottom: 4,
         }}
       >
-        <span style={{ color: 'var(--color-text-muted)' }}>Fuel</span>
+        <span style={{ color: 'var(--color-text-muted)' }}>Fuel Level</span>
         <span style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>
           {pct}%
         </span>

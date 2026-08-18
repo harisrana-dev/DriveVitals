@@ -2,8 +2,7 @@ import { memo } from 'react';
 import { AlertTriangle, Bell, Info } from 'lucide-react';
 import { SeverityBadge } from './SeverityBadge';
 import { AlertStatusBadge } from './AlertStatusBadge';
-import { severityColor, severityBg } from '../../utils/alerts';
-import { useRelativeTime } from '../../hooks/useRelativeTime';
+import { severityColor, severityBg, alertAge } from '../../utils/alerts';
 
 const SEV_ICONS = {
   critical: <AlertTriangle size={14} strokeWidth={2} />,
@@ -14,7 +13,7 @@ const SEV_ICONS = {
 };
 
 export const AlertCard = memo(function AlertCard({ alert, onClick, stale }) {
-  const timeAgo = useRelativeTime(alert.created_at);
+  const timeAgo = alertAge(alert.created_at);
   const color = severityColor(alert.severity);
   const bg = severityBg(alert.severity);
 

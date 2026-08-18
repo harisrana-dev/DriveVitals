@@ -2,8 +2,7 @@ import { memo } from 'react';
 import { AlertTriangle, ArrowUpRight } from 'lucide-react';
 import { SeverityBadge } from './SeverityBadge';
 import { AlertStatusBadge } from './AlertStatusBadge';
-import { useRelativeTime } from '../../hooks/useRelativeTime';
-import { alertStaleness, formatEventCounts } from '../../utils/alerts';
+import { alertStaleness, formatEventCounts, alertAge } from '../../utils/alerts';
 
 const STALE_LABEL = {
   stale: 'Stale',
@@ -60,7 +59,7 @@ export const CriticalIncidentQueue = memo(function CriticalIncidentQueue({ incid
 });
 
 function QueueRow({ incident, selected, onClick }) {
-  const timeAgo = useRelativeTime(incident.created_at);
+  const timeAgo = alertAge(incident.created_at);
   const staleness = alertStaleness(incident);
   const stale = staleness.level === 'stale' || staleness.level === 'hard-stale';
   const color = incident.severity === 'critical' ? 'var(--color-red)' : 'var(--color-amber)';

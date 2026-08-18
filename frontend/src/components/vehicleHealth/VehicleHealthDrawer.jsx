@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom';
 import { X, Wrench } from 'lucide-react';
 import { useVehicle } from '../../hooks/useVehicleHealth';
 import { useLiveData } from '../../context/LiveDataContext';
+import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
 import {
   canonicalHealthCategory,
   healthColor,
@@ -12,6 +12,7 @@ import {
   HEALTH_SEVERITY_LABEL,
 } from '../../utils/health';
 import { dueStatus, dueStatusStyle } from '../../utils/maintenance';
+import { drawerStackOffset, drawerZIndex, overlayZIndex } from '../../utils/drawerLayout';
 
 const COMPONENT_KEYS = ['engine', 'cooling', 'braking', 'transmission', 'fuel'];
 
@@ -63,14 +64,14 @@ function formatEvidence(evidence) {
   if (evidence.event_count != null) parts.push(`${evidence.event_count} events`);
   if (evidence.percent != null) parts.push(`${evidence.percent.toFixed(1)}%`);
   if (evidence.window_fraction != null) parts.push(`${(evidence.window_fraction * 100).toFixed(0)}% of window`);
-  if (evidence.temperature_c != null) parts.push(`${evidence.temperature_c.toFixed(0)}\u00b0C`);
-  if (evidence.stddev_c != null) parts.push(`stddev ${evidence.stddev_c.toFixed(1)}\u00b0C`);
+  if (evidence.temperature_c != null) parts.push(`${Math.round(evidence.temperature_c)} \u00B0C`);
+  if (evidence.stddev_c != null) parts.push(`stddev ${evidence.stddev_c.toFixed(1)} \u00B0C`);
   if (evidence.rpm != null) parts.push(`${Math.round(evidence.rpm)} rpm`);
   if (evidence.speed_kmh != null) parts.push(`${evidence.speed_kmh.toFixed(0)} km/h`);
   if (evidence.efficiency_km_per_l != null) parts.push(`${evidence.efficiency_km_per_l.toFixed(1)} km/L`);
   if (evidence.throttle_percent != null) parts.push(`throttle ${evidence.throttle_percent.toFixed(0)}%`);
   if (evidence.mean_load_percent != null) parts.push(`mean load ${evidence.mean_load_percent.toFixed(0)}%`);
-  return parts.join(' \u00b7 ');
+  return parts.join(' \u00B7 ');
 }
 
 function StateBadge({ label, severity }) {
@@ -175,9 +176,10 @@ function AttentionItem({ reason }) {
   );
 }
 
-export function VehicleHealthDrawer({ vehicleId, onClose }) {
+export function VehicleHealthDrawer({ vehicleId, onClose, depth = 0 }) {
   const vehicle = useVehicle(vehicleId);
   if (!vehicle) return null;
+  const right = drawerStackOffset(depth, 520);
 
   return (
     <>
@@ -187,7 +189,7 @@ export function VehicleHealthDrawer({ vehicleId, onClose }) {
           position: 'fixed',
           inset: 0,
           background: 'rgba(0,0,0,0.4)',
-          zIndex: 300,
+          zIndex: overlayZIndex(depth),
           animation: 'fadeIn 0.15s ease-out',
         }}
       />
@@ -195,27 +197,28 @@ export function VehicleHealthDrawer({ vehicleId, onClose }) {
         style={{
           position: 'fixed',
           top: 0,
-          right: 0,
+          right,
           width: 520,
           maxWidth: '92vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
           boxShadow: 'var(--color-shadow-lg)',
-          zIndex: 301,
+          zIndex: drawerZIndex(depth),
           display: 'flex',
           flexDirection: 'column',
           animation: 'slideInRight 0.2s ease-out',
         }}
       >
-        <DrawerContent vehicle={vehicle} onClose={onClose} />
+        <DrawerContent vehicle={vehicle} onClose={onClose} depth={depth} />
       </div>
     </>
   );
 }
 
-function DrawerContent({ vehicle, onClose }) {
+function DrawerContent({ vehicle, onClose, depth = 0 }) {
   const { maintenance, healthConfig } = useLiveData();
+  const { openMaintenance } = useVehicleDrawer();
 
   const reasons = normalizeHealthReasons(vehicle.healthReasons);
   const hasScore = vehicle.overallHealth != null;
@@ -331,10 +334,10 @@ function DrawerContent({ vehicle, onClose }) {
 
         <Section title="Current Condition">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <ConditionRow label="Coolant" value={vehicle.coolantTemp} unit="\u00b0C" getState={(v) => getTempState(v, cooling.overheat_temp_c)} />
+            <ConditionRow label="Coolant" value={vehicle.coolantTemp} unit={' \u00B0C'} getState={(v) => getTempState(v, cooling.overheat_temp_c)} />
             <ConditionRow label="Engine load" value={vehicle.engineLoad} unit="%" getState={getLoadState} />
             <ConditionRow label="RPM" value={vehicle.rpm} unit="" getState={(v) => getRpmState(v, engine.redline_rpm)} />
-            <ConditionRow label="Fuel" value={vehicle.fuelLevel} unit="%" getState={getFuelState} />
+            <ConditionRow label="Fuel Level" value={vehicle.fuelLevel} unit="%" getState={getFuelState} />
           </div>
         </Section>
 
@@ -342,9 +345,9 @@ function DrawerContent({ vehicle, onClose }) {
           {vehicleMaintenance.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {vehicleMaintenance.slice(0, 4).map((item) => (
-                <Link
+                <button
                   key={item.id}
-                  to={`/maintenance?vehicle=${encodeURIComponent(vehicle.id)}`}
+                  onClick={() => openMaintenance(vehicle.id, depth + 1)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -357,6 +360,10 @@ function DrawerContent({ vehicle, onClose }) {
                     fontSize: 12,
                     textDecoration: 'none',
                     transition: 'border-color 0.15s ease',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    textAlign: 'left',
+                    width: '100%',
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border-light)'; }}
@@ -387,7 +394,7 @@ function DrawerContent({ vehicle, onClose }) {
                       <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>No odometer</span>
                     )}
                   </div>
-                </Link>
+                </button>
               ))}
               {vehicleMaintenance.length > 4 && (
                 <div style={{ fontSize: 11, color: 'var(--color-text-muted)', paddingLeft: 4 }}>
@@ -410,8 +417,8 @@ function DrawerContent({ vehicle, onClose }) {
             </div>
           )}
           <div style={{ marginTop: 10 }}>
-            <Link
-              to={`/maintenance?vehicle=${encodeURIComponent(vehicle.id)}`}
+            <button
+              onClick={() => openMaintenance(vehicle.id, depth + 1)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -420,11 +427,16 @@ function DrawerContent({ vehicle, onClose }) {
                 fontWeight: 500,
                 color: 'var(--color-accent)',
                 textDecoration: 'none',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
               }}
             >
               Open Maintenance
               <span aria-hidden="true" style={{ fontSize: 14 }}>\u2192</span>
-            </Link>
+            </button>
           </div>
         </Section>
       </div>

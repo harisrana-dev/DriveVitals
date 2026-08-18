@@ -27,13 +27,21 @@ function applyDriverTrends(mapped) {
 }
 
 function applyDriverPercentiles(drivers) {
-  const scored = drivers.filter((d) => d.historical?.safetyScore != null);
-  if (scored.length === 0) return drivers;
+  const scored = drivers.filter(
+    (d) => d.historical?.safetyScore != null && d.historical?.scoreQuality === 'valid'
+  );
+  if (scored.length < 2) return drivers;
   const sorted = [...scored].sort(
     (a, b) => a.historical.safetyScore - b.historical.safetyScore
   );
+  const uniqueScores = new Set(sorted.map((d) => d.historical.safetyScore));
+  const hasMeaningfulVariation = uniqueScores.size > 1;
+
   return drivers.map((d) => {
-    if (d.historical?.safetyScore == null) return d;
+    if (d.historical?.safetyScore == null || d.historical?.scoreQuality !== 'valid') return d;
+    if (!hasMeaningfulVariation) {
+      return { ...d, historical: { ...d.historical, percentile: null, percentileNote: 'no_variation' } };
+    }
     const percentile = Math.round(
       (sorted.filter((x) => x.historical.safetyScore <= d.historical.safetyScore).length /
         sorted.length) *
@@ -93,7 +101,9 @@ export function useDriversOverview() {
         return level === 'high' || level === 'critical';
       }
     ).length;
-    const scored = drivers.filter((d) => d.historical?.safetyScore != null);
+    const scored = drivers.filter(
+      (d) => d.historical?.safetyScore != null && d.historical?.scoreQuality === 'valid'
+    );
     const avgScore =
       scored.length > 0
         ? Math.round(scored.reduce((s, d) => s + d.historical.safetyScore, 0) / scored.length)

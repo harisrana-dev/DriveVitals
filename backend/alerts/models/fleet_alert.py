@@ -68,6 +68,7 @@ class FleetAlert:
     severity: AlertSeverity
     message: str
     created_at: datetime
+    last_triggered_at: datetime | None = None
     driver_id: str | None = None
     trip_id: str | None = None
     condition: str | None = None

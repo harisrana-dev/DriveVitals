@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { useTrip } from '../../hooks/useTripsData';
 import { useTripTelemetry } from '../../hooks/useTripTelemetry';
+import { drawerStackOffset, drawerZIndex, overlayZIndex } from '../../utils/drawerLayout';
 
 const SEVERITY_COLORS = {
   severe: 'var(--color-red)',
@@ -45,17 +46,18 @@ function formatTimestamp(value) {
   });
 }
 
-export function TripDrawer({ trip, onClose, onDelete }) {
+export function TripDrawer({ trip, onClose, onDelete, depth = 0 }) {
   if (!trip) return null;
 
   return (
-    <DrawerFrame onClose={onClose}>
+    <DrawerFrame onClose={onClose} depth={depth}>
       <DrawerContent trip={trip} onClose={onClose} onDelete={onDelete} />
     </DrawerFrame>
   );
 }
 
-function DrawerFrame({ onClose, children }) {
+function DrawerFrame({ onClose, children, depth = 0 }) {
+  const right = drawerStackOffset(depth);
   return (
     <>
       <div
@@ -64,7 +66,7 @@ function DrawerFrame({ onClose, children }) {
           position: 'fixed',
           inset: 0,
           background: 'rgba(0,0,0,0.3)',
-          zIndex: 300,
+          zIndex: overlayZIndex(depth),
           animation: 'fadeIn 0.15s ease-out',
         }}
       />
@@ -72,14 +74,14 @@ function DrawerFrame({ onClose, children }) {
         style={{
           position: 'fixed',
           top: 0,
-          right: 0,
+          right,
           width: 560,
           maxWidth: '94vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
           boxShadow: 'var(--color-shadow-lg)',
-          zIndex: 301,
+          zIndex: drawerZIndex(depth),
           display: 'flex',
           flexDirection: 'column',
           animation: 'slideInRight 0.2s ease-out',

@@ -27,7 +27,7 @@ export function generateDriverInsights({ driver, allDrivers }) {
 
   const insights = [];
   const scored = (allDrivers || []).filter(
-    (d) => d && d.historical?.safetyScore != null
+    (d) => d && d.historical?.safetyScore != null && d.historical?.scoreQuality === 'valid'
   );
   const historical = driver.historical || {};
   const riskLevel = driverRiskLevel(driver);
@@ -46,7 +46,7 @@ export function generateDriverInsights({ driver, allDrivers }) {
     return insights;
   }
 
-  if (historical.safetyScore != null && scored.length >= 3) {
+  if (historical.safetyScore != null && historical.scoreQuality === 'valid' && scored.length >= 3) {
     const fleetAvg = scored.reduce((s, d) => s + d.historical.safetyScore, 0) / scored.length;
     const diff = Math.round(historical.safetyScore - fleetAvg);
     const below = diff < 0;
@@ -67,6 +67,17 @@ export function generateDriverInsights({ driver, allDrivers }) {
       action: below
         ? 'Prioritise a coaching session focused on this driver\u2019s leading behaviour events.'
         : 'Consider highlighting this driver\u2019s practices in fleet training.',
+    });
+  } else if (historical.safetyScore != null && historical.scoreQuality !== 'valid') {
+    insights.push({
+      id: 'score-degraded',
+      category: 'data',
+      severity: 'info',
+      title: 'Score data quality is insufficient',
+      observation: `${driver.name}'s safety score is not meaningful because the recorded distance (${historical.totalDistanceKm != null ? `${historical.totalDistanceKm.toFixed(1)} km` : 'unknown'}) is below the minimum required for reliable density normalisation.`,
+      evidence: 'Score requires a minimum of 1 km of recorded driving distance.',
+      implication: 'Ranking and benchmark comparisons based on this score are unreliable.',
+      action: 'Complete more trips with sufficient distance to generate meaningful scores.',
     });
   }
 

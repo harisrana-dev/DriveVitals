@@ -14,8 +14,13 @@ export const AlertHistory = memo(function AlertHistory({
   filtersApi,
   onIncidentClick,
   selectedKey,
+  onAcknowledgeAllPassive,
 }) {
   const [sortBy, setSortBy] = useState('severity');
+  const isResolvedTab = filtersApi.filters.statusTab === 'resolved';
+  const hasUnacknowledgedPassive = filtersApi.filteredIncidents.some(
+    (i) => i.status === 'resolved' && !i.acknowledged
+  );
 
   return (
     <div
@@ -55,6 +60,8 @@ export const AlertHistory = memo(function AlertHistory({
         selectedKey={selectedKey}
         sortBy={sortBy}
         onSortChange={setSortBy}
+        onAcknowledgeAllPassive={onAcknowledgeAllPassive}
+        showAcknowledgeAllPassive={isResolvedTab && hasUnacknowledgedPassive}
       />
     </div>
   );

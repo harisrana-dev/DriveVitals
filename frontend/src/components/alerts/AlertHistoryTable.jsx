@@ -1,12 +1,11 @@
-import { memo } from 'react';
+import { memo, useRef, useEffect } from 'react';
 import { ArrowUpRight, Check, ChevronsUpDown } from 'lucide-react';
 import { useLiveData } from '../../context/LiveDataContext';
 import { severityRank } from '../../services/alertAdapter';
 import { SeverityBadge } from './SeverityBadge';
 import { AlertStatusBadge } from './AlertStatusBadge';
 import { AlertCard } from './AlertCard';
-import { useRelativeTime } from '../../hooks/useRelativeTime';
-import { alertStaleness, formatEventCounts, categoryDisplayLabel } from '../../utils/alerts';
+import { alertAge, alertStaleness, formatEventCounts, categoryDisplayLabel } from '../../utils/alerts';
 
 const GRID = '76px 1.15fr 0.95fr 1.6fr 0.95fr 0.8fr 1fr 1.2fr 96px';
 
@@ -60,12 +59,42 @@ export const AlertHistoryTable = memo(function AlertHistoryTable({
   selectedKey,
   sortBy,
   onSortChange,
+  onAcknowledgeAllPassive,
+  showAcknowledgeAllPassive,
 }) {
   const list = sortIncidents(incidents, sortBy);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [incidents]);
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginBottom: 8 }}>
+        {showAcknowledgeAllPassive && onAcknowledgeAllPassive && (
+          <button
+            onClick={onAcknowledgeAllPassive}
+            style={{
+              padding: '4px 10px',
+              borderRadius: 6,
+              border: '1px solid var(--color-border)',
+              background: 'transparent',
+              color: 'var(--color-text-secondary)',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 0.12s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-accent-subtle)'; e.currentTarget.style.color = 'var(--color-accent)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+          >
+            Acknowledge All Passive
+          </button>
+        )}
         <ChevronsUpDown size={12} style={{ color: 'var(--color-text-muted)' }} />
         <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Sort</span>
         <select
@@ -90,7 +119,7 @@ export const AlertHistoryTable = memo(function AlertHistoryTable({
 
       <div className="alerts-history-desktop">
         <div style={{ border: '1px solid var(--color-border)', borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ maxHeight: 460, overflowY: 'auto', scrollbarGutter: 'stable' }}>
+          <div ref={scrollRef} style={{ maxHeight: 460, overflowY: 'auto', scrollbarGutter: 'stable' }}>
             <div
               style={{
                 position: 'sticky',
@@ -167,10 +196,11 @@ export const AlertHistoryTable = memo(function AlertHistoryTable({
 
 function HistoryRow({ incident, selected, onClick }) {
   const { acknowledgeAlert } = useLiveData();
-  const timeAgo = useRelativeTime(incident.created_at);
+  const timeAgo = alertAge(incident.created_at);
   const staleness = alertStaleness(incident);
   const stale = staleness.level === 'stale' || staleness.level === 'hard-stale';
   const resolved = incident.status === 'resolved';
+  const isPassive = resolved && !incident.acknowledged;
   const eventSummary = formatEventCounts(incident.eventCounts);
   const category = categoryDisplayLabel(incident.category);
 
@@ -200,6 +230,7 @@ function HistoryRow({ incident, selected, onClick }) {
         padding: '9px 12px',
         borderBottom: '1px solid var(--color-border-light)',
         background: selected ? 'var(--color-accent-subtle)' : 'transparent',
+        borderLeft: isPassive ? '3px solid var(--color-text-muted)' : '3px solid transparent',
         cursor: 'pointer',
         opacity: resolved || (stale && !selected) ? 0.55 : stale ? 0.8 : 1,
         transition: 'background-color 0.12s ease',
@@ -247,6 +278,23 @@ function HistoryRow({ incident, selected, onClick }) {
 
       <span style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
         <AlertStatusBadge status={incident.status} size="sm" />
+        {isPassive && (
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              color: 'var(--color-text-muted)',
+              background: 'var(--color-surface-hover)',
+              padding: '1px 5px',
+              borderRadius: 3,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Passive
+          </span>
+        )}
         {stale && !resolved && (
           <span
             style={{

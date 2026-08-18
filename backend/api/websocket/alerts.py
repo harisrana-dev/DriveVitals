@@ -55,6 +55,7 @@ def publish_alert_row(event_type: str, alert) -> None:
             "acknowledged": alert.acknowledged,
             "acknowledged_at": _to_iso(alert.acknowledged_at),
             "created_at": _to_iso(alert.created_at),
+            "last_triggered_at": _to_iso(alert.last_triggered_at),
             "resolved_at": _to_iso(alert.resolved_at),
             "condition": alert.condition,
             "category": alert.category,

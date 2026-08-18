@@ -17,6 +17,7 @@ import { TripDrawer } from '../trips/TripDrawer';
 import { EmptyState } from '../ui/EmptyState';
 import { computeDriverBenchmark } from '../../utils/driverBenchmark';
 import { generateDriverInsights } from '../../utils/driverInsights';
+import { drawerStackOffset, drawerZIndex, overlayZIndex } from '../../utils/drawerLayout';
 
 const STATUS_MAP = {
   active: { label: 'ACTIVE', color: 'var(--color-green)', bg: 'var(--color-green-bg)' },
@@ -40,12 +41,12 @@ function gradeColor(grade) {
   return 'var(--color-red)';
 }
 
-export function DriverProfileDrawer({ driverId, onClose }) {
+export function DriverProfileDrawer({ driverId, onClose, depth = 0 }) {
   const driver = useDriver(driverId);
   const [activeTab, setActiveTab] = useState('Overview');
 
   return (
-    <DrawerFrame onClose={onClose}>
+    <DrawerFrame onClose={onClose} depth={depth}>
       {driver ? (
         <DrawerContent
           driver={driver}
@@ -60,7 +61,8 @@ export function DriverProfileDrawer({ driverId, onClose }) {
   );
 }
 
-function DrawerFrame({ onClose, children }) {
+function DrawerFrame({ onClose, children, depth = 0 }) {
+  const right = drawerStackOffset(depth, 500);
   return (
     <>
       <div
@@ -69,7 +71,7 @@ function DrawerFrame({ onClose, children }) {
           position: 'fixed',
           inset: 0,
           background: 'rgba(0,0,0,0.3)',
-          zIndex: 300,
+          zIndex: overlayZIndex(depth),
           animation: 'fadeIn 0.15s ease-out',
         }}
       />
@@ -77,14 +79,14 @@ function DrawerFrame({ onClose, children }) {
         style={{
           position: 'fixed',
           top: 0,
-          right: 0,
+          right,
           width: 500,
           maxWidth: '92vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
           boxShadow: 'var(--color-shadow-lg)',
-          zIndex: 301,
+          zIndex: drawerZIndex(depth),
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -156,6 +158,7 @@ function DrawerContent({ driver, activeTab, onTabChange, onClose }) {
           key={selectedTrip.id}
           trip={selectedTrip}
           onClose={() => setSelectedTrip(null)}
+          depth={1}
         />
       )}
     </>
@@ -386,7 +389,13 @@ function DualScoreBlocks({ driver, relativeTime, trend, TrendIcon }) {
         label="Historical Safety"
         score={historical.safetyScore}
         subtitle={
-          historical.grade
+          historical.scoreQuality === 'insufficient_distance'
+            ? `Score unreliable — ${historical.totalDistanceKm != null ? `${historical.totalDistanceKm.toFixed(1)} km` : 'insufficient distance'} recorded`
+            : historical.scoreQuality === 'insufficient_trips'
+            ? 'Score unreliable — too few completed trips'
+            : historical.scoreQuality === 'no_data'
+            ? 'No trip data available yet'
+            : historical.grade
             ? `Grade ${historical.grade} over ${historical.tripsCompleted ?? 0} trips`
             : 'No completed-trip score recorded yet'
         }
@@ -609,6 +618,18 @@ function OverviewTab({ driver, benchmark }) {
             {historical.percentile}th percentile for safety across scored drivers
           </div>
         )}
+        {historical.percentile == null && historical.scoreQuality === 'no_variation' && (
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 12,
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            <Trophy size={11} style={{ verticalAlign: 'text-bottom', marginRight: 4, opacity: 0.5 }} />
+            No meaningful percentile — all scored drivers have equivalent safety scores
+          </div>
+        )}
       </div>
 
       <FleetBenchmark benchmark={benchmark} compact />
@@ -698,8 +719,8 @@ function LiveTab({ driver }) {
             <LiveTelemetryItem icon={<Activity size={13} />} label="RPM" value={telemetry.rpm != null ? Math.round(smoothRpm).toLocaleString() : '—'} />
             <LiveTelemetryItem icon={<Zap size={13} />} label="Throttle" value={telemetry.throttle != null ? `${Math.round(smoothThrottle)}%` : '—'} />
             <LiveTelemetryItem icon={<Wind size={13} />} label="Brake" value={telemetry.brake != null ? `${Math.round(smoothBrake)}%` : '—'} />
-            <LiveTelemetryItem icon={<Fuel size={13} />} label="Fuel" value={telemetry.fuelLevel != null ? `${Math.round(smoothFuel)}%` : '—'} />
-            <LiveTelemetryItem icon={<Thermometer size={13} />} label="Coolant" value={telemetry.coolantTemp != null ? `${Math.round(smoothCoolant)}\u00b0C` : '—'} />
+            <LiveTelemetryItem icon={<Fuel size={13} />} label="Fuel Level" value={telemetry.fuelLevel != null ? `${Math.round(smoothFuel)}%` : '—'} />
+            <LiveTelemetryItem icon={<Thermometer size={13} />} label="Coolant" value={telemetry.coolantTemp != null ? `${Math.round(smoothCoolant)} \u00B0C` : '—'} />
             <LiveTelemetryItem icon={<Cpu size={13} />} label="Engine Load" value={telemetry.engineLoad != null ? `${Math.round(smoothEngineLoad)}%` : '—'} />
             <LiveTelemetryItem icon={<Activity size={13} />} label="Vehicle Health" value={telemetry.healthScore != null ? `${Math.round(smoothHealth)}%` : '—'} />
           </div>
@@ -876,7 +897,7 @@ function BehaviourTab({ driver }) {
   return (
     <div>
       <DriverBehaviourTimeline driver={driver} />
-      {driver.behaviour.totalRatePer100Km != null && (
+      {driver.behaviour.totalRatePer100Km != null ? (
         <div
           style={{
             marginTop: 8,
@@ -892,7 +913,19 @@ function BehaviourTab({ driver }) {
             : 'recorded distance'} —{' '}
           {driver.behaviour.totalRatePer100Km} per 100 km.
         </div>
-      )}
+      ) : driver.behaviour.totalEvents > 0 ? (
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 11,
+            color: 'var(--color-text-muted)',
+            lineHeight: 1.5,
+          }}
+        >
+          {driver.behaviour.totalEvents} recorded event
+          {driver.behaviour.totalEvents === 1 ? '' : 's'} — insufficient distance for reliable per-100-km rate.
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1058,11 +1091,34 @@ function PerformanceTrend({ performance, observations }) {
       <div>
         <SectionTitle>Performance Trend</SectionTitle>
         <EmptyState
-          title="Not enough completed trips"
-          description="At least two scored trips are needed to plot a performance trend."
+          title="No performance trend data"
+          description="At least two scored completed trips are needed to plot a performance trend."
         />
       </div>
     );
+  }
+
+  if (performance.history.length === 2) {
+    const h0 = performance.history[0];
+    const h1 = performance.history[1];
+    if (h0?.score != null && h1?.score != null && h0.score === h1.score) {
+      return (
+        <div>
+          <SectionTitle>Performance Trend</SectionTitle>
+          <div style={{
+            padding: '16px',
+            borderRadius: 8,
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border-light)',
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+            textAlign: 'center',
+          }}>
+            No meaningful trend — both scored trips have identical safety scores ({h0.score}). Collect more trip data to observe a performance direction.
+          </div>
+        </div>
+      );
+    }
   }
 
   const history = performance.history;
@@ -1221,7 +1277,7 @@ function FleetBenchmark({ benchmark, compact }) {
             value={
               benchmark.driverEventRate != null && benchmark.fleetEventRate != null
                 ? `${benchmark.driverEventRate.toFixed(1)} vs fleet ${benchmark.fleetEventRate.toFixed(1)} / 100 km`
-                : '—'
+                : 'Insufficient distance for reliable rate'
             }
           />
           {benchmark.fleetFuelEfficiency != null && !compact && (

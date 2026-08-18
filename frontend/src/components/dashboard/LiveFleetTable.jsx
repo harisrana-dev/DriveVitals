@@ -9,6 +9,7 @@ const STATUS_META = {
   ACTIVE: { label: 'Active', color: 'var(--color-green)', bg: 'var(--color-green-bg)' },
   TRIP_COMPLETED: { label: 'Trip Completed', color: 'var(--color-purple)', bg: 'var(--color-purple-bg)' },
   IDLE: { label: 'Idle', color: 'var(--color-blue)', bg: 'var(--color-blue-bg)' },
+  STALE: { label: 'Stale', color: 'var(--color-amber)', bg: 'var(--color-amber-bg)' },
   OFFLINE: { label: 'Offline', color: 'var(--color-text-muted)', bg: 'var(--color-surface-hover)' },
 };
 
@@ -94,7 +95,7 @@ export const LiveFleetTable = memo(function LiveFleetTable() {
         <span>Status</span>
         <span>Health</span>
         <span style={{ textAlign: 'right' }}>Speed</span>
-        <span style={{ textAlign: 'right' }}>Fuel</span>
+          <span style={{ textAlign: 'right' }}>Fuel Level</span>
         <span style={{ textAlign: 'right' }}>Coolant</span>
         <span>Updated</span>
       </div>
@@ -204,7 +205,7 @@ function FleetRow({ vehicle, onOpen }) {
       </span>
       <CellValue value={vehicle.speed} unit="km/h" />
       <CellValue value={vehicle.fuelLevel} unit="%" />
-      <CellValue value={vehicle.coolantTemp} unit="\u00B0C" />
+      <CellValue value={vehicle.coolantTemp} unit={' \u00B0C'} />
       <span style={{ fontSize: 10, color: 'var(--color-text-muted)', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
         {vehicle.lastUpdate ? timeAgo : '\u2014'}
       </span>

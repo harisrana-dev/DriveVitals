@@ -17,6 +17,7 @@ class AlertRead(BaseModel):
     acknowledged: bool
     acknowledged_at: datetime | None
     created_at: datetime
+    last_triggered_at: datetime | None
     resolved_at: datetime | None
     condition: str | None
     category: str | None

@@ -13,7 +13,7 @@ const sortOptions = [
   { value: 'name', label: 'Name' },
   { value: 'speed', label: 'Speed' },
   { value: 'healthScore', label: 'Health' },
-  { value: 'fuelLevel', label: 'Fuel' },
+        { value: 'fuelLevel', label: 'Fuel Level' },
 ];
 
 export const FleetFilters = memo(function FleetFilters({

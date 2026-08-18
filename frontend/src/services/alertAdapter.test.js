@@ -90,6 +90,20 @@ describe('adaptAlert', () => {
     expect(view.vehicle_name).toBeNull();
   });
 
+  it('passes through last_triggered_at', () => {
+    const withTrigger = {
+      ...restAlert,
+      last_triggered_at: '2026-08-17T12:00:00Z',
+    };
+    const view = adaptAlert(withTrigger, null);
+    expect(view.last_triggered_at).toBe('2026-08-17T12:00:00Z');
+  });
+
+  it('defaults last_triggered_at to null when absent', () => {
+    const view = adaptAlert(restAlert, null);
+    expect(view.last_triggered_at).toBeNull();
+  });
+
   it('maps resolved status to resolved', () => {
     const view = adaptAlert({ ...restAlert, status: 'resolved', acknowledged: true }, null);
     expect(view.status).toBe('resolved');
@@ -126,12 +140,14 @@ describe('applyAlertEvent', () => {
       evidence: { event_counts: { harsh_braking: 3 } },
       source: 'alert_engine',
       created_at: '2026-08-15T08:00:00Z',
+      last_triggered_at: '2026-08-15T08:00:00Z',
     };
     const next = applyAlertEvent([], event);
     expect(next).toHaveLength(1);
     expect(next[0].alert_id).toBe('trip_unsafe:v-101');
     expect(next[0].status).toBe('active');
     expect(next[0].acknowledged).toBe(false);
+    expect(next[0].last_triggered_at).toBe('2026-08-15T08:00:00Z');
   });
 
   it('does not duplicate an existing created event', () => {

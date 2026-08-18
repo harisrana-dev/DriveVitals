@@ -2,12 +2,8 @@ import { X, Check, CheckCircle2, ExternalLink, Wrench } from 'lucide-react';
 import { useLiveData } from '../../context/LiveDataContext';
 import { SeverityBadge } from './SeverityBadge';
 import { AlertStatusBadge } from './AlertStatusBadge';
-import { useRelativeTime } from '../../hooks/useRelativeTime';
-import {
-  severityColor,
-  alertStaleness,
-  EVENT_COUNT_ORDER,
-} from '../../utils/alerts';
+import { alertAge, severityColor, alertStaleness, EVENT_COUNT_ORDER } from '../../utils/alerts';
+import { drawerStackOffset, drawerZIndex, overlayZIndex } from '../../utils/drawerLayout';
 
 const EVENT_COUNT_LABELS = {
   total: 'events',
@@ -43,6 +39,7 @@ export function AlertDrawer({
   onViewDriver,
   onViewTrip,
   onViewMaintenance,
+  depth = 0,
 }) {
   if (!incident) return null;
 
@@ -54,7 +51,7 @@ export function AlertDrawer({
           position: 'fixed',
           inset: 0,
           background: 'rgba(0,0,0,0.3)',
-          zIndex: 300,
+          zIndex: overlayZIndex(depth),
           animation: 'fadeIn 0.15s ease-out',
         }}
       />
@@ -62,14 +59,14 @@ export function AlertDrawer({
         style={{
           position: 'fixed',
           top: 0,
-          right: 0,
+          right: drawerStackOffset(depth, 480),
           width: 480,
           maxWidth: '90vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
           boxShadow: 'var(--color-shadow-lg)',
-          zIndex: 301,
+          zIndex: drawerZIndex(depth),
           display: 'flex',
           flexDirection: 'column',
           animation: 'slideInRight 0.2s ease-out',
@@ -170,6 +167,22 @@ function Header({ incident, onClose }) {
               {incident.alert_ids.length > 1 ? `${incident.alert_ids.length} alerts` : incident.alert_ids[0]}
             </span>
             <SeverityBadge severity={incident.severity} size="sm" />
+            {incident.status === 'resolved' && !incident.acknowledged && (
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  color: 'var(--color-text-muted)',
+                  background: 'var(--color-surface-hover)',
+                  padding: '1px 5px',
+                  borderRadius: 3,
+                }}
+              >
+                Passive
+              </span>
+            )}
             {stale && (
               <span
                 style={{
@@ -220,6 +233,7 @@ function Header({ incident, onClose }) {
 function IncidentInfo({ incident }) {
   const created = formatDateTime(incident.created_at);
   const resolvedAt = formatDateTime(incident.resolved_at);
+  const lastTriggered = formatDateTime(incident.last_triggered_at);
   const acknowledgedAt = incident.acknowledged
     ? formatDateTime(incident.children.find((c) => c.acknowledged_at)?.acknowledged_at)
     : null;
@@ -256,6 +270,9 @@ function IncidentInfo({ incident }) {
           <AlertStatusBadge status={incident.status} />
         </div>
         <InfoRow label="Created" value={created || '—'} />
+        {lastTriggered && lastTriggered !== created && (
+          <InfoRow label="Last triggered" value={lastTriggered} />
+        )}
         <InfoRow label="Acknowledged" value={acknowledgedAt || '—'} />
         <InfoRow label="Resolved" value={resolvedAt || '—'} />
       </div>
@@ -399,7 +416,7 @@ function RelatedAlerts({ incident }) {
 
 function ChildAlertRow({ child }) {
   const { acknowledgeAlert, resolveAlert } = useLiveData();
-  const timeAgo = useRelativeTime(child.created_at);
+  const timeAgo = alertAge(child.created_at);
   const isActive = child.status === 'active';
 
   return (

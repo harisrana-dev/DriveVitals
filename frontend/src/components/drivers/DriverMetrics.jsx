@@ -1,12 +1,13 @@
 import { memo } from 'react';
 import { Route, Map, Gauge, Fuel, Clock, ShieldCheck } from 'lucide-react';
+import { formatFuelEfficiency, formatDuration, formatSpeed } from '../../utils/formatters';
 
 export const DriverMetrics = memo(function DriverMetrics({ driver }) {
   const h = driver.historical || {};
   const metrics = [
     { icon: <Route size={14} />, label: 'Total Distance', value: formatKm(h.totalDistanceKm) },
     { icon: <Map size={14} />, label: 'Trips Completed', value: formatTrips(h.tripsCompleted) },
-    { icon: <Gauge size={14} />, label: 'Average Speed', value: formatSpeed(h.averageSpeedKmh) },
+    { icon: <Gauge size={14} />, label: 'Average Speed', value: formatSpeedRaw(h.averageSpeedKmh) },
     { icon: <Fuel size={14} />, label: 'Fuel Efficiency', value: formatFuelEfficiency(h.fuelEfficiency) },
     { icon: <ShieldCheck size={14} />, label: 'Average Trip Score', value: formatScore(h.averageTripScore) },
     { icon: <Clock size={14} />, label: 'Driving Hours', value: formatHours(h.drivingHours) },
@@ -63,14 +64,9 @@ function formatTrips(trips) {
   return trips.toString();
 }
 
-function formatSpeed(speed) {
+function formatSpeedRaw(speed) {
   if (speed == null) return '—';
   return `${speed} km/h`;
-}
-
-function formatFuelEfficiency(kmPerL) {
-  if (kmPerL == null) return '—';
-  return `${kmPerL.toFixed(1)} km/L`;
 }
 
 function formatScore(score) {

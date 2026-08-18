@@ -16,6 +16,7 @@ import {
   HEALTH_SEVERITY_LABEL,
 } from '../../utils/health';
 import { dueStatus, dueStatusStyle } from '../../utils/maintenance';
+import { drawerStackOffset, drawerZIndex, overlayZIndex } from '../../utils/drawerLayout';
 
 const EVENT_LABELS = {
   speeding: 'Speeding',
@@ -40,7 +41,7 @@ function titleCase(value) {
   return String(value).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function VehicleDrawer({ vehicleId, onClose }) {
+export function VehicleDrawer({ vehicleId, onClose, depth = 0, onOpenMaintenance }) {
   const vehicle = useVehicle(vehicleId);
   const { maintenance } = useLiveData();
   const [expandedEvents, setExpandedEvents] = useState(false);
@@ -48,7 +49,7 @@ export function VehicleDrawer({ vehicleId, onClose }) {
   if (!vehicle) return null;
 
   return (
-    <DrawerFrame onClose={onClose}>
+    <DrawerFrame onClose={onClose} depth={depth}>
       <DrawerContent
         vehicle={vehicle}
         vehicleId={vehicleId}
@@ -56,12 +57,15 @@ export function VehicleDrawer({ vehicleId, onClose }) {
         expandedEvents={expandedEvents}
         onToggleEvents={() => setExpandedEvents((p) => !p)}
         onClose={onClose}
+        depth={depth}
+        onOpenMaintenance={onOpenMaintenance}
       />
     </DrawerFrame>
   );
 }
 
-function DrawerFrame({ onClose, children }) {
+function DrawerFrame({ onClose, children, depth = 0 }) {
+  const right = drawerStackOffset(depth);
   return (
     <>
       <div
@@ -70,7 +74,7 @@ function DrawerFrame({ onClose, children }) {
           position: 'fixed',
           inset: 0,
           background: 'rgba(0,0,0,0.3)',
-          zIndex: 300,
+          zIndex: overlayZIndex(depth),
           animation: 'fadeIn 0.15s ease-out',
         }}
       />
@@ -78,14 +82,14 @@ function DrawerFrame({ onClose, children }) {
         style={{
           position: 'fixed',
           top: 0,
-          right: 0,
+          right,
           width: 440,
           maxWidth: '90vw',
           height: '100vh',
           background: 'var(--color-surface)',
           borderLeft: '1px solid var(--color-border)',
           boxShadow: 'var(--color-shadow-lg)',
-          zIndex: 301,
+          zIndex: drawerZIndex(depth),
           display: 'flex',
           flexDirection: 'column',
           animation: 'slideInRight 0.2s ease-out',
@@ -97,7 +101,7 @@ function DrawerFrame({ onClose, children }) {
   );
 }
 
-function DrawerContent({ vehicle, vehicleId, maintenance, expandedEvents, onToggleEvents, onClose }) {
+function DrawerContent({ vehicle, vehicleId, maintenance, expandedEvents, onToggleEvents, onClose, onOpenMaintenance }) {
   const status = vehicle.displayStatus || 'OFFLINE';
 
   const reasons = useMemo(() => normalizeHealthReasons(vehicle.reasons), [vehicle.reasons]);
@@ -156,9 +160,9 @@ function DrawerContent({ vehicle, vehicleId, maintenance, expandedEvents, onTogg
           onToggleEvents={onToggleEvents}
         />
         <RecentConditionSection vehicle={vehicle} />
-        <MaintenanceSection items={vehicleMaintenance} vehicleId={vehicleId} />
+        <MaintenanceSection items={vehicleMaintenance} vehicleId={vehicleId} onOpenMaintenance={onOpenMaintenance} />
       </div>
-      <DrawerFooter vehicleId={vehicleId} />
+      <DrawerFooter vehicleId={vehicleId} onOpenMaintenance={onOpenMaintenance} />
     </>
   );
 }
@@ -745,7 +749,7 @@ function RecentConditionSection({ vehicle }) {
         />
         <TelemetryMetric
           icon={<Fuel size={12} />}
-          label="Fuel"
+              label="Fuel Level"
           value={`${Math.round(smoothFuel)}%`}
           stateLabel={metricStateLabel(fuelState)}
           stateColor={metricStateColor(fuelState)}
@@ -755,7 +759,10 @@ function RecentConditionSection({ vehicle }) {
   );
 }
 
-function MaintenanceSection({ items, vehicleId }) {
+function MaintenanceSection({ items, vehicleId, onOpenMaintenance }) {
+  const handleOpen = onOpenMaintenance
+    ? () => onOpenMaintenance(vehicleId)
+    : undefined;
   return (
     <div>
       <SectionTitle count={items.length}>Maintenance</SectionTitle>
@@ -841,24 +848,50 @@ function MaintenanceSection({ items, vehicleId }) {
             )}
           </div>
           <div style={{ marginTop: 8 }}>
-            <Link
-              to={`/maintenance?vehicle=${encodeURIComponent(vehicleId || '')}`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                fontSize: 12,
-                fontWeight: 500,
-                color: 'var(--color-accent)',
-                textDecoration: 'none',
-                transition: 'color 0.15s ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
-            >
-              Open Maintenance
-              <span aria-hidden="true" style={{ fontSize: 14 }}>→</span>
-            </Link>
+            {onOpenMaintenance ? (
+              <button
+                onClick={handleOpen}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: 'var(--color-accent)',
+                  textDecoration: 'none',
+                  transition: 'color 0.15s ease',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+              >
+                Open Maintenance
+                <span aria-hidden="true" style={{ fontSize: 14 }}>{'\u2192'}</span>
+              </button>
+            ) : (
+              <Link
+                to={`/maintenance?vehicle=${encodeURIComponent(vehicleId || '')}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: 'var(--color-accent)',
+                  textDecoration: 'none',
+                  transition: 'color 0.15s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+              >
+                Open Maintenance
+                <span aria-hidden="true" style={{ fontSize: 14 }}>{'\u2192'}</span>
+              </Link>
+            )}
           </div>
         </>
       )}
@@ -866,7 +899,7 @@ function MaintenanceSection({ items, vehicleId }) {
   );
 }
 
-function DrawerFooter({ vehicleId }) {
+function DrawerFooter({ vehicleId, onOpenMaintenance }) {
   return (
     <div
       style={{
@@ -894,34 +927,67 @@ function DrawerFooter({ vehicleId }) {
       >
         Acknowledge
       </button>
-      <Link
-        to={`/maintenance?vehicle=${encodeURIComponent(vehicleId || '')}`}
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '8px 12px',
-          borderRadius: 8,
-          border: '1px solid var(--color-border)',
-          background: 'transparent',
-          color: 'var(--color-text-secondary)',
-          fontSize: 13,
-          fontWeight: 500,
-          textDecoration: 'none',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'var(--color-surface-hover)';
-          e.currentTarget.style.color = 'var(--color-text-primary)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'transparent';
-          e.currentTarget.style.color = 'var(--color-text-secondary)';
-        }}
-      >
-        Open Maintenance
-      </Link>
+      {onOpenMaintenance ? (
+        <button
+          onClick={() => onOpenMaintenance(vehicleId)}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid var(--color-border)',
+            background: 'transparent',
+            color: 'var(--color-text-secondary)',
+            fontSize: 13,
+            fontWeight: 500,
+            textDecoration: 'none',
+            transition: 'all 0.15s ease',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--color-surface-hover)';
+            e.currentTarget.style.color = 'var(--color-text-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--color-text-secondary)';
+          }}
+        >
+          Open Maintenance
+        </button>
+      ) : (
+        <Link
+          to={`/maintenance?vehicle=${encodeURIComponent(vehicleId || '')}`}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '8px 12px',
+            borderRadius: 8,
+            border: '1px solid var(--color-border)',
+            background: 'transparent',
+            color: 'var(--color-text-secondary)',
+            fontSize: 13,
+            fontWeight: 500,
+            textDecoration: 'none',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--color-surface-hover)';
+            e.currentTarget.style.color = 'var(--color-text-primary)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--color-text-secondary)';
+          }}
+        >
+          Open Maintenance
+        </Link>
+      )}
     </div>
   );
 }

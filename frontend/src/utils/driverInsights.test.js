@@ -21,6 +21,7 @@ function driver(name, overrides = {}) {
     historical: {
       tripsCompleted: 8,
       safetyScore: 84,
+      scoreQuality: 'valid',
       riskLevel: 'low',
       scores: { safety: 84, efficiency: 78, aggression: 90 },
       performanceHistory: [],
@@ -32,9 +33,9 @@ function driver(name, overrides = {}) {
 }
 
 const fleet = [
-  driver('B', { historical: { safetyScore: 90 } }),
-  driver('C', { historical: { safetyScore: 86 } }),
-  driver('D', { historical: { safetyScore: 95 } }),
+  driver('B', { historical: { safetyScore: 90, scoreQuality: 'valid' } }),
+  driver('C', { historical: { safetyScore: 86, scoreQuality: 'valid' } }),
+  driver('D', { historical: { safetyScore: 95, scoreQuality: 'valid' } }),
 ];
 
 function scores(...values) {
@@ -57,7 +58,7 @@ describe('generateDriverInsights', () => {
   });
 
   it('flags a driver below the fleet-average safety', () => {
-    const d = driver('A', { historical: { safetyScore: 70, scores: { safety: 70 } } });
+    const d = driver('A', { historical: { safetyScore: 70, scoreQuality: 'valid', scores: { safety: 70 } } });
     const insights = generateDriverInsights({ driver: d, allDrivers: fleet });
     const bench = insights.find((i) => i.id === 'fleet-benchmark');
     expect(bench).toMatchObject({
@@ -69,7 +70,7 @@ describe('generateDriverInsights', () => {
 
   it('credits a driver above the fleet-average safety', () => {
     const insights = generateDriverInsights({
-      driver: driver('A', { historical: { safetyScore: 96, scores: { safety: 96 } } }),
+      driver: driver('A', { historical: { safetyScore: 96, scoreQuality: 'valid', scores: { safety: 96 } } }),
       allDrivers: fleet,
     });
     const bench = insights.find((i) => i.id === 'fleet-benchmark');

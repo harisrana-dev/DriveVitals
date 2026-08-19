@@ -37,6 +37,18 @@ const endpoints = {
     list: '/telemetry',
     vehicle: (id) => `/telemetry/${id}`,
   },
+  analytics: {
+    summary: '/analytics/summary',
+    fleetTrend: '/analytics/fleet-trend',
+    drivers: '/analytics/drivers',
+    driverTrend: (id) => `/analytics/drivers/${id}/trend`,
+    safetyDistribution: '/analytics/safety-distribution',
+    vehicles: '/analytics/vehicles',
+    trips: '/analytics/trips',
+    events: '/analytics/events',
+    eventsTrend: '/analytics/events/trend',
+    insights: '/analytics/insights',
+  },
   summary: {
     fleet: '/summary',
     vehicle: '/vehicle-summary',

@@ -2,7 +2,6 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Truck,
-  Radio,
   MapPin,
   Users,
   AlertTriangle,
@@ -17,7 +16,6 @@ import {
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={1.8} />, section: 'overview' },
   { to: '/fleet', label: 'Fleet', icon: <Truck size={18} strokeWidth={1.8} />, section: 'operations' },
-  { to: '/live-telemetry', label: 'Live Telemetry', icon: <Radio size={18} strokeWidth={1.8} />, section: 'operations' },
   { to: '/trips', label: 'Trips', icon: <MapPin size={18} strokeWidth={1.8} />, section: 'operations' },
   { to: '/drivers', label: 'Drivers', icon: <Users size={18} strokeWidth={1.8} />, section: 'intelligence' },
   { to: '/alerts', label: 'Alerts', icon: <AlertTriangle size={18} strokeWidth={1.8} />, section: 'intelligence' },

@@ -1,3 +1,4 @@
+from backend.api.v1.routers.analytics import router as analytics_router
 from backend.api.v1.routers.alerts import router as alerts_router
 from backend.api.v1.routers.driver_statistics import (
     router as driver_statistics_router,
@@ -14,6 +15,7 @@ from backend.api.v1.routers.vehicle_health import (
 from backend.api.v1.routers.vehicles import router as vehicles_router
 
 __all__ = [
+    "analytics_router",
     "alerts_router",
     "driver_statistics_router",
     "drivers_router",

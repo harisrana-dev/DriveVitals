@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { Dashboard } from './pages/Dashboard';
 import { FleetPage } from './pages/Fleet';
-import { LiveTelemetryPage } from './pages/LiveTelemetry';
 import { TripsPage } from './pages/Trips';
 import { DriversPage } from './pages/Drivers';
 import { AlertsPage } from './pages/Alerts';
@@ -40,7 +39,6 @@ function App() {
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/fleet" element={<FleetPage />} />
-          <Route path="/live-telemetry" element={<LiveTelemetryPage />} />
           <Route path="/trips" element={<TripsPage />} />
           <Route path="/drivers" element={<DriversPage />} />
           <Route path="/alerts" element={<AlertsPage />} />

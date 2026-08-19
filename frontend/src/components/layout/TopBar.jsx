@@ -9,7 +9,6 @@ import { useLiveData } from '../../context/LiveDataContext';
 const pageTitles = {
   '/dashboard': 'Dashboard',
   '/fleet': 'Fleet',
-  '/live-telemetry': 'Live Telemetry',
   '/trips': 'Trips',
   '/drivers': 'Drivers',
   '/alerts': 'Alerts',

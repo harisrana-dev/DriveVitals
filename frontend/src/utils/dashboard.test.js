@@ -123,6 +123,51 @@ describe('deriveConnectionState', () => {
     expect(deriveConnectionState(null, now, now)).toBe('offline');
     expect(deriveConnectionState(undefined, null, now)).toBe('offline');
   });
+
+  it('passes through when lastUpdate is null while live (no timestamp to compare)', () => {
+    expect(deriveConnectionState('live', null, now)).toBe('live');
+  });
+
+  it('passes through when lastUpdate is undefined while live (no timestamp to compare)', () => {
+    expect(deriveConnectionState('live', undefined, now)).toBe('live');
+  });
+
+  describe('connection state lifecycle', () => {
+    it('Test A — connected: LIVE when fresh data and live WS', () => {
+      const state = deriveConnectionState('live', now - 5000, now);
+      expect(state).toBe('live');
+    });
+
+    it('Test B — disconnect: OFFLINE when WS is offline', () => {
+      const state = deriveConnectionState('offline', now - 5000, now);
+      expect(state).toBe('offline');
+    });
+
+    it('Test B — disconnect: STALE when WS is live but data is old', () => {
+      const state = deriveConnectionState('live', now - SNAPSHOT_STALE_MS - 1, now);
+      expect(state).toBe('stale');
+    });
+
+    it('Test C — recent state preserved: stale carries distinct state from offline', () => {
+      const staleState = deriveConnectionState('live', now - SNAPSHOT_STALE_MS - 1, now);
+      const offlineState = deriveConnectionState('offline', now, now);
+      expect(staleState).toBe('stale');
+      expect(offlineState).toBe('offline');
+      expect(staleState).not.toBe(offlineState);
+    });
+
+    it('Test D — reconnect: LIVE again after fresh data arrives', () => {
+      const state = deriveConnectionState('live', now - 1000, now);
+      expect(state).toBe('live');
+    });
+
+    it('Test E — vehicle state isolation: backend disconnect does not affect deriveConnectionState logic', () => {
+      const offline = deriveConnectionState('offline', now, now);
+      expect(offline).toBe('offline');
+      const stale = deriveConnectionState('live', now - SNAPSHOT_STALE_MS - 1, now);
+      expect(stale).toBe('stale');
+    });
+  });
 });
 
 describe('rankVehiclesForTriage', () => {

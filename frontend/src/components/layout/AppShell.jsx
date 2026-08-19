@@ -1,11 +1,15 @@
 import { useState, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
+import { WifiOff, RefreshCw } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { VehicleDrawerProvider } from '../../context/VehicleDrawerContext';
 import { VehicleDrawer } from '../fleet/VehicleDrawer';
 import { MaintenanceDrawer } from '../maintenance/MaintenanceDrawer';
 import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
+import { useLiveData } from '../../context/LiveDataContext';
+import { useNow } from '../../hooks/useNow';
+import { deriveConnectionState } from '../../utils/dashboard';
 
 function AppShellInner() {
   const {
@@ -13,6 +17,9 @@ function AppShellInner() {
     maintenanceVehicleId, maintenanceDepth, closeMaintenance,
     openMaintenance,
   } = useVehicleDrawer();
+  const { connectionStatus: rawConnectionStatus, lastUpdate, syncing, sync } = useLiveData();
+  const now = useNow(5000);
+  const connectionStatus = deriveConnectionState(rawConnectionStatus, lastUpdate, now);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -60,6 +67,50 @@ function AppShellInner() {
 
       <div className="main-content" style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <TopBar onMenuClick={handleMobileMenu} />
+        {(connectionStatus === 'offline' || connectionStatus === 'stale') && (
+          <div
+            className="fade-in"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 24px',
+              background: 'var(--color-amber-bg)',
+              borderBottom: '1px solid var(--color-amber)',
+              fontSize: 12,
+              fontWeight: 500,
+              color: 'var(--color-text-primary)',
+            }}
+          >
+            <WifiOff size={14} style={{ color: 'var(--color-amber)', flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>
+              Backend disconnected — showing recent known state.
+            </span>
+            <button
+              onClick={sync}
+              disabled={syncing}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: 6,
+                border: '1px solid var(--color-amber)',
+                background: 'transparent',
+                color: 'var(--color-amber)',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: syncing ? 'default' : 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => { if (!syncing) { e.currentTarget.style.background = 'var(--color-amber)'; e.currentTarget.style.color = '#fff'; } }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-amber)'; }}
+            >
+              <RefreshCw size={12} style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
+              Retry
+            </button>
+          </div>
+        )}
         <main style={{ flex: 1, padding: 24, overflow: 'auto' }}>
           <Outlet />
         </main>

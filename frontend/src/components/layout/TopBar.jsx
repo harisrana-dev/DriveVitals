@@ -5,6 +5,8 @@ import ThemeToggle from '../common/ThemeToggle';
 import { ConnectionBadge } from '../ui/ConnectionBadge';
 import { useUnacknowledgedAlertCount } from '../../hooks/useFleetData';
 import { useLiveData } from '../../context/LiveDataContext';
+import { useNow } from '../../hooks/useNow';
+import { deriveConnectionState } from '../../utils/dashboard';
 
 const pageTitles = {
   '/dashboard': 'Dashboard',
@@ -26,7 +28,9 @@ function formatTime(timestamp) {
 export function TopBar({ onMenuClick }) {
   const location = useLocation();
   const alertCount = useUnacknowledgedAlertCount();
-  const { connectionStatus, lastUpdate, syncing, sync } = useLiveData();
+  const { connectionStatus: rawConnectionStatus, lastUpdate, syncing, sync } = useLiveData();
+  const now = useNow(5000);
+  const connectionStatus = deriveConnectionState(rawConnectionStatus, lastUpdate, now);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
 

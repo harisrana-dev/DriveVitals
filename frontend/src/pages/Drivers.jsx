@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Search, AlertTriangle, RefreshCw, Users, Trophy } from 'lucide-react';
+import { Search, RefreshCw, Users, Trophy } from 'lucide-react';
 import { useDriversFilters } from '../hooks/useDrivers';
 import { useLiveData } from '../context/LiveDataContext';
 import { DriverOverview } from '../components/drivers/DriverOverview';
@@ -32,52 +32,6 @@ const performanceOptions = [
   { value: 'declining', label: 'Declining' },
   { value: 'no_score', label: 'No Score Yet' },
 ];
-
-function OfflineBanner({ onRetry }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '12px 16px',
-        borderRadius: 10,
-        background: 'var(--color-amber-bg)',
-        border: '1px solid var(--color-amber)',
-        fontSize: 13,
-        color: 'var(--color-amber)',
-        fontWeight: 500,
-      }}
-    >
-      <AlertTriangle size={16} />
-      <span style={{ flex: 1 }}>
-        Live connection lost. Showing the last known fleet data.
-      </span>
-      <button
-        onClick={onRetry}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '6px 12px',
-          borderRadius: 6,
-          border: '1px solid var(--color-amber)',
-          background: 'transparent',
-          color: 'var(--color-amber)',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: 'pointer',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-amber)'; e.currentTarget.style.color = '#fff'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-amber)'; }}
-      >
-        <RefreshCw size={13} />
-        Retry
-      </button>
-    </div>
-  );
-}
 
 function SkeletonGrid() {
   return (
@@ -165,10 +119,6 @@ export function DriversPage() {
       </div>
 
       <DriverOverview />
-
-      {connectionStatus === 'offline' && !emptyFleet && (
-        <OfflineBanner onRetry={sync} />
-      )}
 
       {loading ? (
         <SkeletonGrid />

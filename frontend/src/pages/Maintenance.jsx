@@ -28,7 +28,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 export function MaintenancePage() {
   const maintenanceApi = useMaintenance();
   const filtersApi = useMaintenanceFilters();
-  const { hydrated, connectionStatus } = useLiveData();
+  const { hydrated } = useLiveData();
   const { openDrawer: openVehicleDrawer } = useVehicleDrawer();
   const [searchParams, setSearchParams] = useSearchParams();
   const queueRef = useRef(null);
@@ -90,20 +90,6 @@ export function MaintenancePage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1400 }}>
       <MaintenanceCommandHeader />
-
-      {connectionStatus === 'offline' && (
-        <div
-          style={{
-            padding: '10px 14px',
-            borderRadius: 10,
-            background: 'var(--color-red-bg)',
-            color: 'var(--color-red)',
-            fontSize: 12,
-          }}
-        >
-          Fleet connection is offline. Data shown is the last snapshot received.
-        </div>
-      )}
 
       {isEmpty ? (
         <EmptyState

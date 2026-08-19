@@ -1,5 +1,6 @@
 const STATUS_META = {
   live: { label: 'LIVE', color: 'var(--color-green)' },
+  stale: { label: 'STALE', color: 'var(--color-amber)' },
   connecting: { label: 'CONNECTING', color: 'var(--color-amber)' },
   offline: { label: 'OFFLINE', color: 'var(--color-red)' },
   syncing: { label: 'SYNCING', color: 'var(--color-blue)' },

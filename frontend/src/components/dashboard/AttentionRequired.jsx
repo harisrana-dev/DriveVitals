@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { AlertTriangle, ArrowRight, Radio } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDashboard } from '../../hooks/useDashboard';
-import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
+import { useVehicleDrawer } from '../../context/useVehicleDrawer';
 import { useRelativeTime } from '../../hooks/useRelativeTime';
 import { TRIAGE_META } from '../../utils/dashboard';
 

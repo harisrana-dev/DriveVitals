@@ -4,7 +4,7 @@ import { FleetFilters } from '../components/fleet/FleetFilters';
 import { VehicleGrid } from '../components/fleet/VehicleGrid';
 import { FleetStatusRing } from '../components/fleet/FleetStatusRing';
 import { useFleetFilters } from '../hooks/useFleetFilters';
-import { useVehicleDrawer } from '../context/VehicleDrawerContext';
+import { useVehicleDrawer } from '../context/useVehicleDrawer';
 
 export function FleetPage() {
   const {

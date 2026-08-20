@@ -1,6 +1,5 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-
-const TripDrawerContext = createContext(null);
+import { useState, useCallback } from 'react';
+import { TripDrawerContext } from "./tripDrawerCtx";
 
 export function TripDrawerProvider({ children }) {
   const [selectedTrip, setSelectedTrip] = useState(null);
@@ -24,12 +23,4 @@ export function TripDrawerProvider({ children }) {
       {children}
     </TripDrawerContext.Provider>
   );
-}
-
-export function useTripDrawer() {
-  const ctx = useContext(TripDrawerContext);
-  if (!ctx) {
-    throw new Error('useTripDrawer must be used within a TripDrawerProvider');
-  }
-  return ctx;
 }

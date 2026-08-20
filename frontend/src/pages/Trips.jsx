@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useTripsFilters } from '../hooks/useTripsFilters';
-import { useTripDrawer } from '../context/TripDrawerContext';
-import { useLiveData } from '../context/LiveDataContext';
+import { useTripDrawer } from '../context/useTripDrawer';
+import { useLiveData } from '../context/useLiveData';
 import { TripsKpis } from '../components/trips/TripsKpis';
 import { TripsFilters } from '../components/trips/TripsFilters';
 import { TripsTable } from '../components/trips/TripsTable';

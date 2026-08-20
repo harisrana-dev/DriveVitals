@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import {
-  BarChart, Bar, AreaChart, Area,
+  AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 

@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Gauge } from 'lucide-react';
 import { useDashboard } from '../../hooks/useDashboard';
-import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
+import { useVehicleDrawer } from '../../context/useVehicleDrawer';
 import { TRIAGE_META } from '../../utils/dashboard';
 
 const GRID = '1.4fr 1fr 52px 46px 64px 1.4fr';

@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Radio } from 'lucide-react';
 import { useLiveEvents } from '../../hooks/useAlerts';
-import { useLiveData } from '../../context/LiveDataContext';
+import { useLiveData } from '../../context/useLiveData';
 
 /**
  * LIVE NOW band. The single place on the page allowed a pulse. It renders

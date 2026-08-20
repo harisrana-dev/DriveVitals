@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { useLiveData } from '../../context/LiveDataContext';
+import { useLiveData } from '../../context/useLiveData';
 import { useAlerts } from '../../hooks/useAlerts';
 
 const CONNECTION_META = {

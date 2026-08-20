@@ -1,6 +1,6 @@
 import { memo, useRef, useEffect } from 'react';
 import { ArrowUpRight, Check, ChevronsUpDown } from 'lucide-react';
-import { useLiveData } from '../../context/LiveDataContext';
+import { useLiveData } from '../../context/useLiveData';
 import { severityRank } from '../../services/alertAdapter';
 import { SeverityBadge } from './SeverityBadge';
 import { AlertStatusBadge } from './AlertStatusBadge';

@@ -6,7 +6,6 @@
  * concepts — this module is the single source of truth.
  */
 
-const MS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 3600;
 const SECONDS_PER_DAY = 86400;

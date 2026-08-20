@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { useLiveData } from '../../context/LiveDataContext';
+import { useLiveData } from '../../context/useLiveData';
 import { useMaintenance } from '../../hooks/useMaintenance';
 
 const CONNECTION_META = {

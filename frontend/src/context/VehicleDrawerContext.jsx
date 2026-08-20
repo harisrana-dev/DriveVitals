@@ -1,6 +1,5 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-
-const VehicleDrawerContext = createContext(null);
+import { useState, useCallback } from 'react';
+import { VehicleDrawerContext } from "./vehicleDrawerCtx";
 
 export function VehicleDrawerProvider({ children }) {
   const [selectedVehicleId, setSelectedVehicleId] = useState(null);
@@ -44,12 +43,4 @@ export function VehicleDrawerProvider({ children }) {
       {children}
     </VehicleDrawerContext.Provider>
   );
-}
-
-export function useVehicleDrawer() {
-  const ctx = useContext(VehicleDrawerContext);
-  if (!ctx) {
-    throw new Error('useVehicleDrawer must be used within a VehicleDrawerProvider');
-  }
-  return ctx;
 }

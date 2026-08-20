@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Truck } from 'lucide-react';
 import { useDashboard } from '../../hooks/useDashboard';
-import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
+import { useVehicleDrawer } from '../../context/useVehicleDrawer';
 import { useRelativeTime } from '../../hooks/useRelativeTime';
 import { healthLabel, healthColor } from '../../utils/health';
 

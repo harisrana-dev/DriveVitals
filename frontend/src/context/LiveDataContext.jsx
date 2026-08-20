@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useCallback, useState } from "react";
+import { useEffect, useMemo, useRef, useCallback, useState } from "react";
 import { subscribeToChannel, reconnectAll, getState } from "../websocket";
 import { listVehicles, listVehicleHealth, getHealthConfig } from "../services/api/vehicleApi";
 import { listDrivers, listDriverStatistics } from "../services/api/driverApi";
@@ -7,8 +7,7 @@ import { listAlerts, acknowledgeAlert, resolveAlert } from "../services/api/aler
 import { listTelemetry } from "../services/api/telemetryApi";
 import { listTrips } from "../services/api/tripApi";
 import { applyAlertEvent } from "../services/alertAdapter";
-
-const LiveDataContext = createContext(null);
+import { LiveDataContext } from "./liveDataCtx";
 
 function mergeTripsPayload(wsTrips, restTrips) {
   const rest = Array.isArray(restTrips) ? restTrips : [];
@@ -301,7 +300,8 @@ export function LiveDataProvider({ children }) {
   }, [updateLastUpdate]);
 
   useEffect(() => {
-    hydrate();
+    const id = setTimeout(() => hydrate(), 0);
+    return () => clearTimeout(id);
   }, [hydrate]);
 
   useEffect(() => {
@@ -471,8 +471,4 @@ export function LiveDataProvider({ children }) {
       {children}
     </LiveDataContext.Provider>
   );
-}
-
-export function useLiveData() {
-  return useContext(LiveDataContext);
 }

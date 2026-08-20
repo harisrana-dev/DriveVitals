@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { HealthKpiCards } from './HealthKpiCards';
 import { ConnectionBadge } from '../ui/ConnectionBadge';
-import { useLiveData } from '../../context/LiveDataContext';
+import { useLiveData } from '../../context/useLiveData';
 import { useRelativeTime } from '../../hooks/useRelativeTime';
 
 export const VehicleHealthOverview = memo(function VehicleHealthOverview() {

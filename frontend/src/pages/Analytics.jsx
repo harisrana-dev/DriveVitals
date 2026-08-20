@@ -1,7 +1,5 @@
-import { useState, useMemo } from 'react';
 import { useAnalytics } from '../hooks/useAnalytics';
-import { useLiveData } from '../context/LiveDataContext';
-import { useVehicleDrawer } from '../context/VehicleDrawerContext';
+import { useLiveData } from '../context/useLiveData';
 import { AnalyticsCommandHeader } from '../components/analytics/AnalyticsCommandHeader';
 import { AnalyticsKpiStrip } from '../components/analytics/AnalyticsKpiStrip';
 import { FleetPerformance } from '../components/analytics/FleetPerformance';
@@ -14,7 +12,6 @@ import { Spinner } from '../components/ui/Spinner';
 
 export function AnalyticsPage() {
   const { vehicles, drivers } = useLiveData();
-  const { openDrawer: openVehicleDrawer } = useVehicleDrawer();
 
   const {
     range,
@@ -33,14 +30,12 @@ export function AnalyticsPage() {
     fleetTrend,
     driverRanking,
     driverTrend,
-    safetyDist,
     vehicleAnalytics,
     tripSummary,
     eventBreakdown,
     eventTrend,
     insights,
     loading,
-    errors,
     refresh,
     presets,
   } = useAnalytics();

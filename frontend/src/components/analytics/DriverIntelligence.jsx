@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import {
-  LineChart, Line, BarChart, Bar,
+  LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { User } from 'lucide-react';

@@ -1,7 +1,7 @@
 import { X, Wrench } from 'lucide-react';
 import { useVehicle } from '../../hooks/useVehicleHealth';
-import { useLiveData } from '../../context/LiveDataContext';
-import { useVehicleDrawer } from '../../context/VehicleDrawerContext';
+import { useLiveData } from '../../context/useLiveData';
+import { useVehicleDrawer } from '../../context/useVehicleDrawer';
 import {
   canonicalHealthCategory,
   healthColor,

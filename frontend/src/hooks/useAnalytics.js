@@ -106,14 +106,15 @@ export function useAnalytics() {
   }, [params]);
 
   useEffect(() => {
-    fetchAll();
+    const id = setTimeout(() => fetchAll(), 0);
+    return () => clearTimeout(id);
   }, [fetchAll]);
 
   // Fetch driver trend when a driver is selected
   useEffect(() => {
     if (!selectedDriverId) {
-      setDriverTrend(null);
-      return;
+      const id = setTimeout(() => setDriverTrend(null), 0);
+      return () => clearTimeout(id);
     }
     let cancelled = false;
     getDriverTrend(selectedDriverId, params).then((res) => {

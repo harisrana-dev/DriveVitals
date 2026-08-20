@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 
 const SECONDS_PER_DAY = 86400;
-const SECONDS_PER_WEEK = 7 * SECONDS_PER_DAY;
 const SECONDS_PER_MONTH = 30 * SECONDS_PER_DAY;
 
 function compute(iso) {
@@ -25,11 +24,11 @@ export function useRelativeTime(iso) {
   const [text, setText] = useState(() => compute(iso));
 
   useEffect(() => {
-    setText(compute(iso));
+    const id = setTimeout(() => setText(compute(iso)), 0);
     const interval = setInterval(() => {
       setText(compute(iso));
     }, 1000);
-    return () => clearInterval(interval);
+    return () => { clearTimeout(id); clearInterval(interval); };
   }, [iso]);
 
   return text;

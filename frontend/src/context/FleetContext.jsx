@@ -1,7 +1,5 @@
-import { createContext, useContext } from "react";
-import { useLiveData } from "./LiveDataContext";
-
-const FleetContext = createContext(null);
+import { useLiveData } from "./useLiveData";
+import { FleetContext } from "./fleetCtx";
 
 export function FleetProvider({ children }) {
 
@@ -18,11 +16,4 @@ export function FleetProvider({ children }) {
             {children}
         </FleetContext.Provider>
     );
-}
-
-
-export function useFleetContext(){
-
-    return useContext(FleetContext);
-
 }

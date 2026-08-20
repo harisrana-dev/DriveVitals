@@ -1,7 +1,5 @@
-import { createContext, useContext } from "react";
-import { useLiveData } from "./LiveDataContext";
-
-const TripsContext = createContext(null);
+import { useLiveData } from "./useLiveData";
+import { TripsContext } from "./tripsCtx";
 
 export function TripsProvider({ children }) {
     const {
@@ -17,8 +15,4 @@ export function TripsProvider({ children }) {
             {children}
         </TripsContext.Provider>
     );
-}
-
-export function useTripsContext() {
-    return useContext(TripsContext);
 }

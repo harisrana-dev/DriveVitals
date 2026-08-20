@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Search, RefreshCw, Users, Trophy } from 'lucide-react';
 import { useDriversFilters } from '../hooks/useDrivers';
-import { useLiveData } from '../context/LiveDataContext';
+import { useLiveData } from '../context/useLiveData';
 import { DriverOverview } from '../components/drivers/DriverOverview';
 import { DriverCard } from '../components/drivers/DriverCard';
 import { DriverLeaderboard } from '../components/drivers/DriverLeaderboard';

@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Route, Map, Gauge, Fuel, Clock, ShieldCheck } from 'lucide-react';
-import { formatFuelEfficiency, formatDuration, formatSpeed } from '../../utils/formatters';
+import { formatFuelEfficiency } from '../../utils/formatters';
 
 export const DriverMetrics = memo(function DriverMetrics({ driver }) {
   const h = driver.historical || {};

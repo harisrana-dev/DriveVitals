@@ -1,5 +1,5 @@
 import { X, Check, CheckCircle2, ExternalLink, Wrench } from 'lucide-react';
-import { useLiveData } from '../../context/LiveDataContext';
+import { useLiveData } from '../../context/useLiveData';
 import { SeverityBadge } from './SeverityBadge';
 import { AlertStatusBadge } from './AlertStatusBadge';
 import { alertAge, severityColor, alertStaleness, EVENT_COUNT_ORDER } from '../../utils/alerts';

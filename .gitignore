@@ -3,6 +3,13 @@
 # ============================================================
 
 # ----------------------------
+# Environment Variables
+# ----------------------------
+.env
+.env.*
+!.env.example
+
+# ----------------------------
 # Python
 # ----------------------------
 __pycache__/
@@ -16,7 +23,6 @@ __pycache__/
 venv/
 env/
 ENV/
-.env/
 
 # Python Build
 build/
@@ -37,11 +43,6 @@ htmlcov/
 
 # Logs
 *.log
-
-# Environment Variables
-.env
-.env.*
-!.env.example
 
 # SQLite
 *.sqlite3
@@ -66,7 +67,6 @@ pnpm-debug.log*
 .vscode/
 .mimocode/
 .brain_content/
-.env/
 
 # Uncomment if you want to share workspace settings
 # !.vscode/settings.json
@@ -140,8 +140,3 @@ coverage/
 # ----------------------------
 *.sql
 *.dump
-
-# Environment variables
-.env
-.env.*
-!.env.example

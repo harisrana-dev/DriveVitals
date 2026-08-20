@@ -1,4 +1,5 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -10,6 +11,18 @@ from alembic import context
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Override sqlalchemy.url from environment if available
+db_password = os.getenv("POSTGRES_PASSWORD")
+if db_password:
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_host = os.getenv("POSTGRES_HOST", "localhost")
+    db_port = os.getenv("POSTGRES_PORT", "5432")
+    db_name = os.getenv("POSTGRES_DB", "drivevitals_dev")
+    config.set_main_option(
+        "sqlalchemy.url",
+        f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
+    )
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 async def main():
     user = os.getenv("POSTGRES_USER", "postgres")
-    password = os.getenv("POSTGRES_PASSWORD", "drivevitals123")
+    password = os.getenv("POSTGRES_PASSWORD")
+    if not password:
+        raise RuntimeError(
+            "POSTGRES_PASSWORD environment variable is not set. "
+            "Copy .env.example to .env and configure your database credentials."
+        )
     host = os.getenv("POSTGRES_HOST", "localhost")
     port = os.getenv("POSTGRES_PORT", "5432")
     db = os.getenv("POSTGRES_DB", "drivevitals_dev")

@@ -7,9 +7,9 @@ services:
     restart: unless-stopped
 
     environment:
-      POSTGRES_USER: drivevitals
-      POSTGRES_PASSWORD: drivevitals123
-      POSTGRES_DB: drivevitals
+      POSTGRES_USER: ${POSTGRES_USER:-drivevitals}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-drivevitals}
 
     ports:
       - "5432:5432"

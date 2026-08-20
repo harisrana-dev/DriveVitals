@@ -1,5 +1,15 @@
 # Dashboard Frontend Design — DriveVitals
 
+**Note:** DriveVitals provides two WebSocket channels:
+
+1. **`/ws/dashboard`** (this document) — Fleet-wide snapshots broadcast every tick (~10 Hz). Payload includes current vehicle positions, speeds, fuel, health, and active alerts. Use for real-time dashboard updates.
+
+2. **`/ws/trips`** (see `docs/API.md`) — Trip completion/update snapshots sent on-demand when trips complete or transition states. Payload includes trip summary, efficiency metrics, driver scoring, and events. Use for trip history and detail views.
+
+For complete WebSocket channel specifications, see `docs/API.md`.
+
+---
+
 This document defines the contract between the DriveVitals backend and any frontend consuming the live dashboard feed. It describes what the backend guarantees and what the frontend is responsible for; it does not prescribe a specific frontend implementation.
 
 ## Connecting to the Backend

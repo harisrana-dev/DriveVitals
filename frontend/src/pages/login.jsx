@@ -103,11 +103,7 @@ function Login() {
       return;
     }
 
-    if (email === "admin@drivevitals.com" && password === "admin123") {
-      setShowLoader(true);
-    } else {
-      setError("Invalid email or password.");
-    }
+    setShowLoader(true);
   };
 
   return (

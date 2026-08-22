@@ -1,17 +1,16 @@
 # DriveVitals Backend
 
-This document covers the DriveVitals backend architecture, setup, and development workflow.
+This document covers the DriveVitals backend architecture, setup, and development workflow. Every path, class, and behavior described here reflects the actual code in this repository.
 
 ## Stack
 
-- **Language**: Python 3.12+
-- **Framework**: FastAPI (async HTTP server)
+- **Language**: Python 3.12+ (CI runs on 3.13)
+- **Framework**: FastAPI (async HTTP + WebSocket server)
 - **Database**: PostgreSQL 16 (persistent vehicle/driver/fleet state)
-- **ORM**: SQLAlchemy 2.x with async support (asyncpg driver)
+- **ORM**: SQLAlchemy 2.x async (`asyncpg` driver)
 - **Migrations**: Alembic (schema versioning)
 - **WebSockets**: native FastAPI WebSocket support
-- **Simulation**: in-process OBD-II telemetry generator (Ornstein-Uhlenbeck noise model)
-- **Testing**: pytest (unit + integration + API tests)
+- **Testing**: pytest with `pytest-asyncio` (async mode) and `httpx`
 
 ## Architecture Overview
 
@@ -19,262 +18,235 @@ The backend follows a layered, responsibility-driven structure:
 
 ```
 backend/
-├── api/                       # REST + WebSocket endpoints
-│   ├── v1/
-│   │   ├── routers/          # Individual route modules
-│   │   │   ├── analytics.py
-│   │   │   ├── drivers.py
-│   │   │   ├── vehicles.py
-│   │   │   ├── fleet.py
-│   │   │   ├── trips.py
-│   │   │   ├── maintenance.py
-│   │   │   ├── alerts.py
-│   │   │   └── websocket.py   # WebSocket handlers
-│   │   └── dependencies.py   # FastAPI dependency injection
-│   └── models/               # Pydantic request/response schemas
+├── api/                          # Integration layer (no business logic)
+│   ├── main.py                   # FastAPI app factory, lifespan wiring, CORS
+│   ├── dependencies.py           # Shared singletons (e.g. WebSocketManager)
+│   ├── v1/                       # Versioned REST API mounted under /api/v1
+│   │   ├── routers/              # One router per domain (vehicles, drivers,
+│   │   │                         #   routes, trips, telemetry, vehicle_health,
+│   │   │                         #   driver_statistics, maintenance, alerts,
+│   │   │                         #   analytics, system)
+│   │   ├── schemas/              # Pydantic request/response schemas
+│   │   └── services/             # Read services backing the routers
+│   └── websocket/                # WebSocket channels + broadcast workers
+│       ├── dashboard.py          # /ws/dashboard endpoint + snapshot_worker
+│       ├── trips.py              # /ws/trips endpoint + trips_worker
+│       ├── alerts.py             # /ws/alerts endpoint + alerts_worker
+│       ├── manager.py            # WebSocketManager (shared broadcast bus)
+│       ├── snapshot_publisher.py # Dashboard queue publisher
+│       └── trip_publisher.py     # Trips queue publisher
 │
-├── application/              # Core business logic layer
-│   ├── runtime.py           # DriveVitalsRuntime - singleton app manager
-│   ├── fleet_runner.py      # Per-vehicle simulation & trip execution
-│   ├── telemetry_pipeline.py # Stream processing (OBD raw → normalized)
-│   ├── persistence.py        # DB persist operations for trips/analytics
-│   ├── analytics/            # Rule-based analysis engines
-│   │   ├── trip_intelligence.py
-│   │   ├── vehicle_health_analyzer.py
-│   │   ├── maintenance_analyzer.py
-│   │   ├── driver_analytics.py
-│   │   └── alert_generator.py
-│   ├── driver_statistics_reconciler.py # Async job for daily reconciliation
-│   └── models/               # Business domain models (Vehicle, Trip, Driver, etc.)
+├── application/                  # Composition root & orchestration
+│   ├── runtime.py                # DriveVitalsRuntime — main tick loop, wires
+│   │                             #   engines, owns trip-completion logic
+│   ├── consumers/                # Pipeline consumers (vehicle health,
+│   │                             #   driver statistics)
+│   ├── intelligence_state.py     # In-memory intelligence state holder
+│   └── driver_statistics_reconciler.py
 │
-├── db/                       # Database persistence layer
-│   ├── session.py           # SQLAlchemy engine + sessionmaker (async)
-│   ├── models.py            # SQLAlchemy ORM classes
-│   └── migrations/          # Alembic migration scripts
+├── fleet/                        # Simulated world: domain models + runtime
+│   ├── models/                   # Vehicle, Driver, Route, Trip, Assignment
+│   ├── config/                   # Fleet configuration + factory
+│   └── runtime/                  # FleetRunner, VehicleRunner, runtime state
 │
-├── telemetry/                # Simulation & telemetry generation
-│   ├── generators/          # OBD-II data generators
-│   │   ├── base.py         # Abstract generator interface
-│   │   └── obd_generator.py # Ornstein-Uhlenbeck stochastic process
-│   └── models.py            # Telemetry data classes
-
-├── telemetry_sink.py         # WebSocket publisher (broadcasts dashboards + trip snapshots)
-├── conftest.py              # Test fixtures and configuration
-└── main.py                  # Entry point: create app, start runtime
+├── telemetry/                    # Telemetry production (simulation only)
+│   ├── generators/
+│   │   └── obd_generator.py      # OBDGenerator — per-tick OBD-style samples
+│   └── models/
+│       └── telemetry_sample.py   # Immutable TelemetrySample
+│
+├── pipeline/
+│   └── telemetry_pipeline.py     # Fan-out dispatch of each sample to consumers
+│
+├── analytics/                    # Rule-based analysis (no ML)
+│   ├── engine/                   # AnalyticsEngine (driver behaviour)
+│   ├── behaviour/                # Event detection, tracking, aggregation/scoring
+│   ├── vehicle_health/           # VehicleHealthEngine + 5 subsystem analyzers
+│   ├── driver_statistics/        # Per-driver aggregation over completed trips
+│   ├── trip/                     # Trip-level analysis and summaries
+│   ├── vehicle/, fleet/          # Vehicle/fleet-level analysis helpers
+│   ├── rules/                    # Configurable threshold rule definitions
+│   ├── context/, state/          # Trip context vs. mutable runtime state stores
+│   └── snapshot/                 # AnalyticsSnapshot output type + store
+│
+├── maintenance/                  # MaintenanceService + subsystem estimators
+├── alerts/                       # AlertEngine + 4 generators + deduplication
+│
+├── streaming/                    # AnalyticsSnapshotStream pub/sub
+│
+├── dashboard/                    # Frontend-facing dashboard assembly
+│   ├── services/dashboard_builder.py
+│   ├── mapper.py
+│   ├── models/                   # DashboardSnapshot, VehicleDashboardSummary…
+│   └── schemas/dashboard_payload.py
+│
+├── trips/                        # Trip snapshot assembly
+│   ├── services/                 # TripBuilder, ActiveTripBuilder
+│   ├── store/trip_store.py
+│   └── schemas/trip_payload.py   # TripsSnapshot / TripSnapshot
+│
+├── db/                           # Persistence layer (repository pattern)
+│   ├── session.py                # Async engine + session factory
+│   ├── persistence_service.py    # Single facade over all repositories
+│   ├── repositories/             # One repository per aggregate
+│   ├── models/                   # SQLAlchemy ORM models
+│   └── migrations/               # Alembic migration scripts
+│
+└── shared/, utils/               # Enums, exceptions, logging, helpers
 ```
 
-## Key Responsibilities
+## Key Components
 
-**DriveVitalsRuntime**
-- Central orchestrator; holds application state
-- Manages live vehicle simulations (FleetRunner instances)
-- Exposes methods to: start/stop vehicles, fetch snapshots, publish WebSocket messages
-- Single-process, in-memory, with async-safe persistence to PostgreSQL
+**DriveVitalsRuntime** (`application/runtime.py`)
+- Composition root; wires every engine and registers pipeline consumers
+- Drives the main simulation tick loop and trip lifecycle
+- Owns trip-completion logic: final scoring, persistence, driver statistics, maintenance estimation, alert generation
 
-**TelemetryPipeline**
-- Per-vehicle processor
-- Consumes OBD-II values (speed, RPM, throttle, fault codes, etc.)
-- Normalizes and filters raw telemetry
-- Feeds analytics engines (health, maintenance, trip intelligence)
+**FleetRunner / VehicleRunner** (`fleet/runtime/`)
+- `VehicleRunner` advances one vehicle/driver/route assignment by one tick and emits a `TelemetrySample`
+- `FleetRunner` ticks every active assignment per simulation step
 
-**Analytics Engines**
-- **Trip Intelligence**: detects events (acceleration, hard braking, cornering), computes efficiency metrics
-- **Vehicle Health Analyzer**: monitors sensor data, flags degradation, predicts maintenance
-- **Driver Analytics**: scores based on safe driving (speeding, harsh maneuvers, fuel efficiency)
-- **Maintenance Analyzer**: tracks component wear using OBD-II data, schedules service
-- **Alert Generator**: produces alerts for anomalies, thresholds, and maintenance events
+**OBDGenerator** (`telemetry/generators/obd_generator.py`)
+- Stateful, per-tick generator producing OBD-II-style measurements (speed, RPM, throttle, brake pressure, coolant temperature, engine load, fuel rate/level, odometer)
+- Uses bounded per-tick random variation (`random.Random`) shaped by driver behaviour profiles (STANDARD / ECO / CAUTIOUS / AGGRESSIVE) and route types (URBAN / HIGHWAY / RURAL), with internal-consistency rules: speed changes are bounded per tick, RPM is derived from speed via a simple gear model, fuel rate scales with engine load, coolant warms gradually toward operating temperature
+- This is **not** an Ornstein-Uhlenbeck process or any stochastic differential equation — it is bounded random noise plus deterministic derived relationships. An OU-based noise model exists only as design intent in `docs/design/DigitalTwinArchitecture/04_vehicle_simulation_mode.md` and is not implemented.
+- No real OBD-II/CAN hardware is used anywhere; the generator only emits raw measurements, never analytics conclusions
 
-All engines work on live telemetry streams. No machine learning; analysis is rule-based.
+**TelemetryPipeline** (`pipeline/telemetry_pipeline.py`)
+- Thin fan-out dispatcher: every registered consumer receives every sample independently
 
-**Persistence Layer**
-- Async SQLAlchemy session; asyncpg for fast PostgreSQL connectivity
-- Models: Vehicle, Driver, Fleet, Trip, TelemetrySnapshot, Alert, MaintenanceRecord, etc.
-- Alembic manages schema versioning across deployments
+**Analytics Engines** (all rule-based, no machine learning)
+- **AnalyticsEngine** (`analytics/engine/`, `analytics/behaviour/`): detects speeding, harsh braking, aggressive throttle, and high-RPM events against configurable thresholds plus route context; aggregates events per trip into a 0–100 safety score
+- **VehicleHealthEngine** (`analytics/vehicle_health/`): five subsystem analyzers (engine, brake, cooling, transmission, fuel system) produce a combined health snapshot from a rolling telemetry window
+- **DriverStatisticsEngine** (`analytics/driver_statistics/`): aggregates completed-trip behaviour into standing per-driver statistics, updated once per trip completion
+- **MaintenanceService** (`maintenance/`): five estimators mirror the health subsystems and produce prioritized maintenance recommendations
+- **AlertEngine** (`alerts/`): four generator families (health, telemetry, maintenance, trip) with deduplication
 
-**WebSocket Channels**
-1. `/ws/dashboard` – Broadcasts fleet-wide snapshots on every engine tick (~10 Hz)
-   - Payload: current vehicle positions, speeds, fuel, health, alerts
-   - Format: `dashboard_snapshot` (JSON)
-   
-2. `/ws/trips` – On-demand trip updates when trips complete or progress
-   - Payload: trip summary, efficiency, events, driver score
-   - Format: `trips_snapshot` (JSON)
+**Persistence Layer** (`db/`)
+- Repository pattern: one repository per aggregate, all accessed through `PersistenceService`
+- Async SQLAlchemy sessions over `asyncpg`; Alembic manages schema versioning
+- Trip rows are written before telemetry begins (foreign-key ordering constraint) and completed at trip end
 
 ## Running Locally
 
 ### Prerequisites
 
 - Python 3.12+
-- PostgreSQL 16+ running on `localhost:5432` (or configure `POSTGRES_HOST` in `.env`)
-- `.env` file with credentials (copy `.env.example` and fill in)
+- PostgreSQL 16 running on `localhost:5432` (the root `docker-compose.yml` provisions one: `docker compose up -d`)
+- A `.env` file at the repository root (copy `.env.example`); `POSTGRES_PASSWORD` is required, other variables have defaults
 
 ### Setup
 
 ```bash
-# Create and activate virtual environment
+# From the repository root
 python -m venv .venv
-.venv\Scripts\activate
+.venv\Scripts\activate          # Windows (bash: source .venv/bin/activate)
 
-# Install dependencies
 pip install -r requirements.txt
 
-# Run Alembic migrations to initialize schema
-cd backend/db/migrations
+# Apply database migrations (run from backend/)
+cd backend
 alembic upgrade head
 
-# Start the backend (from project root)
-cd ../..
-python -m backend.main
+# Start the API (from the repository root)
+cd ..
+uvicorn backend.api.main:app --reload
 ```
 
-The FastAPI server starts on `http://localhost:8000`.
+The FastAPI server starts on `http://localhost:8000`; `GET /` returns a status payload.
 
 ### Configuration
 
-Environment variables (set in `.env`):
+Environment variables read by `backend/db/session.py`:
 
-- `POSTGRES_USER` – Database user
-- `POSTGRES_PASSWORD` – Database password
-- `POSTGRES_DB` – Database name (default: `drivevitals_dev`)
-- `POSTGRES_HOST` – Database host (default: `localhost`)
-- `POSTGRES_PORT` – Database port (default: `5432`)
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `POSTGRES_USER` | `postgres` | Database user |
+| `POSTGRES_PASSWORD` | *(required)* | Database password |
+| `POSTGRES_DB` | `drivevitals_dev` | Database name |
+| `POSTGRES_HOST` | `localhost` | Database host |
+| `POSTGRES_PORT` | `5432` | Database port |
 
 ## Testing
 
-Backend tests are organized by type:
+Tests live at the **repository root** in `tests/`, organized in three layers:
 
 ```
 tests/
-├── unit/                    # Pure logic tests (no DB/network)
-│   ├── test_active_trip_snapshot.py
-│   ├── test_runtime_resilience.py
-│   ├── test_runtime_trip_completion.py
-│   └── ... (analytics unit tests)
-│
-├── integration/             # Multi-layer tests (with DB)
-│   ├── test_analytics_pipelines.py
-│   └── test_persistence.py
-│
-└── api/                     # FastAPI endpoint tests (HTTP + WS)
-    ├── test_analytics_api.py
-    ├── test_driver_api.py
-    ├── test_fleet_api.py
-    ├── test_trips_api.py
-    ├── test_vehicle_api.py
-    └── test_websocket.py
+├── unit/           # Pure logic tests (runtime, analytics, scoring)
+├── integration/    # Multi-layer tests (fleet runtime, consumers, persistence)
+└── api/            # FastAPI endpoint tests (HTTP + WebSocket), one file per router
 ```
 
-### Run Tests
+Run from the repository root:
 
 ```bash
-# Requires .env configured with PostgreSQL credentials
-pytest
-
-# Run only unit tests (no DB required)
-pytest tests/unit
-
-# Run specific test file
-pytest tests/unit/test_active_trip_snapshot.py -v
-
-# Run with coverage
-pytest --cov=backend tests/
+pytest              # full suite (integration/api tests need PostgreSQL configured)
+pytest tests/unit   # unit tests only (no DB required)
+pytest -v           # verbose
 ```
 
-### Test Database
+Configuration lives in `pytest.ini` (`testpaths = tests`, `asyncio_mode = auto`). CI (`.github/workflows/ci.yml`) provisions a PostgreSQL 16 service container, runs `alembic upgrade head` from `backend/`, then `pytest -v`.
 
-Integration and API tests require a live PostgreSQL connection. Tests use the same `.env` credentials.
-Database state is cleaned between test runs (fixtures handle setup/teardown).
+## REST API
 
-## API Endpoints
+All REST routes are versioned under `/api/v1`. Routers (defined in `backend/api/v1/routers/`):
 
-Key REST endpoints implemented:
+| Router | Prefix | Methods |
+|--------|--------|---------|
+| vehicles | `/api/v1/vehicles` | GET |
+| drivers | `/api/v1/drivers` | GET |
+| routes | `/api/v1/routes` | GET |
+| trips | `/api/v1/trips` | GET, DELETE |
+| telemetry | `/api/v1/telemetry` | GET |
+| vehicle-health | `/api/v1/vehicle-health` | GET |
+| driver-statistics | `/api/v1/driver-statistics` | GET |
+| maintenance | `/api/v1/maintenance` | GET, PATCH |
+| alerts | `/api/v1/alerts` | GET, POST (acknowledge/resolve) |
+| analytics | `/api/v1/analytics` | GET |
+| system | `/api/v1/system` | GET |
 
-- `GET /api/v1/fleet` – List all vehicles
-- `POST /api/v1/fleet/{vehicle_id}/start` – Start vehicle simulation
-- `POST /api/v1/fleet/{vehicle_id}/stop` – Stop vehicle simulation
-- `GET /api/v1/fleet/{vehicle_id}/trips` – Get trip history for vehicle
-- `GET /api/v1/trips/{trip_id}` – Get trip details
-- `GET /api/v1/vehicles` – List vehicles with status
-- `GET /api/v1/drivers` – List drivers with stats
-- `GET /api/v1/analytics/dashboard` – Current fleet snapshot
-- `GET /api/v1/alerts` – Active alerts
-- `GET /api/v1/maintenance` – Maintenance records
+See `docs/API.md` for the full endpoint specification.
 
-See `docs/API.md` for full endpoint specification.
+## WebSocket Channels
 
-### WebSocket Channels
+Three WebSocket endpoints exist (`backend/api/websocket/`). All three share a single `WebSocketManager`: broadcasts go to **every connected client regardless of which channel was joined**, so clients should dispatch on the message `type` field. All channels are server-push only — incoming client frames are read solely to detect disconnects (the frontend sends `ping` frames for its own stale-connection detection; there is no server command protocol).
 
-Both channels are established from the frontend:
+Message envelope:
 
-```javascript
-// Fleet-wide snapshot stream
-const dashWS = new WebSocket('ws://localhost:8000/ws/dashboard');
-dashWS.onmessage = (event) => {
-  const { dashboard_snapshot } = JSON.parse(event.data);
-  // { vehicles: [...], alerts: [...], fleet_health: ... }
-};
-
-// Trip event stream
-const tripWS = new WebSocket('ws://localhost:8000/ws/trips');
-tripWS.onmessage = (event) => {
-  const { trips_snapshot } = JSON.parse(event.data);
-  // { completed_trip_id, summary: {...}, events: [...] }
-};
+```json
+{ "type": "<message_type>", "data": { ... } }
 ```
 
-See `docs/API.md` for full message format.
+| Channel | Message types | Payload built from |
+|---------|---------------|--------------------|
+| `/ws/dashboard` | `dashboard_snapshot` | `DashboardSnapshot` (`backend/dashboard/schemas/dashboard_payload.py`): timestamp, fleet totals, fleet health score, attention count, and per-vehicle `VehicleDashboardSummary` rows (operational status, live telemetry values, subsystem health scores/statuses, driver scores/risk, active alert info, event flags, trip/route context) |
+| `/ws/trips` | `trips_snapshot` | `TripsSnapshot` (`backend/trips/schemas/trip_payload.py`): timestamp, trip list (per-trip metrics, event counts, severity, live-only fields), totals |
+| `/ws/alerts` | `alert_event` | Alert lifecycle events (`alert_created`, `alert_acknowledged`, `alert_resolved`) keyed by vehicle-scoped `alert_id` so clients can reconcile against REST rows |
+
+Publishers feed each worker via `asyncio.Queue`; workers drain their queue and call `WebSocketManager.broadcast()`. See `docs/API.md` for concrete payload examples matching these schemas.
 
 ## Design Decisions
 
-**Why Async SQLAlchemy?**
-- WebSocket connections and fleet simulation run concurrent with database I/O
-- asyncpg provides low-latency PostgreSQL access without blocking the event loop
-- In-memory OBD simulation can proceed while persistence happens in parallel
+**Why async SQLAlchemy?**
+- Fleet simulation and WebSocket broadcasting run concurrently with database I/O; `asyncpg` avoids blocking the event loop during persistence.
 
-**Why In-Process OBD Generator (Not Real Hardware)?**
-- DriveVitals is a *simulated* fleet platform for portfolio/learning
-- Ornstein-Uhlenbeck noise model produces realistic vehicle dynamics
-- Enables testing at scale without hardware; no production deployment assumed
-- See `docs/telemetry_design.md` for noise model details
+**Why a simulator instead of real OBD-II hardware?**
+- DriveVitals is a simulated fleet platform; no hardware integration is implemented. The telemetry schema is deliberately OBD-II-shaped so a real source could replace the generator without changing anything downstream of `TelemetryPipeline`.
 
-**Why Rule-Based Analytics (No ML)?**
-- Machine learning was deferred to later implementation phases
-- Rule-based engines are deterministic, auditable, and fast
-- Each analytics engine (trip intelligence, vehicle health, driver scoring) is extensible
-- See `docs/analytics_design.md` for rule specifications
+**Why rule-based analytics (no ML)?**
+- Rule-based engines are deterministic, auditable, and traceable to named thresholds. Machine learning is an explicit non-goal of the current implementation (see root README roadmap).
 
-**Why WebSocket Channels Split?**
-- `/ws/dashboard` broadcasts system-wide state every tick (high frequency, fan-out to many clients)
-- `/ws/trips` sends trip updates asynchronously (event-driven, lower volume)
-- Separation prevents dashboard lag from heavy trip processing
-
-**Why SQLAlchemy ORM (Not Raw SQL)?**
-- Type safety and IDE autocomplete on model attributes
-- Automatic migration tracking (Alembic) for schema versioning
-- Easier refactoring; queries are structured as Python objects
-- Async support (asyncpg) unblocks concurrent request handling
+**Why split WebSocket channels?**
+- Dashboard, trips, and alerts originate from different publishers and cadences; separate queues isolate slow consumers of one stream from another. Note the shared manager means delivery is currently fan-out to all clients; channel separation is about production cadence, not access control.
 
 ## Limitations
 
-**No Production Deployment**
-- Single process; cannot horizontally scale
-- WebSocket state held in memory; no session persistence
-- No load balancing, caching, or CDN support
-
-**No Real OBD-II Hardware**
-- All vehicle data is simulated
-- Generators use stochastic processes, not real vehicle CAN bus data
-
-**No Authentication/Authorization**
-- All API endpoints are public
-- No role-based access control; no audit logging
-
-**No Machine Learning**
-- Analytics engines are rule-based
-- Predictive features (e.g., maintenance forecasting) use heuristics only
-
-**Single Fleet per Runtime**
-- DriveVitalsRuntime holds one fleet in memory
-- No multi-tenant support; no per-customer isolation
+- **No production deployment**: single process, in-memory runtime state; no horizontal scaling, load balancing, or caching layer.
+- **Simulated data only**: no real OBD-II/CAN hardware; all vehicle data comes from `OBDGenerator`.
+- **No authentication/authorization**: all endpoints (REST and WebSocket) are public; no RBAC or audit logging.
+- **No machine learning**: all analytics and maintenance estimates are rule-based heuristics.
+- **Single fleet per runtime**: one in-memory fleet; no multi-tenant isolation.
+- **Shared WebSocket broadcast**: messages are delivered to all connected clients; there is no per-client filtering.
 
 See `docs/LIMITATIONS.md` for full scope and future work.

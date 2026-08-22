@@ -300,7 +300,7 @@ Persistence is **PostgreSQL 16**, accessed through SQLAlchemy's async engine (`a
 
 `PersistenceService` is the single entry point the runtime and API layer use for all database access; it wraps ten `Repository` classes (vehicle, driver, route, trip, telemetry, behaviour, vehicle health, driver statistics, maintenance, alert), each scoped to one aggregate and one `db/models/` SQLAlchemy model. Writes happen incrementally as data is produced — telemetry samples and health snapshots are persisted per tick, trip rows are created before telemetry begins (to satisfy a foreign-key constraint on `telemetry_samples`) and completed once the trip ends, and behaviour events, driver statistics, maintenance records, and alerts are persisted from their respective completion points rather than batched.
 
-A `docker-compose.yml` at the repository root provisions a standalone Postgres 16 container (`drivevitals` database) for local development; connection parameters are read from environment variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`, `POSTGRES_PORT`) with local defaults. A second `deployment/docker-compose.yml` exists but is currently empty — containerized deployment of the application itself (as opposed to just its database) is not yet implemented.
+A `docker-compose.yml` at the repository root provisions a standalone Postgres 16 container (`drivevitals` database) for local development; connection parameters are read from environment variables (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`, `POSTGRES_PORT`) with local defaults. Containerized deployment of the application itself (as opposed to just its database) is not yet implemented.
 
 ---
 
@@ -455,7 +455,7 @@ Everything below is **not implemented** and is not claimed elsewhere in this doc
 - Predictive (rather than rule-based) maintenance modeling
 - Full frontend/backend REST integration — retiring `mocks/data.js` fallbacks and aligning `frontend/src/api/endpoints.js` with the real `/api/v1` routes
 - Authentication and multi-user access control (the current login/signup screens are static UI only)
-- Containerized deployment of the application itself (`deployment/docker-compose.yml` is currently an empty placeholder)
+- Containerized deployment of the application itself
 - CI pipeline and test coverage reporting
 - Larger-scale fleet simulation beyond the current six-vehicle/six-driver configuration
 - Cloud deployment and multi-tenant operation

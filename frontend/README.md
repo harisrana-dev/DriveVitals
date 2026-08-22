@@ -1,339 +1,256 @@
 # DriveVitals Frontend
 
-React 18 + Vite web interface for the DriveVitals fleet telematics platform.
+React 18 + Vite single-page application for the DriveVitals fleet telematics platform. This document reflects the actual code under `frontend/src/`.
 
-## Architecture
+## Tech Stack
 
-**Tech Stack**
-- React 18 for UI components and state management
-- Vite for fast development and optimized production builds
-- Context API for application state (LiveDataContext, FleetContext, TripsContext, etc.)
-- Custom hooks for WebSocket and REST integration
-- CSS modules and inline styling for component isolation
+- **React 18** with function components and hooks
+- **Vite** for development server and production builds
+- **react-router-dom v7** for routing
+- **recharts** for charts, **lucide-react** for icons
+- **Context API + custom hooks** for state management (no Redux/Zustand)
+- **Vitest** for tests, **ESLint** (flat config) for linting
 
-**Key Directories**
+## Directory Structure
+
 ```
 frontend/src/
-├── pages/              # Top-level page components
-│   ├── Dashboard.jsx      # Fleet-wide live view
-│   ├── Trips.jsx          # Trip history and analytics
-│   ├── Vehicles.jsx       # Vehicle management and status
-│   ├── Drivers.jsx        # Driver profiles and statistics
-│   ├── Maintenance.jsx    # Maintenance schedules and records
-│   ├── Alerts.jsx         # Active and historical alerts
-│   ├── Settings.jsx       # Application preferences
-│   ├── Login.jsx          # Non-functional auth placeholder
-│   ├── Signup.jsx         # Non-functional auth placeholder
-│   └── NotFound.jsx       # 404 page
+├── api/                      # REST client layer
+│   ├── apiClient.js          # fetch wrapper: timeouts, envelope unwrap, PayloadError
+│   ├── config.js             # API_BASE / WS_BASE from env vars with localhost defaults
+│   ├── endpoints.js          # Centralized REST path builders
+│   └── errors.js             # ApiError, NetworkError, TimeoutError, PayloadError
 │
-├── components/         # Reusable UI components
-│   ├── ui/              # Low-level widgets
-│   │   ├── ConnectionBadge.jsx
-│   │   ├── TelemetryGauge.jsx
-│   │   ├── AlertCard.jsx
-│   │   ├── Card.jsx
-│   │   ├── Button.jsx
-│   │   └── ... (10+ shared components)
-│   ├── Fleet/           # Fleet-specific components
-│   │   ├── VehicleGrid.jsx
-│   │   ├── VehicleCard.jsx
-│   │   └── FleetHealthSummary.jsx
-│   ├── Drawers/         # Slide-out panels for detail views
-│   │   ├── TripDrawer.jsx       # Trip detail panel
-│   │   ├── VehicleDrawer.jsx    # Vehicle detail panel
-│   │   ├── DriverDrawer.jsx     # Driver profile panel
-│   │   └── AlertDrawer.jsx      # Alert detail panel
-│   └── Modals/          # Dialog components
-│       ├── ConfirmDialog.jsx
-│       └── ... (other modals)
+├── components/               # Organized by product domain
+│   ├── alerts/               # Alert command center components (queue, filters,
+│   │                         #   history table, KPI strip, risk panels…)
+│   ├── analytics/            # Analytics page sections (fleet performance,
+│   │                         #   safety, trip/fuel/driver intelligence…)
+│   ├── dashboard/            # Dashboard sections (KPI strip, live fleet table,
+│   │                         #   top risk vehicles, maintenance pressure…)
+│   ├── drivers/              # Driver cards, leaderboard, profile drawer,
+│   │                         #   score ring, behaviour timeline…
+│   ├── fleet/                # Vehicle grid/cards, fleet summary, vehicle drawer
+│   ├── maintenance/          # Maintenance tables, queues, horizon panel…
+│   ├── trips/                # Trips table/KPIs/filters, active trips list, drawer
+│   ├── vehicleHealth/        # Health cards/matrix/bars, health drawer…
+│   ├── layout/               # AppShell, Sidebar, TopBar
+│   ├── common/               # AppLoader, ThemeToggle
+│   ├── shared/               # PagePlaceholder
+│   └── ui/                   # Primitives: ConnectionBadge (+ test), EmptyState,
+│                             #   ErrorBoundary, Skeleton, Spinner
 │
-├── contexts/           # Context providers for global state
-│   ├── LiveDataContext.jsx    # Real-time dashboard snapshots (/ws/dashboard)
-│   ├── FleetContext.jsx       # Fleet configuration and metadata
-│   ├── TripsContext.jsx       # Trip history and details (/ws/trips)
-│   ├── TripDrawerContext.jsx  # Trip detail drawer state
-│   └── VehicleDrawerContext.jsx # Vehicle detail drawer state
+├── context/                  # Global state providers
+│   ├── LiveDataContext.jsx   # WebSocket subscriptions + REST hydration + merging
+│   ├── FleetContext.jsx      # Fleet-level UI state
+│   ├── TripsContext.jsx      # Trip list/detail UI state
+│   ├── TripDrawerContext.jsx # Trip drawer open/close state
+│   ├── VehicleDrawerContext.jsx
+│   └── (*Ctx.js / use*.js)   # Context objects + accessor hooks for each provider
 │
-├── hooks/              # Custom React hooks
-│   ├── useWebSocket.js        # WebSocket connection management
-│   ├── useDashboard.js        # Dashboard snapshot fetching
-│   ├── useTrips.js            # Trip data fetching
-│   ├── useVehicles.js         # Vehicle list and status
-│   ├── useDrivers.js          # Driver analytics
-│   ├── useAlerts.js           # Active alerts
-│   ├── useMaintenance.js      # Maintenance records
-│   └── useLocalStorage.js     # Persistent user preferences
+├── hooks/                    # One hook per data domain + UI utilities
+│   ├── useFleetData.js       # Merged live fleet view for the dashboard grid
+│   ├── useDashboard.js, useTripsData.js, useDrivers.js, useDriverTrips.js
+│   ├── useAlerts.js, useMaintenance.js, useVehicleHealth.js, useAnalytics.js
+│   ├── useFleetFilters.js, useTripsFilters.js, useVehicleHealthFilters.js
+│   └── useTripTelemetry.js, useSmoothValue.js, useTheme.js,
+│       useNow.js, useRelativeTime.js
 │
-├── services/           # API and WebSocket services
-│   ├── api.js         # REST client (analytics, vehicles, drivers, trips, maintenance, alerts)
-│   ├── websocket.js   # WebSocket client wrapper
-│   └── config.js      # API base URL and configuration
+├── pages/                    # Route targets (see Routing below)
+│   ├── Introductionpage.jsx  # Landing page ("/")
+│   ├── login.jsx, signup.jsx # Static demo UI only — no auth backend exists
+│   ├── Dashboard.jsx, Fleet.jsx, Trips.jsx, Drivers.jsx, Alerts.jsx,
+│   │   Analytics.jsx, VehicleHealth.jsx, Maintenance.jsx, Settings.jsx
+│   └── LiveTelemetry.jsx, 404page.jsx   # Present but not currently routed
 │
-├── styles/            # Global CSS
-│   ├── index.css      # Reset and layout
-│   └── variables.css  # CSS custom properties
+├── services/                 # Domain mapping + typed API modules
+│   ├── alertAdapter.js       # Applies /ws/alerts lifecycle events to alert rows
+│   ├── driverAdapter.js      # Driver data shaping
+│   └── api/                  # alertApi, analyticsApi, driverApi, healthApi,
+│                             #   maintenanceApi, telemetryApi, tripApi, vehicleApi
 │
-├── App.jsx            # Root component with routing
-├── main.jsx           # Entry point
-└── index.html         # Static HTML template
+├── websocket/                # WebSocket client
+│   ├── connectionManager.js  # Per-URL channels: reconnect/backoff/jitter,
+│   │                         #   heartbeat, stale detection, pub/sub subscribe
+│   └── index.js              # Channel registry: dashboard | trips | alerts
+│
+├── styles/                   # Global CSS (theme, typography, animations, auth)
+├── utils/                    # Pure helpers (formatters, filters, scoring utils;
+│                             #   most have co-located .test.js files)
+├── App.jsx                   # Router + provider tree
+└── main.jsx                  # Entry point
 ```
 
-## Data Flow
+## Routing
 
-### Live Dashboard (/ws/dashboard)
+Defined in `App.jsx`:
 
-```
-WebSocket /ws/dashboard (backend) 
-  ↓ (10 Hz broadcast)
-LiveDataContext 
-  ↓ (subscribers notified)
-Dashboard.jsx, FleetHealthSummary.jsx, etc.
-  ↓ (render current state)
-Browser UI
-```
+| Path | Page component |
+|------|----------------|
+| `/` | `Introductionpage` (Get Started landing) |
+| `/login`, `/signup` | Static demo UI only — no authentication exists |
+| `/dashboard` | `Dashboard` |
+| `/fleet` | `Fleet` |
+| `/trips` | `Trips` |
+| `/drivers` | `Drivers` |
+| `/alerts` | `Alerts` |
+| `/analytics` | `Analytics` |
+| `/vehicle-health` | `VehicleHealth` |
+| `/maintenance` | `Maintenance` |
+| `/settings` | `Settings` |
+| `*` | Redirects to `/dashboard` |
 
-**Message Format:**
+Shell routes render inside `components/layout/AppShell`. `LiveTelemetry.jsx` and `404page.jsx` exist but are not currently routed.
+
+Providers wrap the whole tree in this order: `LiveDataProvider → FleetProvider → TripsProvider → TripDrawerProvider`.
+
+## Real-Time Data (WebSocket)
+
+`src/websocket/index.js` registers three channels against the backend:
+
+| Channel | Message type handled |
+|---------|---------------------|
+| `ws://{WS_BASE}/ws/dashboard` | `dashboard_snapshot` |
+| `ws://{WS_BASE}/ws/trips` | `trips_snapshot` |
+| `ws://{WS_BASE}/ws/alerts` | `alert_event` |
+
+`connectionManager.js` implements per-channel connection handling:
+
+- Reconnect with exponential backoff (1 s base, 30 s cap) plus jitter
+- Heartbeat: sends `{"type":"ping"}` every 30 s; connections stale after 45 s of silence are dropped and reconnected
+- Pub/sub API (`subscribeToChannel`) so multiple consumers share one socket per channel
+- Connection states: `connecting` / `live` / `offline`
+
+All messages arrive in the backend envelope `{ "type": "<message_type>", "data": { ... } }`. Because the backend broadcasts to every connected client, handlers filter on `type`.
+
+### `/ws/dashboard` payload
+
+The `data` object is the backend's `DashboardSnapshot` (defined in `backend/dashboard/schemas/dashboard_payload.py`). Structurally (subset of fields shown):
+
 ```json
 {
-  "message_type": "dashboard_snapshot",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "vehicles": [
-    {
-      "id": "v001",
-      "make": "Tesla",
-      "model": "Model 3",
-      "status": "active",
-      "speed": 45,
-      "fuel": 0.85,
-      "health": "good",
-      "alerts_count": 0
-    }
-  ],
-  "fleet_health": "good",
-  "active_trips": 5,
-  "total_alerts": 2
+  "type": "dashboard_snapshot",
+  "data": {
+    "timestamp": "2026-08-21T12:00:00+00:00",
+    "total_fleet": 6,
+    "active_vehicle_count": 4,
+    "fleet_health_score": 82.5,
+    "attention_required": 1,
+    "vehicles": [
+      {
+        "vehicle_id": "V-101",
+        "driver_id": "D-101",
+        "vehicle_name": "2022 Ford Transit",
+        "driver_name": "Alice Smith",
+        "operational_status": "ACTIVE",
+        "speed_kmh": 45.2,
+        "rpm": 2100,
+        "throttle_position_percent": 32.5,
+        "brake_percent": 0.0,
+        "fuel_level_percent": 64.0,
+        "coolant_temperature_c": 88.5,
+        "engine_load_percent": 45.0,
+        "overall_health_score": 87.0,
+        "overall_health_status": "good",
+        "engine_health": 90.0,
+        "cooling_health": 88.0,
+        "brake_health": 85.0,
+        "transmission_health": 89.0,
+        "fuel_system_health": 86.0,
+        "driver_safety_score": 92.0,
+        "driver_risk_level": "low",
+        "active_alert_count": 0,
+        "active_alert_text": null,
+        "active_event_types": ["speeding"],
+        "speeding": true,
+        "aggressive_throttle": false,
+        "harsh_braking": false,
+        "high_rpm": false,
+        "odometer_km": 45230.5,
+        "last_updated_at": "2026-08-21T12:00:00+00:00",
+        "trip_status": "active",
+        "route_id": "R-101",
+        "route_name": "Downtown Loop"
+      }
+    ]
+  }
 }
 ```
 
-### Trip Events (/ws/trips)
+Field values are illustrative; the field names and structure match `VehicleDashboardSummary`. See `docs/API.md` for full payload references.
 
-```
-Trip completes on backend
-  ↓
-WebSocket /ws/trips (backend)
-  ↓ (event broadcast)
-TripsContext 
-  ↓ (update trip history)
-Trips.jsx, TripDrawer.jsx render new data
-  ↓
-Browser updates
-```
+### `/ws/trips` payload
 
-**Message Format:**
-```json
-{
-  "message_type": "trips_snapshot",
-  "trip_id": "trip_12345",
-  "vehicle_id": "v001",
-  "driver_id": "d001",
-  "status": "completed",
-  "duration_minutes": 25,
-  "distance_km": 18.5,
-  "fuel_efficiency": 6.2,
-  "events": [
-    {
-      "type": "harsh_acceleration",
-      "timestamp": "2024-01-15T10:15:30Z",
-      "severity": "medium"
-    }
-  ],
-  "driver_score": 78
-}
-```
+The `data` object is the backend's `TripsSnapshot` (`backend/trips/schemas/trip_payload.py`): timestamp, per-trip rows (metrics, behaviour event counts, severity, safety score/grade, live-only speed/flag fields), and totals. Active-trip updates arrive once per tick; completed-trip sets are broadcast when trips finish.
 
-### REST Integration
+### `/ws/alerts` payload
 
-Pages fetch static or historical data via REST:
+`alert_event` messages carry alert lifecycle events (`alert_created`, `alert_acknowledged`, `alert_resolved`), applied to the local alert list via `services/alertAdapter.js`.
 
-```
-useVehicles() hook
-  ↓
-api.getVehicles() 
-  ↓ (GET /api/v1/vehicles)
-Backend REST endpoint
-  ↓ (HTTP response)
-Cache in component state
-  ↓
-Vehicles.jsx renders list
-```
+## State Management (`LiveDataContext`)
 
-**Implemented Endpoints:**
+`context/LiveDataContext.jsx` is the central data hub:
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| /api/v1/vehicles | GET | List vehicles with current status |
-| /api/v1/fleet | GET | Fleet metadata and summary |
-| /api/v1/drivers | GET | Driver profiles and stats |
-| /api/v1/trips | GET | Trip history |
-| /api/v1/trips/{id} | GET | Trip details |
-| /api/v1/alerts | GET | Active alerts |
-| /api/v1/analytics/dashboard | GET | Snapshot API (alternative to WebSocket) |
-| /api/v1/maintenance | GET | Maintenance records |
+- Subscribes to all three WebSocket channels and exposes per-channel connection state
+- Hydrates initial data over REST (`listVehicles`, `listDrivers`, `listDriverStatistics`, `listVehicleHealth`, `getHealthConfig`, `listMaintenance`, `listAlerts`, `listTelemetry`, `listTrips`)
+- Merges live snapshots with REST data (e.g. `buildFleetVehicles` joins vehicles, health, drivers, and live dashboard rows; `mergeTripsPayload` de-duplicates trips by id)
+- Exposes mutations: alert acknowledge/resolve, maintenance completion, re-sync
 
-See `docs/API.md` for full specification.
+Domain hooks (`useFleetData`, `useTripsData`, `useAlerts`, …) read from this context and shape data for their pages.
 
-## Context Providers
+## REST Integration
 
-**LiveDataContext**
-- Manages `/ws/dashboard` WebSocket connection
-- Stores current fleet snapshot
-- Exposes: `snapshot`, `isConnected`, `lastUpdate`
-- Consumers: Dashboard, cards, status indicators
+- `api/config.js` reads `VITE_API_BASE` (default `http://localhost:8000/api/v1`) and `VITE_WS_BASE` (default `ws://localhost:8000`)
+- `apiClient.js` wraps `fetch` with a 15 s timeout and unwraps the backend response envelope; failures raise typed errors from `errors.js`
+- `endpoints.js` centralizes path construction; `services/api/*Api.js` modules group calls by domain
 
-**FleetContext**
-- Fleet metadata (name, vehicle count, location, etc.)
-- Persistent across page navigation
-- Used by: Fleet management pages
-
-**TripsContext**
-- Trip history and details
-- Updates from `/ws/trips` WebSocket
-- Exposes: `trips`, `selectedTrip`, `selectTrip()`
-- Consumers: Trips page, TripDrawer
-
-**TripDrawerContext**
-- State for trip detail slide-out panel
-- Exposes: `isOpen`, `tripId`, `openDrawer()`, `closeDrawer()`
-
-**VehicleDrawerContext**
-- State for vehicle detail slide-out panel
-- Exposes: `isOpen`, `vehicleId`, `openDrawer()`, `closeDrawer()`
-
-## Pages
-
-| Page | Purpose | Data Sources | Status |
-|------|---------|--------------|--------|
-| Dashboard | Fleet-wide live view | /ws/dashboard | Fully implemented |
-| Trips | Trip history + analytics | REST + /ws/trips | Fully implemented |
-| Vehicles | Vehicle list and detail | REST + /ws/dashboard | Fully implemented |
-| Drivers | Driver profiles + scores | REST | Fully implemented |
-| Maintenance | Service records + scheduling | REST | Fully implemented |
-| Alerts | Active + historical alerts | REST | Fully implemented |
-| Settings | User preferences, theme, etc. | localStorage | Partially implemented |
-| Login | Demo placeholder (non-functional) | None | Placeholder only |
-| Signup | Demo placeholder (non-functional) | None | Placeholder only |
-
-**Note on Login/Signup:** These pages exist as demo UI but authentication is not implemented. The backend has no auth system. All API endpoints are public.
+Note: some paths declared in `endpoints.js` are not yet fully aligned with the backend router layout (documented in the root README roadmap); the modules above reflect what the frontend actually calls today.
 
 ## Development
 
 ### Prerequisites
 
-- Node.js 16+ and npm 8+
-- Backend running on `http://localhost:8000`
+- Node.js 22 and npm (CI uses Node 22)
+- Backend running on `http://localhost:8000` (see `backend/README.md`)
 
-### Setup
+### Commands
 
 ```bash
-# Install dependencies
-npm install
-
-# Start dev server with hot reload
-npm run dev
-
-# Build for production
-npm run build
-
-# Run tests
-npm test
-
-# Run tests in watch mode
-npm test -- --watch
-
-# Run linting
-npm run lint
+npm ci            # clean install from package-lock.json (CI uses this)
+npm install       # regular install
+npm run dev       # dev server on http://localhost:5173
+npm test          # run all Vitest tests once (vitest run)
+npm test -- src/utils/alerts.test.js   # run a specific file
+npx vitest        # watch mode
+npm run lint      # ESLint (flat config, eslint.config.js)
+npm run build     # production build to dist/
+npx vite preview  # serve the production build locally
 ```
 
-Dev server runs on `http://localhost:5173`. Open in browser; WebSocket will auto-connect to backend.
+### Environment Variables
 
-### Environment Configuration
-
-Create `.env.local` if needed (optional):
+Optional `.env` in `frontend/`:
 
 ```
-VITE_API_BASE_URL=http://localhost:8000
-VITE_WS_BASE_URL=ws://localhost:8000
+VITE_API_BASE=http://localhost:8000/api/v1
+VITE_WS_BASE=ws://localhost:8000
 ```
 
-Defaults point to `localhost:8000`. For production, update `services/config.js`.
+Defaults point at a local backend; overrides are read at build/dev time via Vite.
 
 ## Testing
 
-Tests are run with Vitest:
+Tests run with **Vitest** (`vitest.config.js`). Current test files:
 
-```bash
-# Run all tests (includes .js and .jsx)
-npm test -- --run
+- `components/ui/ConnectionBadge.test.jsx`
+- `services/alertAdapter.test.js`
+- `services/driverAdapter.test.js`
+- `services/api/analyticsApi.test.js`
+- `utils/alerts.test.js`
+- `utils/dashboard.test.js`
+- `utils/driverBenchmark.test.js`
+- `utils/driverInsights.test.js`
+- `utils/driverTrend.test.js`
+- `utils/maintenance.test.js`
 
-# Watch mode
-npm test
-
-# Specific test file
-npm test -- src/components/ui/ConnectionBadge.test.jsx
-```
-
-Test files are co-located:
-- `src/components/ui/ConnectionBadge.test.jsx` – Connection badge widget
-- `src/hooks/useWebSocket.test.js` – WebSocket hook
-- `src/services/api.test.js` – REST client
-- `src/contexts/LiveDataContext.test.jsx` – Context provider
-
-## Troubleshooting
-
-**WebSocket connection fails**
-- Ensure backend is running on `http://localhost:8000`
-- Check browser console for connection errors
-- Verify firewall allows WebSocket protocol (ws://)
-
-**API calls return 404**
-- Confirm backend is responding: `curl http://localhost:8000/api/v1/vehicles`
-- Check that Vite frontend is not making requests to wrong URL
-- Review `services/config.js` for API base URL
-
-**CSS or styling issues**
-- Clear browser cache and rebuild: `npm run build`
-- Restart dev server: Ctrl+C, then `npm run dev`
-- Check for conflicting CSS modules
-
-**Tests failing**
-- Run `npm test -- --run` to get full output
-- Ensure mocks are configured in `vitest.config.js`
-- Check that `.jsx` test files are included in test discovery
-
-**Hot reload not working**
-- Restart dev server
-- Clear `node_modules/.vite` cache
-- Ensure file has valid JSX syntax
-
-## Build & Deployment
-
-```bash
-# Build optimized production bundle
-npm run build
-
-# Output goes to dist/
-# Serve locally for testing
-npx vite preview
-```
-
-The built `dist/` folder contains the static frontend assets. Deploy to:
-- AWS S3 + CloudFront
-- Vercel / Netlify
-- Apache / nginx
-- Any static hosting service
-
-**Production Considerations:**
-- Update `VITE_API_BASE_URL` environment variable for production backend URL
-- Ensure CORS is configured on backend to allow frontend origin
-- Use HTTPS for production (ws:// → wss://)
-- Consider caching headers on static assets
+CI (`.github/workflows/ci.yml`) runs `npm ci`, `npm test`, and `npm run lint` on Node 22.

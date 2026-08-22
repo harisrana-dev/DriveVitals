@@ -108,7 +108,7 @@ See [`API.md`](API.md) for complete reference.
 - [`TRIP_INTELLIGENCE.md`](TRIP_INTELLIGENCE.md) for trip lifecycle
 
 **DevOps / Deployment:**
-- `deployment/docker-compose.yml` for database provisioning
+- Root `docker-compose.yml` for PostgreSQL provisioning
 - [`design/DigitalTwinArchitecture/06_integration_deployment_architecture.md`](design/DigitalTwinArchitecture/06_integration_deployment_architecture.md) for deployment strategy
 
 **Test Engineer:**

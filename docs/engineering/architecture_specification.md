@@ -462,7 +462,7 @@ placeholders — see §5):
 - `scripts/` — `run_backend.py` (uvisorn/run app), `run_fleet_demo.py`,
   `run_fleet_telemetry.py`, `simulate_vehicle.py`, `test_obd_connection.py`,
   `test_dashboard_websocket.py`, `reset_database.py`.
-- `deployment/docker-compose.yml` + root `docker-compose.yml` — `postgres:16`.
+- Root `docker-compose.yml` — `postgres:16`.
 - `tests/` — pytest suite (52 passing; 10 pre-existing failures isolated to
   `test_analytics_engine.py`).
 

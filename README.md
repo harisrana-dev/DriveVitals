@@ -21,6 +21,58 @@ Current analytics are **rule-based**; machine learning is not part of the curren
 
 ---
 
+## Product Overview
+
+### Fleet Command Center
+
+![Fleet Command Center](docs/images/1_Dashboard.png)
+
+Real-time fleet overview showing all vehicles with live telemetry, health status, alert counts, and operational state.
+
+### Vehicle Intelligence
+
+![Vehicle Intelligence](docs/images/2_Fleet.png)
+
+Subsystem-level health breakdown per vehicle: engine, brake, cooling, transmission, and fuel system scores with status indicators.
+
+### Driver Intelligence
+
+![Driver Intelligence](docs/images/3_Drivers.png)
+
+Per-driver profiles with behaviour metrics, safety scores, and trip history.
+
+### Trips
+
+![Trips](docs/images/4_Trips.png)
+
+Trip lifecycle tracking with start/completion timestamps, distance, fuel consumption, and safety scores.
+
+### Maintenance
+
+![Maintenance](docs/images/5_Maintenance.png)
+
+Maintenance recommendations with priority levels, due odometer, and completion tracking.
+
+### Alerts
+
+![Alerts](docs/images/6_Health.png)
+
+Fleet alert feed with severity, category, acknowledgement, and resolution workflow.
+
+### Analytics
+
+![Analytics](docs/images/7_Analytics.png)
+
+Fleet-wide analytics with behaviour trends, health distributions, and operational intelligence.
+
+### Reports
+
+![Reports](docs/images/8_Reports.png)
+
+Exportable fleet reports summarizing driver performance, vehicle health, and maintenance status.
+
+---
+
 ## System Architecture
 
 ![DriveVitals System Architecture](docs/assets/architecture/drivevitals-system-architecture.svg)
@@ -39,6 +91,8 @@ The architecture follows a layered pipeline:
 ---
 
 ## Digital Twin & Fleet Runtime
+
+![Digital Twin Execution Flow](docs/assets/architecture/digital-execution-flow.svg)
 
 DriveVitals implements a physics-inspired vehicle simulation rather than a full physics engine. Each vehicle in the fleet is managed by a `VehicleRunner` that evolves its state tick-by-tick:
 
@@ -73,6 +127,8 @@ The `TelemetryPipeline` is a plain fan-out dispatcher: every registered consumer
 
 ## Analytics & Fleet Intelligence
 
+![Analytics Processing Flow](docs/assets/architecture/analytics-processing-flow.svg)
+
 Analytics transform raw telemetry into operational intelligence. All analytics are **rule-based and deterministic** — every score and flag can be traced back to a named threshold.
 
 ### Driver Behaviour
@@ -84,7 +140,7 @@ Analytics transform raw telemetry into operational intelligence. All analytics a
 - **Aggressive throttle** — throttle position above threshold
 - **High-RPM driving** — engine RPM above threshold
 
-Events are tracked over the trip lifetime, aggregated into counts, and converted to a 0–100 safety score using a deduction model.
+Detection runs **per tick**. The `BehaviourEventTracker` coalesces continuous events (e.g. sustained speeding) into single `BehaviourEvent` objects with real duration and distance. At **trip completion**, events are aggregated by `DriverBehaviourSummarizer` into a trip-level summary and converted to a 0–100 safety score using an exponential decay model based on weighted event density per kilometre.
 
 ### Vehicle Health
 
@@ -224,6 +280,7 @@ DriveVitals is a feature-frozen engineering project in its current scope. The fo
 - **No message broker, cache, or task queue** — no Redis, Kafka, Celery, or similar infrastructure.
 - **Frontend-backend REST integration is partial** — the dashboard vehicle grid consumes live WebSocket data, but some REST-backed views still use mock data as a fallback.
 - **No coverage reporting** — the test suite runs but does not enforce minimum coverage thresholds.
+- **Project demo only** — this is a demonstration project built for portfolio and academic evaluation purposes. It is not intended for production use, commercial deployment, or operational fleet management. The simulated telemetry, rule-based analytics, and local deployment model are deliberate scope choices that reflect the project's educational and demonstrative purpose.
 
 ---
 

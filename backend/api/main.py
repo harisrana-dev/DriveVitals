@@ -185,7 +185,7 @@ async def lifespan(
         await persistence_service.reconcile_maintenance_duplicates()
     except Exception:
         print(
-            "⚠️ Maintenance reconciliation failed at startup"
+            "Maintenance reconciliation failed at startup"
         )
 
     # --------------------------------------------------------------
@@ -220,9 +220,7 @@ async def lifespan(
         )
     )
 
-    print(
-        "🚗 DriveVitals runtime started"
-    )
+    print("DriveVitals runtime started")
 
     yield
 
@@ -292,9 +290,7 @@ async def lifespan(
         snapshot_publisher
     )
 
-    print(
-        "🛑 DriveVitals runtime stopped"
-    )
+    print("DriveVitals runtime stopped")
 
 
 app = FastAPI(

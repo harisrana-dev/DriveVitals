@@ -58,6 +58,12 @@ const endpoints = {
     status: '/system/status',
     version: '/system/version',
   },
+  auth: {
+    signup: '/auth/signup',
+    login: '/auth/login',
+    logout: '/auth/logout',
+    me: '/auth/me',
+  },
 };
 
 export { endpoints };

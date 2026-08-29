@@ -1,7 +1,10 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.api.security import authenticate_session
 from backend.api.v1.services.alert_service import AlertService
+from backend.api.v1.services.auth_service import AuthService
 from backend.api.v1.services.driver_service import DriverService
 from backend.api.v1.services.driver_statistics_service import (
     DriverStatisticsService,
@@ -15,14 +18,17 @@ from backend.api.v1.services.vehicle_health_service import (
 )
 from backend.api.v1.services.vehicle_service import VehicleService
 
+from backend.db.models.user import User
 from backend.db.repositories import (
     AlertRepository,
+    AuthSessionRepository,
     DriverRepository,
     DriverStatisticsRepository,
     MaintenanceRepository,
     RouteRepository,
     TelemetryRepository,
     TripRepository,
+    UserRepository,
     VehicleHealthRepository,
     VehicleRepository,
 )
@@ -30,6 +36,8 @@ from backend.db.session import get_session
 
 LIMIT_MIN = 1
 LIMIT_MAX = 500
+
+_bearer = HTTPBearer(auto_error=False)
 
 
 def validate_pagination(limit: int, offset: int) -> tuple[int, int]:
@@ -98,3 +106,43 @@ async def get_alert_service(
     session: AsyncSession = Depends(get_session),
 ) -> AlertService:
     return AlertService(AlertRepository(session))
+
+
+async def get_auth_service(
+    session: AsyncSession = Depends(get_session),
+) -> AuthService:
+    return AuthService(
+        UserRepository(session),
+        AuthSessionRepository(session),
+    )
+
+
+def _extract_token(
+    credentials: HTTPAuthorizationCredentials | None,
+) -> str:
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="INVALID_OR_EXPIRED_TOKEN",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    session: AsyncSession = Depends(get_session),
+) -> User:
+    token = _extract_token(credentials)
+    user = await authenticate_session(session, token)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="INVALID_OR_EXPIRED_TOKEN",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+async def get_user_id(current_user: User = Depends(get_current_user)) -> str:
+    return current_user.user_id

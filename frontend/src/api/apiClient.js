@@ -1,7 +1,10 @@
 import { API_BASE, REQUEST_TIMEOUT_MS } from './config';
 import { ApiError, NetworkError, TimeoutError, PayloadError } from './errors';
+import { tokenStorage } from '../auth/tokenStorage';
 
 const LOG_TAG = '[api]';
+
+const AUTH_FREE_PATHS = new Set(['/auth/login', '/auth/signup']);
 
 function isAbsoluteUrl(path) {
   return /^https?:\/\//i.test(path);
@@ -80,16 +83,30 @@ async function request(path, options = {}) {
 
   const controller = applyTimeout(signal, timeoutMs);
 
+  const isAuthFreePath = AUTH_FREE_PATHS.has(path);
+  const token = tokenStorage.get();
+  let headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+  if (token && !isAuthFreePath && !headers.Authorization) {
+    headers = { ...headers, Authorization: `Bearer ${token}` };
+  }
+
   try {
     const response = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {}),
-      },
+      headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
+    if (
+      response.status === 401 &&
+      !isAuthFreePath &&
+      !options.headers?.Authorization
+    ) {
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+    }
     return await parseResponse(response);
   } catch (error) {
     if (error instanceof ApiError) {

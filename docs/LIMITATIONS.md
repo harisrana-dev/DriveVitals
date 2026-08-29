@@ -22,7 +22,7 @@
 - Two WebSocket channels: `/ws/dashboard` (fleet snapshots) and `/ws/trips` (trip snapshots).
 - React dashboard with live WebSocket data, REST hydration, and trip drill-down.
 - Active-trip live streaming with real-time behaviour flags and fuel tracking.
-- 31 test files across unit, integration, and API layers.
+- 35 backend test files across unit, integration, and API layers (298 tests passing) plus 15 frontend Vitest suites.
 
 ---
 
@@ -38,7 +38,11 @@
 
 - **Real OBD-II / CAN bus integration.** The simulator is the only telemetry source. Hardware integration groundwork exists in `docs/engineering/` and `scripts/` but is not connected.
 - **Machine learning.** All analytics are rule-based. ML-based driver classification, anomaly detection, and predictive maintenance are roadmap items.
-- **Authentication / multi-user access control.** The `login` and `signup` pages are static UI only. There is no user model, session handling, or JWT/OAuth implementation.
+- **Authentication / multi-user access control — Phase 7 M1 (identity) shipped, M2 (authorization) deferred.**
+  M1: DB-backed `User` + `AuthSession`, scrypt password hashing, opaque revocable bearer tokens,
+  and `/api/v1/auth/*` (`signup`, `login`, `logout`, `me`) with an `AuthProvider`/`ProtectedRoute` UI layer.
+  Not yet implemented: role-based access control enforcement, WebSocket session enforcement, JWT/OAuth
+  providers, password reset, single sign-on.
 - **Containerized application deployment.** `docker-compose.yml` provisions PostgreSQL only. The FastAPI backend and React frontend are not containerized.
 - **CI/CD pipeline.** No GitHub Actions, linting checks, or automated test runs are configured.
 - **Coverage reporting.** No pytest-cov or similar tooling is configured.

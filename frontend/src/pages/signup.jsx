@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/signup.css";
 import ThemeToggle from "../components/common/ThemeToggle";
+import { useAuth } from "../hooks/useAuth";
+import { ApiError } from "../api/errors";
 
 /* ── Inline route/network SVG illustration ───────────────── */
 function RouteIllustration() {
@@ -71,6 +73,7 @@ function RouteIllustration() {
 /* ── Component ───────────────────────────────────────────── */
 function Signup() {
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   const [formData, setFormData] = useState({
     fullName: "", email: "", password: "", confirmPassword: "",
@@ -82,7 +85,7 @@ function Signup() {
     setError("");
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     const { fullName, email, password, confirmPassword } = formData;
 
@@ -99,8 +102,18 @@ function Signup() {
       return;
     }
 
-    console.log("Registering user:", { fullName, email });
-    navigate("/login");
+    try {
+      await signup({ fullName, email, password });
+      navigate("/login", { state: { created: true } });
+    } catch (err) {
+      let detail = null;
+      if (err instanceof ApiError) detail = err.detail;
+      if (detail === "EMAIL_EXISTS") {
+        setError("An account with this email already exists.");
+      } else {
+        setError("We couldn't create your account. Please try again.");
+      }
+    }
   };
 
   return (

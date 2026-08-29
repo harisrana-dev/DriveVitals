@@ -9,7 +9,7 @@ function withJitter(delay) {
   return delay + Math.floor(Math.random() * 500);
 }
 
-function createChannel(url) {
+function createChannel(getUrl) {
   let ws = null;
   let state = 'connecting';
   let reconnectAttempts = 0;
@@ -105,6 +105,10 @@ function createChannel(url) {
       ws = null;
     }
     setState('connecting');
+
+    // Read the current token at connection time, not at channel creation time.
+    // This ensures reconnectAll() picks up fresh tokens after login.
+    const url = getUrl();
 
     try {
       ws = new WebSocket(url);
@@ -203,21 +207,26 @@ function createChannel(url) {
 
 const channels = new Map();
 
-function subscribeToUrl(url, handlers) {
-  let channel = channels.get(url);
+function subscribeToUrl(key, getUrl, handlers) {
+  let channel = channels.get(key);
   if (!channel) {
-    channel = createChannel(url);
-    channels.set(url, channel);
+    channel = createChannel(getUrl);
+    channels.set(key, channel);
   }
   return channel.subscribe(handlers);
 }
 
-function getChannelState(url) {
-  const channel = channels.get(url);
+function getChannelState(key) {
+  const channel = channels.get(key);
   return channel ? channel.getState() : 'offline';
 }
 
 function reconnectAll() {
+  // Force each existing channel to reconnect with the current token.
+  // getUrl() is called inside openSocket(), so it reads the live token
+  // from tokenStorage at reconnect time — not the stale URL from creation.
+  // We do NOT close/destroy channels because LiveDataProvider's subscription
+  // effect has stable deps and won't re-run to re-subscribe.
   channels.forEach((channel) => channel.forceReconnect());
 }
 

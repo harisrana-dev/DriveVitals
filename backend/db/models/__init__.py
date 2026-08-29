@@ -9,6 +9,8 @@ from backend.db.models.maintenance_record import MaintenanceRecord
 from backend.db.models.vehicle_health import VehicleHealth
 from backend.db.models.driver_statistics import DriverStatistics
 from backend.db.models.vehicle_statistics import VehicleStatistics
+from backend.db.models.user import User
+from backend.db.models.auth_session import AuthSession
 
 __all__ = [
     "Vehicle",
@@ -22,4 +24,6 @@ __all__ = [
     "VehicleHealth",
     "DriverStatistics",
     "VehicleStatistics",
+    "User",
+    "AuthSession",
 ]

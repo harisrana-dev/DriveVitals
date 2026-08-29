@@ -10,6 +10,8 @@ from backend.db.repositories.maintenance_repository import MaintenanceRepository
 from backend.db.repositories.driver_statistics_repository import (
     DriverStatisticsRepository,
 )
+from backend.db.repositories.user_repository import UserRepository
+from backend.db.repositories.auth_session_repository import AuthSessionRepository
 
 __all__ = [
     "VehicleRepository",
@@ -22,4 +24,6 @@ __all__ = [
     "AlertRepository",
     "MaintenanceRepository",
     "DriverStatisticsRepository",
+    "UserRepository",
+    "AuthSessionRepository",
 ]

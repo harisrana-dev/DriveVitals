@@ -1,25 +1,33 @@
 import { WS_BASE } from '../api/config';
+import { tokenStorage } from '../auth/tokenStorage';
 import { subscribeToUrl, getChannelState, reconnectAll } from './connectionManager';
 
-const channels = {
+const channelBaseUrls = {
   dashboard: `${WS_BASE}/ws/dashboard`,
   trips: `${WS_BASE}/ws/trips`,
   alerts: `${WS_BASE}/ws/alerts`,
 };
 
+function withToken(url) {
+  const token = tokenStorage.get();
+  if (!token) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}token=${encodeURIComponent(token)}`;
+}
+
 function subscribeToChannel(channelName, handlers) {
-  const url = channels[channelName];
-  if (!url) {
-    console.error(`[ws] Unknown channel "${channelName}".`, Object.keys(channels));
+  const baseUrl = channelBaseUrls[channelName];
+  if (!baseUrl) {
+    console.error(`[ws] Unknown channel "${channelName}".`, Object.keys(channelBaseUrls));
     return () => {};
   }
-  return subscribeToUrl(url, handlers);
+  return subscribeToUrl(withToken(baseUrl), handlers);
 }
 
 function getState(channelName) {
-  const url = channels[channelName];
-  if (!url) return 'offline';
-  return getChannelState(url);
+  const baseUrl = channelBaseUrls[channelName];
+  if (!baseUrl) return 'offline';
+  return getChannelState(withToken(baseUrl));
 }
 
-export { subscribeToChannel, getState, channels, reconnectAll };
+export { subscribeToChannel, getState, reconnectAll, channelBaseUrls };

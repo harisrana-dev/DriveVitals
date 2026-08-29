@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Bell, Menu, Search, ChevronDown, User, LogOut, Settings, RefreshCw } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Bell, Menu, Search, ChevronDown, User, Settings, RefreshCw, LogOut } from 'lucide-react';
 import ThemeToggle from '../common/ThemeToggle';
 import { ConnectionBadge } from '../ui/ConnectionBadge';
 import { useUnacknowledgedAlertCount } from '../../hooks/useFleetData';
 import { useLiveData } from '../../context/useLiveData';
 import { useNow } from '../../hooks/useNow';
 import { deriveConnectionState } from '../../utils/dashboard';
+import { getInitials, getRoleLabel } from '../../utils/identity';
+import { useAuth } from '../../hooks/useAuth';
 
 const pageTitles = {
   '/dashboard': 'Dashboard',
@@ -27,12 +29,24 @@ function formatTime(timestamp) {
 
 export function TopBar({ onMenuClick }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const alertCount = useUnacknowledgedAlertCount();
   const { connectionStatus: rawConnectionStatus, lastUpdate, syncing, sync } = useLiveData();
+  const { user, logout } = useAuth();
   const now = useNow(5000);
   const connectionStatus = deriveConnectionState(rawConnectionStatus, lastUpdate, now);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
+
+  const fullName = user?.full_name || '';
+  const initials = getInitials(fullName);
+  const roleLabel = getRoleLabel(user?.role);
+
+  const handleLogout = async () => {
+    setProfileOpen(false);
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   useEffect(() => {
     function handleClick(e) {
@@ -235,10 +249,10 @@ export function TopBar({ onMenuClick }) {
               fontWeight: 600,
               fontSize: 12,
             }}>
-              JD
+              {initials}
             </div>
             <span className="profile-name" style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)' }}>
-              John Doe
+              {fullName}
             </span>
             <ChevronDown size={14} style={{ color: 'var(--color-text-muted)' }} />
           </button>
@@ -259,17 +273,17 @@ export function TopBar({ onMenuClick }) {
               zIndex: 100,
             }}>
               <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--color-border-light)' }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)' }}>John Doe</div>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Fleet Manager</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)' }}>{fullName}</div>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{roleLabel}</div>
               </div>
               {[
-                { icon: <User size={15} />, label: 'Profile' },
-                { icon: <Settings size={15} />, label: 'Settings' },
-                { icon: <LogOut size={15} />, label: 'Sign out' },
+                { icon: <User size={15} />, label: 'Profile', action: () => setProfileOpen(false) },
+                { icon: <Settings size={15} />, label: 'Settings', action: () => { setProfileOpen(false); navigate('/settings'); } },
+                { icon: <LogOut size={15} />, label: 'Sign out', action: handleLogout },
               ].map((item) => (
                 <button
                   key={item.label}
-                  onClick={() => setProfileOpen(false)}
+                  onClick={item.action}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

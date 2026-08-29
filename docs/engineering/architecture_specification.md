@@ -433,7 +433,7 @@ placeholders — see §5):
   | Route | Source of data |
   |---|---|
   | `/` | `GetStarted` / Introductionpage (static) |
-  | `/login`, `/signup` | client-side validation only; login navigates to `/dashboard` |
+  | `/login`, `/signup` | real `/api/v1/auth/*` (login, signup, logout, me) via `AuthContext`; `ProtectedRoute` guards the app shell |
   | `/dashboard` | live via `useDashboardSocket` |
   | `/fleet` | live via `useDashboardSocket` |
   | `/trips` | live via `useTripsSocket` |

@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/login.css";
 import ThemeToggle from "../components/common/ThemeToggle";
 import AppLoader from "../components/common/AppLoader";
+import { useAuth } from "../hooks/useAuth";
+import { ApiError } from "../api/errors";
 
 /* ── Inline fleet SVG illustration ──────────────────────── */
 function FleetIllustration() {
@@ -84,9 +86,12 @@ function FleetIllustration() {
 /* ── Component ───────────────────────────────────────────── */
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
 
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const created = location.state?.created === true;
   const [showLoader, setShowLoader] = useState(false);
 
   const handleChange = (e) => {
@@ -94,7 +99,7 @@ function Login() {
     setError("");
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     const { email, password } = formData;
 
@@ -104,6 +109,18 @@ function Login() {
     }
 
     setShowLoader(true);
+    try {
+      await login({ email, password });
+    } catch (err) {
+      let detail = null;
+      if (err instanceof ApiError) detail = err.detail;
+      if (detail === "INVALID_CREDENTIALS") {
+        setError("Incorrect email or password.");
+      } else {
+        setError("We couldn't sign you in. Please try again.");
+      }
+      setShowLoader(false);
+    }
   };
 
   return (
@@ -143,6 +160,11 @@ function Login() {
         <p className="login-subtitle">Sign in to your fleet dashboard</p>
 
         <form onSubmit={handleLogin}>
+          {created && (
+            <p className="login-success">
+              Account created. Please sign in.
+            </p>
+          )}
           <div className="input-group">
             <input type="email" name="email" placeholder="Work email"
               value={formData.email} onChange={handleChange} />

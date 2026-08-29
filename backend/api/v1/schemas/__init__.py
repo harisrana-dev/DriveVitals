@@ -1,4 +1,10 @@
 from backend.api.v1.schemas.alert import AlertRead
+from backend.api.v1.schemas.auth import (
+    LoginRequest,
+    SignupRequest,
+    UserRead,
+    UserWithToken,
+)
 from backend.api.v1.schemas.common import PaginatedResponse, Response
 from backend.api.v1.schemas.driver import DriverRead
 from backend.api.v1.schemas.driver_statistics import DriverStatisticsRead
@@ -13,12 +19,16 @@ __all__ = [
     "AlertRead",
     "DriverRead",
     "DriverStatisticsRead",
+    "LoginRequest",
     "MaintenanceRead",
     "PaginatedResponse",
     "Response",
     "RouteRead",
+    "SignupRequest",
     "TelemetryRead",
     "TripRead",
+    "UserRead",
+    "UserWithToken",
     "VehicleHealthRead",
     "VehicleRead",
 ]

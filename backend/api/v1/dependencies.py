@@ -13,6 +13,7 @@ from backend.api.v1.services.maintenance_service import MaintenanceService
 from backend.api.v1.services.route_service import RouteService
 from backend.api.v1.services.telemetry_service import TelemetryService
 from backend.api.v1.services.trip_service import TripService
+from backend.api.v1.services.settings_service import SettingsService
 from backend.api.v1.services.vehicle_health_service import (
     VehicleHealthService,
 )
@@ -26,6 +27,7 @@ from backend.db.repositories import (
     DriverStatisticsRepository,
     MaintenanceRepository,
     RouteRepository,
+    SystemSettingsRepository,
     TelemetryRepository,
     TripRepository,
     UserRepository,
@@ -184,3 +186,9 @@ def require_role(*roles: str):
 
 require_admin = require_role("admin")
 require_operator_or_admin = require_role("operator", "admin")
+
+
+async def get_settings_service(
+    session: AsyncSession = Depends(get_session),
+) -> SettingsService:
+    return SettingsService(session)

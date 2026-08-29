@@ -64,6 +64,10 @@ const endpoints = {
     logout: '/auth/logout',
     me: '/auth/me',
   },
+  settings: {
+    all: '/settings',
+    category: (cat) => `/settings/${cat}`,
+  },
 };
 
 export { endpoints };

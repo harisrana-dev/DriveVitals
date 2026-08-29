@@ -11,6 +11,7 @@ from backend.db.models.driver_statistics import DriverStatistics
 from backend.db.models.vehicle_statistics import VehicleStatistics
 from backend.db.models.user import User
 from backend.db.models.auth_session import AuthSession
+from backend.db.models.system_settings import SystemSettings
 
 __all__ = [
     "Vehicle",
@@ -26,4 +27,5 @@ __all__ = [
     "VehicleStatistics",
     "User",
     "AuthSession",
+    "SystemSettings",
 ]

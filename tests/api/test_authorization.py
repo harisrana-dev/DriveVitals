@@ -96,13 +96,15 @@ class TestSettingsAuthorization:
         response = await operator_client.get("/api/v1/settings")
         assert response.status_code == 403
 
-    async def test_settings_allows_admin(
-        self, admin_client: AsyncClient
-    ) -> None:
+    async def test_settings_allows_admin(self, admin_client: AsyncClient) -> None:
         response = await admin_client.get("/api/v1/settings")
         assert response.status_code == 200
         body = response.json()
-        assert body["data"] == {"settings": {}}
+        data = body["data"]
+        assert "account" in data
+        assert "system" in data
+        assert "analytics" in data
+        assert data["account"]["role"] == "admin"
 
 
 class TestReadOnlyStaysAnonymous:

@@ -40,15 +40,15 @@ async def _child_counts(trip_id: str) -> dict[str, int]:
 
 class TestDeleteTrip:
 
-    async def test_delete_aborted_trip(self, client: AsyncClient) -> None:
-        response = await client.delete("/api/v1/trips/t-5")
+    async def test_delete_aborted_trip(self, operator_client: AsyncClient) -> None:
+        response = await operator_client.delete("/api/v1/trips/t-5")
 
         assert response.status_code == 204
 
-        got = await client.get("/api/v1/trips/t-5")
+        got = await operator_client.get("/api/v1/trips/t-5")
         assert got.status_code == 404
 
-        listing = await client.get("/api/v1/trips")
+        listing = await operator_client.get("/api/v1/trips")
         assert listing.status_code == 200
         assert listing.json()["count"] == 4
         assert {t["trip_id"] for t in listing.json()["data"]} == {
@@ -59,43 +59,45 @@ class TestDeleteTrip:
         }
 
     async def test_delete_aborted_trip_second_delete_is_404(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
-        first = await client.delete("/api/v1/trips/t-5")
+        first = await operator_client.delete("/api/v1/trips/t-5")
         assert first.status_code == 204
 
-        second = await client.delete("/api/v1/trips/t-5")
+        second = await operator_client.delete("/api/v1/trips/t-5")
         assert second.status_code == 404
 
     async def test_delete_completed_trip_rejected(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
-        response = await client.delete("/api/v1/trips/t-1")
+        response = await operator_client.delete("/api/v1/trips/t-1")
 
         assert response.status_code == 409
         assert "Only aborted trips" in response.json()["detail"]
 
-        got = await client.get("/api/v1/trips/t-1")
+        got = await operator_client.get("/api/v1/trips/t-1")
         assert got.status_code == 200
 
     async def test_delete_in_progress_trip_rejected(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
-        response = await client.delete("/api/v1/trips/t-3")
+        response = await operator_client.delete("/api/v1/trips/t-3")
 
         assert response.status_code == 409
         assert "in_progress" in response.json()["detail"]
 
-        got = await client.get("/api/v1/trips/t-3")
+        got = await operator_client.get("/api/v1/trips/t-3")
         assert got.status_code == 200
 
-    async def test_delete_unknown_trip_404(self, client: AsyncClient) -> None:
-        response = await client.delete("/api/v1/trips/does-not-exist")
+    async def test_delete_unknown_trip_404(
+        self, operator_client: AsyncClient
+    ) -> None:
+        response = await operator_client.delete("/api/v1/trips/does-not-exist")
 
         assert response.status_code == 404
 
     async def test_delete_aborted_trip_removes_trip_scoped_children_only(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
         await _abort("t-1")
         assert await _child_counts("t-1") == {
@@ -104,7 +106,7 @@ class TestDeleteTrip:
             "alerts": 2,
         }
 
-        response = await client.delete("/api/v1/trips/t-1")
+        response = await operator_client.delete("/api/v1/trips/t-1")
         assert response.status_code == 204
 
         assert await _child_counts("t-1") == {
@@ -134,13 +136,15 @@ class TestDeleteTrip:
 
 class TestDeleteAllAborted:
 
-    async def test_bulk_delete_aborted(self, client: AsyncClient) -> None:
-        response = await client.delete("/api/v1/trips/aborted")
+    async def test_bulk_delete_aborted(
+        self, operator_client: AsyncClient
+    ) -> None:
+        response = await operator_client.delete("/api/v1/trips/aborted")
 
         assert response.status_code == 200
         assert response.json() == {"deleted_count": 1}
 
-        listing = await client.get("/api/v1/trips")
+        listing = await operator_client.get("/api/v1/trips")
         assert listing.status_code == 200
         assert listing.json()["count"] == 4
         assert {t["trip_id"] for t in listing.json()["data"]} == {
@@ -151,22 +155,22 @@ class TestDeleteAllAborted:
         }
 
     async def test_bulk_delete_aborted_is_idempotent(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
-        first = await client.delete("/api/v1/trips/aborted")
+        first = await operator_client.delete("/api/v1/trips/aborted")
         assert first.json() == {"deleted_count": 1}
 
-        second = await client.delete("/api/v1/trips/aborted")
+        second = await operator_client.delete("/api/v1/trips/aborted")
         assert second.status_code == 200
         assert second.json() == {"deleted_count": 0}
 
     async def test_bulk_delete_aborted_removes_children(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
         await _abort("t-1")
         await _abort("t-3")
 
-        response = await client.delete("/api/v1/trips/aborted")
+        response = await operator_client.delete("/api/v1/trips/aborted")
 
         assert response.status_code == 200
         assert response.json() == {"deleted_count": 3}
@@ -187,9 +191,9 @@ class TestDeleteAllAborted:
             assert {t.trip_id for t in trips} == {"t-2", "t-4"}
 
     async def test_bulk_delete_aborted_empty_database(
-        self, empty_client: AsyncClient
+        self, operator_empty_client: AsyncClient
     ) -> None:
-        response = await empty_client.delete("/api/v1/trips/aborted")
+        response = await operator_empty_client.delete("/api/v1/trips/aborted")
 
         assert response.status_code == 200
         assert response.json() == {"deleted_count": 0}
@@ -198,14 +202,14 @@ class TestDeleteAllAborted:
 class TestPaginationRegression:
 
     async def test_pagination_reconciles_after_individual_delete(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
-        await client.delete("/api/v1/trips/t-5")
+        await operator_client.delete("/api/v1/trips/t-5")
 
         collected: list[str] = []
         offset = 0
         while True:
-            response = await client.get(
+            response = await operator_client.get(
                 "/api/v1/trips", params={"limit": 2, "offset": offset}
             )
             assert response.status_code == 200
@@ -219,11 +223,11 @@ class TestPaginationRegression:
         assert set(collected) == {"t-1", "t-2", "t-3", "t-4"}
 
     async def test_pagination_reconciles_after_bulk_delete(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
-        await client.delete("/api/v1/trips/aborted")
+        await operator_client.delete("/api/v1/trips/aborted")
 
-        response = await client.get(
+        response = await operator_client.get(
             "/api/v1/trips", params={"limit": 2, "offset": 2}
         )
 
@@ -233,15 +237,15 @@ class TestPaginationRegression:
         assert len(payload["data"]) == 2
 
     async def test_kpi_aggregates_exclude_deleted_trips(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
         """Deleting an aborted trip must not change completed-trip metrics."""
-        before = await client.get("/api/v1/trips", params={"status": "completed"})
+        before = await operator_client.get("/api/v1/trips", params={"status": "completed"})
         assert before.status_code == 200
         before_count = before.json()["count"]
 
-        await client.delete("/api/v1/trips/t-5")
+        await operator_client.delete("/api/v1/trips/t-5")
 
-        after = await client.get("/api/v1/trips", params={"status": "completed"})
+        after = await operator_client.get("/api/v1/trips", params={"status": "completed"})
         assert after.status_code == 200
         assert after.json()["count"] == before_count == 3

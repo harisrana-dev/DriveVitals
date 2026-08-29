@@ -1,11 +1,21 @@
 import asyncio
+import os
 
 import websockets
 
 
-URI = (
-    "ws://127.0.0.1:8000/ws/dashboard"
-)
+def _uri() -> str:
+    token = os.environ.get("DRIVEVITALS_TOKEN")
+    if not token:
+        raise SystemExit(
+            "DRIVEVITALS_TOKEN is required: the dashboard WebSocket now "
+            "rejects anonymous connections. Log in via POST /api/v1/auth/login "
+            "and export the returned token as DRIVEVITALS_TOKEN."
+        )
+    return (
+        "ws://127.0.0.1:8000/ws/dashboard"
+        f"?token={token}"
+    )
 
 
 async def client(
@@ -17,7 +27,7 @@ async def client(
     )
 
     async with websockets.connect(
-        URI
+        _uri()
     ) as websocket:
 
         print(

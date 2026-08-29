@@ -49,8 +49,17 @@ from backend.api.websocket.trip_publisher import (
     TripSnapshotPublisher,
 )
 
+from backend.api.v1.services.admin_bootstrap import (
+    AdminBootstrapConfigError,
+    bootstrap_admin,
+)
+
 from backend.db.persistence_service import (
     PersistenceService,
+)
+
+from backend.db.session import (
+    async_session_factory,
 )
 
 from backend.trips.store.trip_store import (
@@ -102,6 +111,26 @@ async def lifespan(
     global snapshot_worker_task
     global trips_worker_task
     global alerts_worker_task
+
+    # --------------------------------------------------------------
+    # Provision the first administrator when bootstrapping a fresh
+    # deployment. Idempotent (no-op once any user exists) and
+    # conservative: it never promotes or alters existing users.
+    # --------------------------------------------------------------
+
+    try:
+        async with async_session_factory() as session:
+            result = await bootstrap_admin(session)
+        if result.created and result.email:
+            print(
+                f"Bootstrap admin created: {result.email}"
+            )
+    except AdminBootstrapConfigError as exc:
+        print(
+            "Admin bootstrap configuration error: "
+            f"{exc}"
+        )
+        raise
 
     # --------------------------------------------------------------
     # Wire persistence alert events to the alerts WebSocket queue

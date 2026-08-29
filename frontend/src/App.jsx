@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { RoleRoute } from './components/auth/RoleRoute';
 import { Dashboard } from './pages/Dashboard';
 import { FleetPage } from './pages/Fleet';
 import { TripsPage } from './pages/Trips';
@@ -49,7 +50,9 @@ function App() {
             <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/vehicle-health" element={<VehicleHealthPage />} />
             <Route path="/maintenance" element={<MaintenancePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route element={<RoleRoute roles={['admin']} />}>
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Route>

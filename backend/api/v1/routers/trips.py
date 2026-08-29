@@ -9,11 +9,13 @@ from fastapi import (
 
 from backend.api.v1.dependencies import (
     get_trip_service,
+    require_operator_or_admin,
     validate_pagination,
 )
 from backend.api.v1.schemas.common import PaginatedResponse, Response
 from backend.api.v1.schemas.trip import TripDeleteResult, TripRead
 from backend.api.v1.services.trip_service import TripLifecycleError, TripService
+from backend.db.models.user import User
 
 router = APIRouter(prefix="/trips")
 
@@ -99,6 +101,7 @@ async def list_trips(
 )
 async def delete_all_aborted_trips(
     service: TripService = Depends(get_trip_service),
+    current_user: User = Depends(require_operator_or_admin),
 ) -> TripDeleteResult:
     deleted_count = await service.delete_all_aborted()
     return TripDeleteResult(deleted_count=deleted_count)
@@ -118,6 +121,7 @@ async def delete_all_aborted_trips(
 async def delete_trip(
     trip_id: str,
     service: TripService = Depends(get_trip_service),
+    current_user: User = Depends(require_operator_or_admin),
 ) -> FastAPIResponse:
     try:
         trip = await service.delete_aborted(trip_id)

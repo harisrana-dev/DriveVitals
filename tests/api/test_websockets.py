@@ -5,7 +5,8 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from starlette.testclient import TestClient
+import pytest
+from starlette.testclient import TestClient, WebSocketDisconnect
 
 import backend.api.main as main
 import backend.api.websocket.trips as trips_module
@@ -39,27 +40,107 @@ from backend.trips.schemas.trip_payload import (
 )
 from backend.trips.services.trip_builder import TripBuilder
 from backend.trips.store.trip_store import TripStore
+from backend.db.session import get_session
+from tests.api.conftest import (
+    _create_user_with_session,
+    test_session_factory,
+)
+
+
+def _ws_client() -> TestClient:
+    """TestClient over the real app with the DB session overridden.
+
+    The real app's own engine pools connections across event loops, which
+    trips up when TestClient (portal loop) and ``asyncio.run`` (fresh loop)
+    interleave. Routing the WS auth lookup through the NullPool test engine
+    keeps every connection bound to the loop that opened it.
+    """
+    async def _override_get_session():
+        async with test_session_factory() as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _override_get_session
+    return TestClient(app)
 
 
 class TestWebSockets:
+    """Every channel now requires a valid session token.
 
-    def test_dashboard_websocket_connects(self) -> None:
-        client = TestClient(app)
+    Anonymous connections are rejected before accept with close code 4401;
+    authenticated connections stream normally.
 
-        with client.websocket_connect("/ws/dashboard") as websocket:
-            websocket.send_text("ping")
+    Each test uses ``_ws_client()`` so the WS auth lookup runs against the
+    NullPool test engine; see the helper's docstring for why.
+    """
 
-    def test_trips_websocket_connects(self) -> None:
-        client = TestClient(app)
+    def test_dashboard_websocket_rejects_unauthenticated(self) -> None:
+        client = _ws_client()
 
-        with client.websocket_connect("/ws/trips") as websocket:
-            websocket.send_text("ping")
+        with pytest.raises(WebSocketDisconnect) as exc:
+            with client.websocket_connect("/ws/dashboard"):
+                pass
 
-    def test_alerts_websocket_connects(self) -> None:
-        client = TestClient(app)
+        assert exc.value.code == 4401
 
-        with client.websocket_connect("/ws/alerts") as websocket:
-            websocket.send_text("ping")
+    def test_trips_websocket_rejects_unauthenticated(self) -> None:
+        client = _ws_client()
+
+        with pytest.raises(WebSocketDisconnect) as exc:
+            with client.websocket_connect("/ws/trips"):
+                pass
+
+        assert exc.value.code == 4401
+
+    def test_alerts_websocket_rejects_unauthenticated(self) -> None:
+        client = _ws_client()
+
+        with pytest.raises(WebSocketDisconnect) as exc:
+            with client.websocket_connect("/ws/alerts"):
+                pass
+
+        assert exc.value.code == 4401
+
+    def test_dashboard_websocket_connects_with_token(self) -> None:
+        token = asyncio.run(_create_user_with_session("operator"))
+        client = _ws_client()
+
+        try:
+            with client.websocket_connect(f"/ws/dashboard?token={token}") as websocket:
+                websocket.send_text("ping")
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_trips_websocket_connects_with_token(self) -> None:
+        token = asyncio.run(_create_user_with_session("operator"))
+        client = _ws_client()
+
+        try:
+            with client.websocket_connect(f"/ws/trips?token={token}") as websocket:
+                websocket.send_text("ping")
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_alerts_websocket_connects_with_token(self) -> None:
+        token = asyncio.run(_create_user_with_session("operator"))
+        client = _ws_client()
+
+        try:
+            with client.websocket_connect(f"/ws/alerts?token={token}") as websocket:
+                websocket.send_text("ping")
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_websocket_rejects_invalid_token(self) -> None:
+        client = _ws_client()
+
+        try:
+            with pytest.raises(WebSocketDisconnect) as exc:
+                with client.websocket_connect("/ws/dashboard?token=not-a-valid-token"):
+                    pass
+        finally:
+            app.dependency_overrides.clear()
+
+        assert exc.value.code == 4401
 
 
 class TestAlertsLifecycleWiring:

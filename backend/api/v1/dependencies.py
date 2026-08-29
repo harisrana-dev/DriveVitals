@@ -37,6 +37,8 @@ from backend.db.session import get_session
 LIMIT_MIN = 1
 LIMIT_MAX = 500
 
+INSUFFICIENT_PERMISSIONS = "INSUFFICIENT_PERMISSIONS"
+
 _bearer = HTTPBearer(auto_error=False)
 
 
@@ -146,3 +148,39 @@ async def get_current_user(
 
 async def get_user_id(current_user: User = Depends(get_current_user)) -> str:
     return current_user.user_id
+
+
+async def require_authenticated_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Require a valid authenticated session.
+
+    Equivalent to :func:`get_current_user`; named dependency for
+    authorization-focused endpoints.
+    """
+    return current_user
+
+
+def require_role(*roles: str):
+    """Build a dependency that requires one of the given roles.
+
+    An authenticated user without a required role receives a 403
+    ``INSUFFICIENT_PERMISSIONS`` — never a 401, which is reserved for
+    unauthenticated requests.
+    """
+
+    async def _require(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        if current_user.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=INSUFFICIENT_PERMISSIONS,
+            )
+        return current_user
+
+    return _require
+
+
+require_admin = require_role("admin")
+require_operator_or_admin = require_role("operator", "admin")

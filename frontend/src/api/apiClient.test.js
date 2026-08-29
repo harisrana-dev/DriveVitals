@@ -123,6 +123,35 @@ describe('apiClient auth behavior', () => {
     ).rejects.toBeInstanceOf(ApiError);
     expect(dispatchEvent).not.toHaveBeenCalled();
   });
+
+  it('does NOT dispatch auth:expired on a 403 from a protected endpoint', async () => {
+    tokenStorage.get.mockReturnValue('tok-1');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({ status: 403, body: { detail: 'INSUFFICIENT_PERMISSIONS' } })
+    );
+
+    const error = await apiClient
+      .delete(endpoints.trips.aborted)
+      .catch((e) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.status).toBe(403);
+    expect(error.detail).toBe('INSUFFICIENT_PERMISSIONS');
+    expect(dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('does NOT dispatch auth:expired on a 404 from a protected endpoint', async () => {
+    tokenStorage.get.mockReturnValue('tok-1');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      jsonResponse({ status: 404, body: { detail: 'NOT_FOUND' } })
+    );
+
+    const error = await apiClient
+      .get(endpoints.fleet.vehicle('v-999'))
+      .catch((e) => e);
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.status).toBe(404);
+    expect(dispatchEvent).not.toHaveBeenCalled();
+  });
 });
 
 describe('apiClient errors', () => {

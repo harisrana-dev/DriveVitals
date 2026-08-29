@@ -16,4 +16,38 @@ function getRoleLabel(role) {
   return roleLabels[role] || 'Team Member';
 }
 
-export { getInitials, getRoleLabel, roleLabels };
+function hasRole(user, role) {
+  return Boolean(user) && user.role === role;
+}
+
+function hasAnyRole(user, roles) {
+  return Boolean(user) && Array.isArray(roles) && roles.includes(user.role);
+}
+
+function isAdmin(user) {
+  return hasRole(user, 'admin');
+}
+
+function isOperator(user) {
+  return hasRole(user, 'operator');
+}
+
+function isViewer(user) {
+  return hasRole(user, 'viewer');
+}
+
+function canAccessSettings(user) {
+  return isAdmin(user);
+}
+
+export {
+  canAccessSettings,
+  getInitials,
+  getRoleLabel,
+  hasAnyRole,
+  hasRole,
+  isAdmin,
+  isOperator,
+  isViewer,
+  roleLabels,
+};

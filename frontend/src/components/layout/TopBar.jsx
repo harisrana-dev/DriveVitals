@@ -32,7 +32,7 @@ export function TopBar({ onMenuClick }) {
   const navigate = useNavigate();
   const alertCount = useUnacknowledgedAlertCount();
   const { connectionStatus: rawConnectionStatus, lastUpdate, syncing, sync } = useLiveData();
-  const { user, logout } = useAuth();
+  const { user, logout, canAccessSettings } = useAuth();
   const now = useNow(5000);
   const connectionStatus = deriveConnectionState(rawConnectionStatus, lastUpdate, now);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -278,7 +278,9 @@ export function TopBar({ onMenuClick }) {
               </div>
               {[
                 { icon: <User size={15} />, label: 'Profile', action: () => setProfileOpen(false) },
-                { icon: <Settings size={15} />, label: 'Settings', action: () => { setProfileOpen(false); navigate('/settings'); } },
+                ...(canAccessSettings
+                  ? [{ icon: <Settings size={15} />, label: 'Settings', action: () => { setProfileOpen(false); navigate('/settings'); } }]
+                  : []),
                 { icon: <LogOut size={15} />, label: 'Sign out', action: handleLogout },
               ].map((item) => (
                 <button

@@ -150,8 +150,8 @@ class TestAlerts:
         assert stats["total"] == 1
         assert stats["critical_active"] == 1
 
-    async def test_acknowledge_alert(self, client: AsyncClient) -> None:
-        response = await client.post("/api/v1/alerts/a-1/acknowledge")
+    async def test_acknowledge_alert(self, operator_client: AsyncClient) -> None:
+        response = await operator_client.post("/api/v1/alerts/a-1/acknowledge")
         assert response.status_code == 200
         alert = response.json()
         assert alert["alert_id"] == "a-1"
@@ -159,7 +159,7 @@ class TestAlerts:
         assert alert["acknowledged_at"] is not None
         assert alert["status"] == "active"
 
-        listed = await client.get("/api/v1/alerts")
+        listed = await operator_client.get("/api/v1/alerts")
         assert listed.status_code == 200
         a1 = next(
             item for item in listed.json()["data"] if item["alert_id"] == "a-1"
@@ -168,23 +168,25 @@ class TestAlerts:
         assert a1["acknowledged_at"] is not None
 
     async def test_acknowledge_alert_is_idempotent(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
-        first = await client.post("/api/v1/alerts/a-1/acknowledge")
+        first = await operator_client.post("/api/v1/alerts/a-1/acknowledge")
         assert first.status_code == 200
         first_ts = first.json()["acknowledged_at"]
         assert first_ts is not None
 
-        second = await client.post("/api/v1/alerts/a-1/acknowledge")
+        second = await operator_client.post("/api/v1/alerts/a-1/acknowledge")
         assert second.status_code == 200
         assert second.json()["acknowledged_at"] == first_ts
 
-    async def test_acknowledge_unknown_alert(self, client: AsyncClient) -> None:
-        response = await client.post("/api/v1/alerts/a-99/acknowledge")
+    async def test_acknowledge_unknown_alert(
+        self, operator_client: AsyncClient
+    ) -> None:
+        response = await operator_client.post("/api/v1/alerts/a-99/acknowledge")
         assert response.status_code == 404
 
-    async def test_resolve_alert(self, client: AsyncClient) -> None:
-        response = await client.post("/api/v1/alerts/a-1/resolve")
+    async def test_resolve_alert(self, operator_client: AsyncClient) -> None:
+        response = await operator_client.post("/api/v1/alerts/a-1/resolve")
         assert response.status_code == 200
         alert = response.json()
         assert alert["alert_id"] == "a-1"
@@ -193,20 +195,26 @@ class TestAlerts:
         assert alert["status"] == "resolved"
         assert alert["resolved_at"] is not None
 
-        listed = await client.get("/api/v1/alerts", params={"status": "resolved"})
+        listed = await operator_client.get(
+            "/api/v1/alerts", params={"status": "resolved"}
+        )
         assert listed.json()["count"] == 2
 
-    async def test_resolve_alert_is_idempotent(self, client: AsyncClient) -> None:
-        first = await client.post("/api/v1/alerts/a-1/resolve")
+    async def test_resolve_alert_is_idempotent(
+        self, operator_client: AsyncClient
+    ) -> None:
+        first = await operator_client.post("/api/v1/alerts/a-1/resolve")
         assert first.status_code == 200
         first_ack = first.json()["acknowledged_at"]
         first_resolved = first.json()["resolved_at"]
 
-        second = await client.post("/api/v1/alerts/a-1/resolve")
+        second = await operator_client.post("/api/v1/alerts/a-1/resolve")
         assert second.status_code == 200
         assert second.json()["acknowledged_at"] == first_ack
         assert second.json()["resolved_at"] == first_resolved
 
-    async def test_resolve_unknown_alert(self, client: AsyncClient) -> None:
-        response = await client.post("/api/v1/alerts/a-99/resolve")
+    async def test_resolve_unknown_alert(
+        self, operator_client: AsyncClient
+    ) -> None:
+        response = await operator_client.post("/api/v1/alerts/a-99/resolve")
         assert response.status_code == 404

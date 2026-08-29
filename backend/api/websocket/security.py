@@ -4,6 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.api.security import authenticate_session
 from backend.db.models.user import User
 
+WS_AUTH_REJECT_CODE = 4401
+WS_AUTH_REJECT_REASON = (
+    "Unauthenticated: missing, invalid or expired session token"
+)
+
 
 async def authenticate_ws(
     websocket: WebSocket,

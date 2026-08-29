@@ -118,12 +118,14 @@ class TestMaintenance:
         odometers = [item["due_odometer_km"] for item in payload["data"]]
         assert odometers == sorted(odometers)
 
-    async def test_complete_maintenance(self, client: AsyncClient) -> None:
+    async def test_complete_maintenance(
+        self, operator_client: AsyncClient
+    ) -> None:
         mid = (
-            await client.get("/api/v1/maintenance", params={"limit": 1})
+            await operator_client.get("/api/v1/maintenance", params={"limit": 1})
         ).json()["data"][0]["maintenance_id"]
 
-        response = await client.patch(
+        response = await operator_client.patch(
             f"/api/v1/maintenance/{mid}/complete",
             json={"completed_odometer_km": 99999.0},
         )
@@ -135,16 +137,16 @@ class TestMaintenance:
         assert body["completed_at"] is not None
 
     async def test_complete_maintenance_idempotent(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
         mid = (
-            await client.get("/api/v1/maintenance", params={"limit": 1})
+            await operator_client.get("/api/v1/maintenance", params={"limit": 1})
         ).json()["data"][0]["maintenance_id"]
 
-        first = await client.patch(
+        first = await operator_client.patch(
             f"/api/v1/maintenance/{mid}/complete", json={}
         )
-        second = await client.patch(
+        second = await operator_client.patch(
             f"/api/v1/maintenance/{mid}/complete", json={}
         )
 
@@ -156,16 +158,16 @@ class TestMaintenance:
         ]
 
     async def test_complete_maintenance_defaults_odometer_to_due(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
         mid = (
-            await client.get("/api/v1/maintenance", params={"limit": 1})
+            await operator_client.get("/api/v1/maintenance", params={"limit": 1})
         ).json()["data"][0]["maintenance_id"]
         due = (
-            await client.get("/api/v1/maintenance", params={"limit": 1})
+            await operator_client.get("/api/v1/maintenance", params={"limit": 1})
         ).json()["data"][0]["due_odometer_km"]
 
-        response = await client.patch(
+        response = await operator_client.patch(
             f"/api/v1/maintenance/{mid}/complete", json={}
         )
 
@@ -173,9 +175,9 @@ class TestMaintenance:
         assert response.json()["completed_odometer_km"] == due
 
     async def test_complete_maintenance_not_found(
-        self, client: AsyncClient
+        self, operator_client: AsyncClient
     ) -> None:
-        response = await client.patch(
+        response = await operator_client.patch(
             "/api/v1/maintenance/missing/complete", json={}
         )
 

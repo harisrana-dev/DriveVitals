@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { authApi } from "../api/authApi";
 import { tokenStorage } from "../auth/tokenStorage";
 import { reconnectAll } from "../websocket";
+import {
+  canAccessSettings,
+  hasAnyRole,
+  hasRole,
+} from "../utils/identity";
 import { AuthContext } from "./authCtx";
 
 const EXPIRED_EVENT = "auth:expired";
@@ -127,6 +132,12 @@ export function AuthProvider({ children }) {
       user,
       isAuthenticated: status === AUTH_STATUSES.authenticated,
       isLoading: status === AUTH_STATUSES.loading,
+      isAdmin: hasRole(user, "admin"),
+      isOperator: hasRole(user, "operator"),
+      isViewer: hasRole(user, "viewer"),
+      canAccessSettings: canAccessSettings(user),
+      hasRole: (role) => hasRole(user, role),
+      hasAnyRole: (...roles) => hasAnyRole(user, roles),
       login,
       signup,
       logout,

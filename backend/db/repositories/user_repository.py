@@ -1,10 +1,16 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from backend.db.models.user import User
 from backend.db.repositories.base_repository import BaseRepository
 
 
 class UserRepository(BaseRepository):
+    async def count_all(self) -> int:
+        result = await self._session.execute(
+            select(func.count(User.user_id))
+        )
+        return result.scalar_one()
+
     async def find_by_email(self, email: str) -> User | None:
         result = await self._session.execute(
             select(User).where(User.email == email)

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.api.v1.dependencies import (
     get_maintenance_service,
+    require_operator_or_admin,
     validate_pagination,
 )
 from backend.api.v1.schemas.common import PaginatedResponse
@@ -11,6 +12,7 @@ from backend.api.v1.schemas.maintenance import (
 )
 from backend.api.v1.services.maintenance_service import MaintenanceService
 from backend.api.v1.services.maintenance_service import VALID_SORTS
+from backend.db.models.user import User
 
 router = APIRouter(prefix="/maintenance")
 
@@ -151,6 +153,7 @@ async def complete_maintenance(
     maintenance_id: str,
     payload: MaintenanceCompleteRequest,
     service: MaintenanceService = Depends(get_maintenance_service),
+    current_user: User = Depends(require_operator_or_admin),
 ) -> MaintenanceRead:
     record = await service.complete(
         maintenance_id=maintenance_id,

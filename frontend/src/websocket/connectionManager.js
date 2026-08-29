@@ -3,6 +3,8 @@ const STALE_AFTER_MS = 45000;
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
 
+const WS_AUTH_REJECT_CODE = 4401;
+
 function withJitter(delay) {
   return delay + Math.floor(Math.random() * 500);
 }
@@ -130,9 +132,17 @@ function createChannel(url) {
       handlers.forEach((handler) => handler.onMessage(message));
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       clearInterval(heartbeatTimer);
       heartbeatTimer = null;
+      // The server rejected our session token (missing/invalid/expired).
+      // Retrying cannot succeed while the session is unusable, so stay
+      // offline until the app reconnects with a fresh session.
+      if (event && event.code === WS_AUTH_REJECT_CODE) {
+        manuallyClosed = true;
+        setState('offline');
+        return;
+      }
       if (manuallyClosed) {
         setState('offline');
         return;
@@ -211,4 +221,4 @@ function reconnectAll() {
   channels.forEach((channel) => channel.forceReconnect());
 }
 
-export { subscribeToUrl, getChannelState, reconnectAll };
+export { subscribeToUrl, getChannelState, reconnectAll, WS_AUTH_REJECT_CODE };

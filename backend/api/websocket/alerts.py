@@ -14,12 +14,24 @@ import asyncio
 
 from fastapi import (
     APIRouter,
+    Depends,
     WebSocket,
     WebSocketDisconnect,
 )
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import (
     websocket_manager,
+)
+
+from backend.api.websocket.security import (
+    WS_AUTH_REJECT_CODE,
+    WS_AUTH_REJECT_REASON,
+    authenticate_ws,
+)
+
+from backend.db.session import (
+    get_session,
 )
 
 
@@ -86,7 +98,22 @@ async def alerts_worker() -> None:
 )
 async def alerts_websocket(
     websocket: WebSocket,
+    session: AsyncSession = Depends(get_session),
 ) -> None:
+    user = await authenticate_ws(
+        websocket,
+        session,
+    )
+
+    if user is None:
+
+        await websocket.close(
+            code=WS_AUTH_REJECT_CODE,
+            reason=WS_AUTH_REJECT_REASON,
+        )
+
+        return
+
     await (
         websocket_manager.connect(
             websocket

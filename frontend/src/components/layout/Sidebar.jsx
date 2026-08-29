@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={1.8} />, section: 'overview' },
@@ -33,6 +34,7 @@ const sectionLabels = {
 
 function SidebarContent({ collapsed, onToggle }) {
   const location = useLocation();
+  const { canAccessSettings } = useAuth();
   const sections = ['overview', 'operations', 'intelligence', 'care'];
 
   return (
@@ -135,36 +137,38 @@ function SidebarContent({ collapsed, onToggle }) {
       </nav>
 
       <div style={{ borderTop: '1px solid var(--color-sidebar-border)', padding: collapsed ? '8px' : '8px 12px' }}>
-        <NavLink
-          to="/settings"
-          title={collapsed ? 'Settings' : undefined}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '10px',
-            borderRadius: 8,
-            color: location.pathname === '/settings' ? 'var(--color-sidebar-active-text)' : 'var(--color-text-secondary)',
-            background: location.pathname === '/settings' ? 'var(--color-sidebar-active)' : 'transparent',
-            textDecoration: 'none',
-            fontSize: 13.5,
-            transition: 'all 0.15s ease',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-          }}
-          onMouseEnter={(e) => {
-            if (location.pathname !== '/settings') {
-              e.currentTarget.style.background = 'var(--color-sidebar-hover)';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (location.pathname !== '/settings') {
-              e.currentTarget.style.background = 'transparent';
-            }
-          }}
-        >
-          <Settings size={18} strokeWidth={1.8} />
-          {!collapsed && <span>Settings</span>}
-        </NavLink>
+        {canAccessSettings && (
+          <NavLink
+            to="/settings"
+            title={collapsed ? 'Settings' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px',
+              borderRadius: 8,
+              color: location.pathname === '/settings' ? 'var(--color-sidebar-active-text)' : 'var(--color-text-secondary)',
+              background: location.pathname === '/settings' ? 'var(--color-sidebar-active)' : 'transparent',
+              textDecoration: 'none',
+              fontSize: 13.5,
+              transition: 'all 0.15s ease',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+            }}
+            onMouseEnter={(e) => {
+              if (location.pathname !== '/settings') {
+                e.currentTarget.style.background = 'var(--color-sidebar-hover)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (location.pathname !== '/settings') {
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
+          >
+            <Settings size={18} strokeWidth={1.8} />
+            {!collapsed && <span>Settings</span>}
+          </NavLink>
+        )}
 
         <button
           onClick={onToggle}

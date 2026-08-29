@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import pytest
@@ -8,9 +8,15 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+from backend.api.security import (
+    ScryptPasswordHasher,
+    generate_token,
+    hash_token,
+)
 from backend.api.v1 import api_router
 from backend.db.base import Base
 from backend.db.models import (
+    AuthSession,
     Alert,
     BehaviourEvent,
     Driver,
@@ -19,6 +25,7 @@ from backend.db.models import (
     Route,
     TelemetrySample,
     Trip,
+    User,
     Vehicle,
     VehicleHealth,
 )
@@ -535,4 +542,71 @@ async def empty_client() -> AsyncClient:
     app = _build_app()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
+        yield c
+
+
+_hasher = ScryptPasswordHasher()
+
+
+async def _create_user_with_session(role: str) -> str:
+    """Insert an active user plus a fresh session row; return the raw token."""
+    now = datetime.now(timezone.utc)
+    email = f"{role}-{uuid4().hex[:12]}@authtest.local"
+    async with test_session_factory() as session:
+        user = User(
+            user_id=str(uuid4()),
+            email=email,
+            password_hash=_hasher.hash("password-123"),
+            full_name=f"{role.title()} User",
+            role=role,
+            is_active=True,
+        )
+        session.add(user)
+        await session.flush()
+        token = generate_token()
+        session.add(
+            AuthSession(
+                session_id=str(uuid4()),
+                user_id=user.user_id,
+                token_hash=hash_token(token),
+                expires_at=now + timedelta(days=1),
+                last_used_at=now,
+            )
+        )
+        await session.commit()
+    return token
+
+
+def _authed_client(token: str):
+    app = _build_app()
+    transport = ASGITransport(app=app)
+    return AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
+@pytest.fixture
+async def admin_client(ids: dict[str, str]) -> AsyncClient:
+    async with _authed_client(await _create_user_with_session("admin")) as c:
+        yield c
+
+
+@pytest.fixture
+async def operator_client(ids: dict[str, str]) -> AsyncClient:
+    async with _authed_client(await _create_user_with_session("operator")) as c:
+        yield c
+
+
+@pytest.fixture
+async def viewer_client(ids: dict[str, str]) -> AsyncClient:
+    async with _authed_client(await _create_user_with_session("viewer")) as c:
+        yield c
+
+
+@pytest.fixture
+async def operator_empty_client() -> AsyncClient:
+    await _reset_database()
+    async with _authed_client(await _create_user_with_session("operator")) as c:
         yield c

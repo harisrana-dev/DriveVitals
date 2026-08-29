@@ -6,11 +6,13 @@ from backend.api.websocket.alerts import (
 )
 from backend.api.v1.dependencies import (
     get_alert_service,
+    require_operator_or_admin,
     validate_pagination,
 )
 from backend.api.v1.schemas.alert import AlertRead
 from backend.api.v1.schemas.common import PaginatedResponse
 from backend.api.v1.services.alert_service import AlertService
+from backend.db.models.user import User
 
 router = APIRouter(prefix="/alerts")
 
@@ -242,6 +244,7 @@ async def list_vehicle_alerts(
 async def acknowledge_alert(
     alert_id: str,
     service: AlertService = Depends(get_alert_service),
+    current_user: User = Depends(require_operator_or_admin),
 ) -> AlertRead:
     alert = await service.acknowledge(alert_id)
     if alert is None:
@@ -263,6 +266,7 @@ async def acknowledge_alert(
 async def resolve_alert(
     alert_id: str,
     service: AlertService = Depends(get_alert_service),
+    current_user: User = Depends(require_operator_or_admin),
 ) -> AlertRead:
     alert = await service.resolve(alert_id)
     if alert is None:

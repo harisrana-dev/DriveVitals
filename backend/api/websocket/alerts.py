@@ -14,11 +14,9 @@ import asyncio
 
 from fastapi import (
     APIRouter,
-    Depends,
     WebSocket,
     WebSocketDisconnect,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import (
     websocket_manager,
@@ -31,7 +29,7 @@ from backend.api.websocket.security import (
 )
 
 from backend.db.session import (
-    get_session,
+    async_session_factory,
 )
 
 
@@ -98,12 +96,14 @@ async def alerts_worker() -> None:
 )
 async def alerts_websocket(
     websocket: WebSocket,
-    session: AsyncSession = Depends(get_session),
 ) -> None:
-    user = await authenticate_ws(
-        websocket,
-        session,
-    )
+    # Authenticate with a short-lived DB session and release it before the
+    # long-lived receive loop. See trips.py for the rationale.
+    async with async_session_factory() as session:
+        user = await authenticate_ws(
+            websocket,
+            session,
+        )
 
     if user is None:
 
@@ -121,7 +121,7 @@ async def alerts_websocket(
     )
 
     print(
-        "🔌 Alerts WebSocket connected"
+        "Alerts WebSocket connected"
     )
     try:
         while True:
@@ -131,5 +131,5 @@ async def alerts_websocket(
             websocket
         )
         print(
-            "❌ Alerts WebSocket disconnected"
+            "Alerts WebSocket disconnected"
         )

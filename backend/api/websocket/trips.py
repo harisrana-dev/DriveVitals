@@ -17,11 +17,9 @@ from dataclasses import asdict
 
 from fastapi import (
     APIRouter,
-    Depends,
     WebSocket,
     WebSocketDisconnect,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import (
     websocket_manager,
@@ -34,7 +32,7 @@ from backend.api.websocket.security import (
 )
 
 from backend.db.session import (
-    get_session,
+    async_session_factory,
 )
 
 from backend.trips.schemas.trip_payload import (
@@ -100,12 +98,16 @@ async def trips_worker() -> None:
 )
 async def trips_websocket(
     websocket: WebSocket,
-    session: AsyncSession = Depends(get_session),
 ) -> None:
-    user = await authenticate_ws(
-        websocket,
-        session,
-    )
+    # Authenticate with a short-lived DB session and release it before the
+    # long-lived receive loop. Holding an AsyncSession open for the whole
+    # socket lifetime pins a pooled connection per client and produces
+    # greenlet/finalizer warnings on shutdown.
+    async with async_session_factory() as session:
+        user = await authenticate_ws(
+            websocket,
+            session,
+        )
 
     if user is None:
 
@@ -122,7 +124,7 @@ async def trips_websocket(
         )
     )
     print(
-        "🔌 Trips WebSocket connected"
+        "Trips WebSocket connected"
     )
     try:
         while True:
@@ -132,5 +134,5 @@ async def trips_websocket(
             websocket
         )
         print(
-            "❌ Trips WebSocket disconnected"
+            "Trips WebSocket disconnected"
         )

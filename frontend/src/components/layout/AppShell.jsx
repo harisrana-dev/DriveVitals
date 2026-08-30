@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { getMainContentMargin } from './sidebarLayout';
 import { VehicleDrawerProvider } from '../../context/VehicleDrawerContext';
 import { VehicleDrawer } from '../fleet/VehicleDrawer';
 import { MaintenanceDrawer } from '../maintenance/MaintenanceDrawer';
@@ -35,7 +36,7 @@ function AppShellInner() {
     setMobileOpen((prev) => !prev);
   }, []);
 
-  const marginLeft = sidebarCollapsed ? 64 : 240;
+  const marginLeft = getMainContentMargin(sidebarCollapsed);
 
   return (
     <>
@@ -43,7 +44,7 @@ function AppShellInner() {
         .sidebar-desktop { display: flex; }
         .sidebar-mobile { display: none; }
         .sidebar-overlay { display: none !important; }
-        .main-content { margin-left: ${marginLeft}px; transition: margin-left 0.2s ease; }
+        #dv-app-shell { margin-left: ${marginLeft}px; transition: margin-left 0.2s ease; }
         .mobile-menu-btn { display: none !important; }
         .topbar-search { display: flex !important; }
         .profile-name { display: inline; }
@@ -51,7 +52,7 @@ function AppShellInner() {
           .sidebar-desktop { display: none !important; }
           .sidebar-mobile { display: flex !important; }
           .sidebar-overlay { display: block !important; }
-          .main-content { margin-left: 0 !important; }
+          #dv-app-shell { margin-left: 0 !important; }
           .mobile-menu-btn { display: flex !important; }
           .topbar-search { display: none !important; }
           .profile-name { display: none; }
@@ -65,7 +66,7 @@ function AppShellInner() {
         onMobileClose={handleMobileClose}
       />
 
-      <div className="main-content" style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div id="dv-app-shell" className="main-content" style={{ flex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <TopBar onMenuClick={handleMobileMenu} />
         {(connectionStatus === 'offline' || connectionStatus === 'stale') && (
           <div

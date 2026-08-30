@@ -1,4 +1,6 @@
 import asyncio
+import io
+import sys
 import time
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
@@ -10,6 +12,8 @@ from starlette.testclient import TestClient, WebSocketDisconnect
 
 import backend.api.main as main
 import backend.api.websocket.trips as trips_module
+import backend.api.websocket.dashboard as dashboard_module
+import backend.api.websocket.alerts as alerts_module
 from backend.alerts.models.fleet_alert import (
     AlertCategory,
     AlertSeverity,
@@ -60,7 +64,38 @@ def _ws_client() -> TestClient:
             yield session
 
     app.dependency_overrides[get_session] = _override_get_session
+
+    # The WS handlers authenticate with a short-lived session opened from the
+    # module-level factory. Route that through the NullPool test engine too,
+    # so TestClient's portal loop never shares pooled connections with the
+    # ``asyncio.run`` loops used by the rest of the suite.
+    for module in (
+        trips_module,
+        dashboard_module,
+        alerts_module,
+    ):
+        module.async_session_factory = test_session_factory
+
     return TestClient(app)
+
+
+class _Cp1252Stdout:
+    """Mimics Python's stdout on Windows when attached to a pipe, not a
+    console (redirected output, IDE terminals, npm scripts): the ANSI codepage
+    cp1252 is used with strict error handling, so any non-cp1252 character
+    (e.g. an emoji) raises ``UnicodeEncodeError``.
+    """
+
+    encoding = "cp1252"
+
+    def __init__(self):
+        self._buffer = io.StringIO()
+
+    def write(self, data):
+        self._buffer.write(data.encode("cp1252", "strict").decode("cp1252"))
+
+    def flush(self):
+        pass
 
 
 class TestWebSockets:
@@ -128,6 +163,74 @@ class TestWebSockets:
             with client.websocket_connect(f"/ws/alerts?token={token}") as websocket:
                 websocket.send_text("ping")
         finally:
+            app.dependency_overrides.clear()
+
+    @pytest.mark.parametrize("channel", ["dashboard", "trips", "alerts"])
+    def test_websocket_stays_open_when_stdout_is_cp1252(self, channel) -> None:
+        """Regression: the Trips WS handler used to crash right after accept().
+
+        The old handler printed emoji ("🔌 Trips WebSocket connected") and on
+        Windows a non-attached stdout (redirected output, IDE terminal, npm
+        scripts) encodes as ANSI cp1252 with strict errors, so every emoji
+        print raised ``UnicodeEncodeError`` and killed the handler before it
+        could broadcast anything. All channel handlers now print ASCII only.
+        """
+        token = asyncio.run(_create_user_with_session("operator"))
+        client = _ws_client()
+
+        original_stdout = sys.stdout
+        sys.stdout = _Cp1252Stdout()
+        try:
+            with client.websocket_connect(f"/ws/{channel}?token={token}") as websocket:
+                websocket.send_text("ping")
+        finally:
+            sys.stdout = original_stdout
+            app.dependency_overrides.clear()
+
+    def test_trips_websocket_releases_db_session_after_auth(self) -> None:
+        """Regression: the old handler held its DB session for the whole
+        socket lifetime, pinning a pooled connection per connection. The
+        auth session must be opened and closed inside the handler before the
+        long-lived receive loop.
+        """
+        token = asyncio.run(_create_user_with_session("operator"))
+        client = _ws_client()
+
+        base_factory = trips_module.async_session_factory
+        opened = []
+        closed = []
+
+        class _TrackingFactory:
+            def __call__(self):
+                inner = base_factory()
+                return _TrackedSession(inner)
+
+        class _TrackedSession:
+            def __init__(self, inner):
+                self._inner = inner
+
+            def __getattr__(self, name):
+                return getattr(self._inner, name)
+
+            async def __aenter__(self):
+                opened.append(1)
+                return await self._inner.__aenter__()
+
+            async def __aexit__(self, *exc):
+                result = await self._inner.__aexit__(*exc)
+                closed.append(1)
+                return result
+
+        trips_module.async_session_factory = _TrackingFactory()
+        try:
+            with client.websocket_connect(f"/ws/trips?token={token}") as websocket:
+                websocket.send_text("ping")
+                assert opened, "auth session was never opened"
+                assert closed == opened, (
+                    "DB session still held open while the WebSocket is idle"
+                )
+        finally:
+            trips_module.async_session_factory = base_factory
             app.dependency_overrides.clear()
 
     def test_websocket_rejects_invalid_token(self) -> None:

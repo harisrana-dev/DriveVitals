@@ -4,11 +4,9 @@ from dataclasses import asdict
 
 from fastapi import (
     APIRouter,
-    Depends,
     WebSocket,
     WebSocketDisconnect,
 )
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.dependencies import (
     websocket_manager,
@@ -25,7 +23,7 @@ from backend.dashboard.schemas.dashboard_payload import (
 )
 
 from backend.db.session import (
-    get_session,
+    async_session_factory,
 )
 
 
@@ -96,13 +94,15 @@ async def snapshot_worker() -> None:
 )
 async def dashboard_websocket(
     websocket: WebSocket,
-    session: AsyncSession = Depends(get_session),
 ) -> None:
 
-    user = await authenticate_ws(
-        websocket,
-        session,
-    )
+    # Authenticate with a short-lived DB session and release it before the
+    # long-lived receive loop. See trips.py for the rationale.
+    async with async_session_factory() as session:
+        user = await authenticate_ws(
+            websocket,
+            session,
+        )
 
     if user is None:
 
@@ -120,7 +120,7 @@ async def dashboard_websocket(
     )
 
     print(
-        "🔌 Dashboard connected"
+        "Dashboard connected"
     )
 
     try:
@@ -136,5 +136,5 @@ async def dashboard_websocket(
         )
 
         print(
-            "❌ Dashboard disconnected"
+            "Dashboard disconnected"
         )

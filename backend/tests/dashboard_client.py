@@ -25,7 +25,7 @@ async def dashboard_client():
 
     async with websockets.connect(_url()) as websocket:
 
-        print("🖥 Connected to Dashboard WebSocket\n")
+        print("Connected to Dashboard WebSocket\n")
 
         while True:
 

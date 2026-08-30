@@ -1,7 +1,7 @@
 """add_system_settings
 
 Revision ID: e3a1b2c4d5f6
-Revises: d2f4b9a1c3e7
+Revises: 5f4c3b2a1d0e
 Create Date: 2026-08-29 00:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'e3a1b2c4d5f6'
-down_revision: Union[str, Sequence[str], None] = 'd2f4b9a1c3e7'
+down_revision: Union[str, Sequence[str], None] = '5f4c3b2a1d0e'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

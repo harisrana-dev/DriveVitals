@@ -13,6 +13,11 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import {
+  SIDEBAR_WIDTH,
+  SIDEBAR_COLLAPSED_WIDTH,
+  SIDEBAR_MOBILE_WIDTH,
+} from './sidebarLayout';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={1.8} />, section: 'overview' },
@@ -205,7 +210,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
     <>
       <aside
         style={{
-          width: collapsed ? 64 : 240,
+          width: collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
           background: 'var(--color-sidebar-bg)',
           borderRight: '1px solid var(--color-sidebar-border)',
           display: 'flex',
@@ -239,7 +244,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
 
       <aside
         style={{
-          width: 260,
+          width: SIDEBAR_MOBILE_WIDTH,
           background: 'var(--color-sidebar-bg)',
           borderRight: '1px solid var(--color-sidebar-border)',
           display: 'flex',
@@ -247,7 +252,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
           height: '100vh',
           position: 'fixed',
           top: 0,
-          left: mobileOpen ? 0 : -260,
+          left: mobileOpen ? 0 : -SIDEBAR_MOBILE_WIDTH,
           zIndex: 201,
           transition: 'left 0.25s ease',
           overflow: 'hidden',

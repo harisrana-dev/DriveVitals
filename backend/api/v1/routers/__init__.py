@@ -1,6 +1,7 @@
 from backend.api.v1.routers.analytics import router as analytics_router
 from backend.api.v1.routers.alerts import router as alerts_router
 from backend.api.v1.routers.auth import router as auth_router
+from backend.api.v1.routers.digital_twin import router as digital_twin_router
 from backend.api.v1.routers.driver_statistics import (
     router as driver_statistics_router,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "analytics_router",
     "alerts_router",
     "auth_router",
+    "digital_twin_router",
     "driver_statistics_router",
     "drivers_router",
     "maintenance_router",

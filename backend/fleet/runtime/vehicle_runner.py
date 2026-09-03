@@ -74,6 +74,9 @@ class VehicleRunner:
             trip_id=self.trip.trip_id,
             vehicle_odometer_km=self.vehicle.odometer_km,
             vehicle_fuel_level_percent=self.vehicle.fuel_level_percent,
+            tank_capacity_liters=self.vehicle.tank_capacity_liters,
+            fuel_efficiency_factor=self.vehicle.fuel_efficiency_factor,
+            acceleration_response=self.vehicle.acceleration_response,
         )
 
         # Apply the tick's effects to persistent/lifecycle state.

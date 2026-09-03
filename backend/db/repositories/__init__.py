@@ -15,6 +15,8 @@ from backend.db.repositories.auth_session_repository import AuthSessionRepositor
 from backend.db.repositories.system_settings_repository import (
     SystemSettingsRepository,
 )
+from backend.db.repositories.assignment_repository import AssignmentRepository
+from backend.db.repositories.scenario_repository import ScenarioRepository
 
 __all__ = [
     "VehicleRepository",
@@ -30,4 +32,6 @@ __all__ = [
     "UserRepository",
     "AuthSessionRepository",
     "SystemSettingsRepository",
+    "AssignmentRepository",
+    "ScenarioRepository",
 ]

@@ -20,6 +20,9 @@ class Driver(TimestampMixin, Base):
     employment_status: Mapped[str] = mapped_column(
         String(20), nullable=False, default="active"
     )
+    behavior_profile: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="standard"
+    )
 
     trips = relationship("Trip", back_populates="driver")
     behaviour_events = relationship("BehaviourEvent", back_populates="driver")

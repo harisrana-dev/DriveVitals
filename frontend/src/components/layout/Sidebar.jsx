@@ -9,6 +9,7 @@ import {
   HeartPulse,
   Wrench,
   Settings,
+  FlaskConical,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -142,6 +143,39 @@ function SidebarContent({ collapsed, onToggle }) {
       </nav>
 
       <div style={{ borderTop: '1px solid var(--color-sidebar-border)', padding: collapsed ? '8px' : '8px 12px' }}>
+        {canAccessSettings && (
+          <NavLink
+            to="/digital-twin-lab"
+            title={collapsed ? 'Digital Twin Lab' : undefined}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px',
+              borderRadius: 8,
+              color: location.pathname === '/digital-twin-lab' ? 'var(--color-sidebar-active-text)' : 'var(--color-text-secondary)',
+              background: location.pathname === '/digital-twin-lab' ? 'var(--color-sidebar-active)' : 'transparent',
+              textDecoration: 'none',
+              fontSize: 13.5,
+              transition: 'all 0.15s ease',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+            }}
+            onMouseEnter={(e) => {
+              if (location.pathname !== '/digital-twin-lab') {
+                e.currentTarget.style.background = 'var(--color-sidebar-hover)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (location.pathname !== '/digital-twin-lab') {
+                e.currentTarget.style.background = 'transparent';
+              }
+            }}
+          >
+            <FlaskConical size={18} strokeWidth={1.8} />
+            {!collapsed && <span>Digital Twin Lab</span>}
+          </NavLink>
+        )}
+
         {canAccessSettings && (
           <NavLink
             to="/settings"

@@ -33,6 +33,20 @@ class Vehicle:
     fuel_level_percent: float = 100.0
     engine_status: EngineStatus = EngineStatus.OFF
 
+    # Simulation characteristics. These are simulation inputs (not
+    # analytics conclusions) that influence how the OBD generator varies
+    # telemetry for this vehicle relative to a baseline.
+    fuel_efficiency_factor: float = 1.0
+    acceleration_response: float = 1.0
+    tank_capacity_liters: float = 60.0
+    display_name: str | None = None
+
+    @property
+    def name(self) -> str:
+        if self.display_name:
+            return self.display_name
+        return f"{self.make} {self.model}"
+
     def start_engine(self) -> None:
         self.engine_status = EngineStatus.RUNNING
 

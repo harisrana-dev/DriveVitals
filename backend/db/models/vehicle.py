@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from sqlalchemy import String
+from sqlalchemy import Float, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db.base import Base, TimestampMixin
@@ -23,6 +23,23 @@ class Vehicle(TimestampMixin, Base):
     year: Mapped[int] = mapped_column(nullable=False)
     fuel_type: Mapped[str] = mapped_column(String(20), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+
+    # Descriptive name shown in the digital twin lab. Optional; falls
+    # back to "make model" when unset.
+    display_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Simulation characteristics. These are simulation inputs (not
+    # analytics conclusions) that influence how the OBD generator varies
+    # telemetry for this vehicle relative to a baseline.
+    fuel_efficiency_factor: Mapped[float] = mapped_column(
+        Float, nullable=False, default=1.0
+    )
+    acceleration_response: Mapped[float] = mapped_column(
+        Float, nullable=False, default=1.0
+    )
+    tank_capacity_liters: Mapped[float] = mapped_column(
+        Float, nullable=False, default=60.0
+    )
 
     trips = relationship("Trip", back_populates="vehicle")
     telemetry_samples = relationship("TelemetrySample", back_populates="vehicle")

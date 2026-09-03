@@ -176,6 +176,66 @@ ActiveTripUpdateCallback = Callable[
 logger = logging.getLogger(__name__)
 
 
+class _PersistenceTelemetryConsumer:
+    """Bridges telemetry samples into persistence (async).
+
+    Registered once for the lifetime of the runtime. Persisting raises no
+    exception: failures are logged by :class:`PersistenceService` and the
+    event loop continues (matches prior defensive behavior).
+    """
+
+    def __init__(
+        self,
+        svc: PersistenceService,
+        engine: AlertEngine,
+        state: IntelligenceState,
+    ) -> None:
+        self._svc = svc
+        self._engine = engine
+        self._state = state
+
+    def consume(self, sample: TelemetrySample) -> None:
+        asyncio.ensure_future(self._svc.persist_telemetry(sample))
+
+        health = self._state.get_health_snapshot(sample.vehicle_id)
+
+        if health is not None:
+            asyncio.ensure_future(self._svc.persist_vehicle_health(health))
+
+        alerts = self._engine.generate_alerts(
+            health_snapshot=health,
+            telemetry=(sample,),
+        )
+
+        if alerts:
+            asyncio.ensure_future(self._svc.persist_alerts(alerts))
+
+        active_keys = self._engine.active_alert_keys(
+            health_snapshot=health,
+            telemetry=(sample,),
+        )
+        asyncio.ensure_future(
+            self._svc.resolve_cleared_alerts(
+                sample.vehicle_id,
+                (
+                    AlertType.HEALTH.value,
+                    AlertType.TELEMETRY.value,
+                ),
+                [key for _, key in active_keys],
+            )
+        )
+
+
+class _PersistenceSnapshotSubscriber:
+    """Bridges analytics snapshots (completed behaviour events) to DB."""
+
+    def __init__(self, svc: PersistenceService) -> None:
+        self._svc = svc
+
+    def publish(self, snapshot: AnalyticsSnapshot) -> None:
+        asyncio.ensure_future(self._svc.persist_behaviour_events(snapshot))
+
+
 def _compute_safety_score(
     summary: DriverBehaviourSummary,
     distance_km: float,
@@ -448,6 +508,9 @@ class DriveVitalsRuntime:
 
         self._trip_flush_callback: TripFlushCallback | None = None
         self._trip_update_callback: ActiveTripUpdateCallback | None = None
+        self._trip_completion_callback_installed = False
+        self._persistence_consumer_registered = False
+        self._persistence_snapshot_subscriber: _PersistenceSnapshotSubscriber | None = None
 
         self._initial_fuel_levels: dict[str, float] = {}
 
@@ -578,6 +641,81 @@ class DriveVitalsRuntime:
                 trip=trip,
             )
 
+    def configure_fleet(
+        self,
+        config: FleetConfiguration,
+    ) -> None:
+        """Replace the running fleet with a scenario-derived configuration.
+
+        Used by the Digital Twin Lab to launch a scenario: the runtime is
+        rebuilt (runners, analytics contexts and analytics stores) around
+        the supplied :class:`FleetConfiguration`. The default factory
+        configuration is restored when this is never called or when
+        ``reset()`` is used, so existing auto-start behavior is preserved.
+
+        This must be called while the runtime loop is not running.
+        """
+        self._fleet_config = config
+
+        self._fleet._runners = []
+        self._context_store.clear()
+        self._snapshot_store.clear()
+        self._runtime_store.clear()
+
+        for assignment in config.assignments:
+            vehicle = next(
+                v for v in config.vehicles if v.vehicle_id == assignment.vehicle_id
+            )
+            driver = next(
+                d for d in config.drivers if d.driver_id == assignment.driver_id
+            )
+            route = next(
+                r for r in config.routes if r.route_id == assignment.route_id
+            )
+
+            trip = Trip(
+                trip_id=str(uuid.uuid4()),
+                vehicle_id=vehicle.vehicle_id,
+                driver_id=driver.driver_id,
+                route_id=route.route_id,
+            )
+
+            self._context_store.register(
+                AnalyticsContext(
+                    vehicle_id=vehicle.vehicle_id,
+                    driver_id=driver.driver_id,
+                    trip_id=trip.trip_id,
+                    route_id=route.route_id,
+                    route_type=route.route_type,
+                    speed_limit_kmh=route.speed_limit_kmh,
+                    route_name=f"{route.origin} \u2192 {route.destination}",
+                    vehicle_make=vehicle.make,
+                    vehicle_model=vehicle.model,
+                    vehicle_year=vehicle.year,
+                    driver_name=driver.name,
+                )
+            )
+
+            self._fleet.add_assignment(
+                assignment=assignment,
+                vehicle=vehicle,
+                driver=driver,
+                route=route,
+                trip=trip,
+            )
+
+    def reset_fleet(
+        self,
+    ) -> None:
+        """Restore the default factory-derived fleet for a fresh run.
+
+        Clears in-memory analytics stores and re-points the dashboard
+        builder's trip provider to the (re)built FleetRunner. Idempotent.
+        """
+        self._fleet_config = None
+        self.configure_fleet(FleetFactory.from_config())
+        self._dashboard_builder._trip_provider = self._fleet.trip_for_vehicle
+
     async def run(
         self,
     ) -> None:
@@ -698,60 +836,9 @@ class DriveVitalsRuntime:
         # Register persistence as telemetry consumer
         # --------------------------------------------------------------
 
-        class _PersistenceTelemetryConsumer:
-            def __init__(
-                self,
-                svc: PersistenceService,
-                engine: AlertEngine,
-                state: IntelligenceState,
-            ) -> None:
-                self._svc = svc
-                self._engine = engine
-                self._state = state
+        persistence = self._persistence_service
 
-            def consume(self, sample: TelemetrySample) -> None:
-                asyncio.ensure_future(
-                    self._svc.persist_telemetry(sample)
-                )
-
-                health = self._state.get_health_snapshot(
-                    sample.vehicle_id
-                )
-
-                if health is not None:
-                    asyncio.ensure_future(
-                        self._svc.persist_vehicle_health(health)
-                    )
-
-                alerts = self._engine.generate_alerts(
-                    health_snapshot=health,
-                    telemetry=(sample,),
-                )
-
-                if alerts:
-                    asyncio.ensure_future(
-                        self._svc.persist_alerts(alerts)
-                    )
-
-                # Resolve telemetry/health alerts whose condition has
-                # cleared. Evaluated pre-dedup so persistent conditions that
-                # are inside the cooldown window are not resolved.
-                active_keys = self._engine.active_alert_keys(
-                    health_snapshot=health,
-                    telemetry=(sample,),
-                )
-                asyncio.ensure_future(
-                    self._svc.resolve_cleared_alerts(
-                        sample.vehicle_id,
-                        (
-                            AlertType.HEALTH.value,
-                            AlertType.TELEMETRY.value,
-                        ),
-                        [key for _, key in active_keys],
-                    )
-                )
-
-        if persistence is not None:
+        if persistence is not None and not self._persistence_consumer_registered:
             self._telemetry_pipeline.register(
                 _PersistenceTelemetryConsumer(
                     persistence,
@@ -759,29 +846,25 @@ class DriveVitalsRuntime:
                     self._intelligence_state,
                 )
             )
+            self._persistence_consumer_registered = True
 
         # --------------------------------------------------------------
         # Subscribe persistence to analytics snapshot stream
         # --------------------------------------------------------------
 
-        class _PersistenceSnapshotSubscriber:
-            def __init__(self, svc: PersistenceService) -> None:
-                self._svc = svc
-            def publish(self, snapshot: AnalyticsSnapshot) -> None:
-                asyncio.ensure_future(
-                    self._svc.persist_behaviour_events(snapshot)
-                )
-
-        if persistence is not None:
+        if persistence is not None and self._persistence_snapshot_subscriber is None:
+            self._persistence_snapshot_subscriber = _PersistenceSnapshotSubscriber(
+                persistence
+            )
             self._snapshot_stream.subscribe(
-                _PersistenceSnapshotSubscriber(persistence)
+                self._persistence_snapshot_subscriber
             )
 
         # --------------------------------------------------------------
         # Persist trip completion (hooks into existing callback)
         # --------------------------------------------------------------
 
-        if persistence is not None:
+        if persistence is not None and not self._trip_completion_callback_installed:
             existing_callback = self._trip_flush_callback
 
             def _persist_trip_completion(
@@ -888,6 +971,7 @@ class DriveVitalsRuntime:
                 )
 
             self._trip_flush_callback = _persist_trip_completion
+            self._trip_completion_callback_installed = True
 
         now = start_time
 
@@ -1059,7 +1143,7 @@ class DriveVitalsRuntime:
         )
         final_fuel_pct = runner.vehicle.fuel_level_percent
         fuel_used_pct = initial_fuel_pct - final_fuel_pct
-        tank_capacity_liters = 60.0
+        tank_capacity_liters = runner.vehicle.tank_capacity_liters
         fuel_used_liters = round(
             max(0.0, (fuel_used_pct / 100.0) * tank_capacity_liters), 2
         )
@@ -1539,7 +1623,7 @@ class DriveVitalsRuntime:
         current fuel level. Matches the completed-trip fuel calculation.
         """
 
-        tank_capacity_liters = 60.0
+        tank_capacity_liters = runner.vehicle.tank_capacity_liters
 
         initial_pct = self._initial_fuel_levels.get(
             runner.vehicle.vehicle_id,

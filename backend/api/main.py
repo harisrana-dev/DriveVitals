@@ -45,6 +45,11 @@ from backend.api.websocket.snapshot_publisher import (
     DashboardSnapshotPublisher,
 )
 
+from backend.api.simulation_state import (
+    init_simulation_controller,
+    simulation_controller,
+)
+
 from backend.api.websocket.trip_publisher import (
     TripSnapshotPublisher,
 )
@@ -52,6 +57,18 @@ from backend.api.websocket.trip_publisher import (
 from backend.api.v1.services.admin_bootstrap import (
     AdminBootstrapConfigError,
     bootstrap_admin,
+)
+
+from backend.api.v1.services.digital_twin_service import (
+    DigitalTwinService,
+)
+
+from backend.db.repositories import (
+    AssignmentRepository,
+    DriverRepository,
+    RouteRepository,
+    ScenarioRepository,
+    VehicleRepository,
 )
 
 from backend.db.persistence_service import (
@@ -78,6 +95,8 @@ runtime = (
     )
 )
 
+simulation_controller = init_simulation_controller(runtime)
+
 snapshot_publisher = DashboardSnapshotPublisher(
     queue=snapshot_queue,
     builder=runtime.dashboard_builder,
@@ -93,8 +112,6 @@ trip_publisher = TripSnapshotPublisher(
     store=trip_store,
 )
 
-runtime_task: asyncio.Task | None = None
-
 snapshot_worker_task: asyncio.Task | None = None
 
 trips_worker_task: asyncio.Task | None = None
@@ -107,7 +124,6 @@ async def lifespan(
     app: FastAPI,
 ):
 
-    global runtime_task
     global snapshot_worker_task
     global trips_worker_task
     global alerts_worker_task
@@ -240,14 +256,12 @@ async def lifespan(
     )
 
     # --------------------------------------------------------------
-    # Start DriveVitals runtime
+    # Start DriveVitals runtime (default fleet, auto-start preserved.
+    # The SimulationController owns the run task so a scenario launch can
+    # stop and replace it.)
     # --------------------------------------------------------------
 
-    runtime_task = (
-        asyncio.create_task(
-            runtime.run()
-        )
-    )
+    await simulation_controller.start_default()
 
     print("DriveVitals runtime started")
 
@@ -257,19 +271,24 @@ async def lifespan(
     # Stop DriveVitals runtime
     # --------------------------------------------------------------
 
-    runtime.stop()
+    simulation_controller.shutdown()
 
-    if runtime_task is not None:
-
-        runtime_task.cancel()
-
-        try:
-
-            await runtime_task
-
-        except asyncio.CancelledError:
-
-            pass
+    # Mark any scenario/run still flagged "running" as stopped so the
+    # persisted Digital Twin lifecycle tracks reality.
+    try:
+        async with async_session_factory() as session:
+            svc = DigitalTwinService(
+                session,
+                DriverRepository(session),
+                VehicleRepository(session),
+                RouteRepository(session),
+                AssignmentRepository(session),
+                ScenarioRepository(session),
+                controller=simulation_controller,
+            )
+            await svc.complete_active_runs()
+    except Exception:
+        print("Digital Twin run completion failed at shutdown")
 
     # --------------------------------------------------------------
     # Stop background workers

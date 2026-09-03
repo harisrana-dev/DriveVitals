@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Settings as SettingsIcon,
   User,
@@ -355,15 +356,17 @@ function DigitalTwinTab() {
         Configure vehicles, drivers, routes, assignments, and simulation behavior
         from a dedicated Digital Twin workspace.
       </div>
-      <div style={{
-        marginTop: 16, display: 'inline-block',
-        padding: '6px 14px', borderRadius: 8,
-        border: '1px solid var(--color-border)',
-        fontSize: 11, fontWeight: 600, letterSpacing: '0.06em',
-        color: 'var(--color-text-muted)', textTransform: 'uppercase',
-      }}>
-        Coming in Phase 7 — M4
-      </div>
+      <Link
+        to="/digital-twin-lab"
+        style={{
+          marginTop: 20, display: 'inline-block',
+          padding: '8px 18px', borderRadius: 8,
+          background: 'var(--color-accent)', color: '#fff',
+          textDecoration: 'none', fontSize: 13, fontWeight: 600,
+        }}
+      >
+        Open Digital Twin Lab
+      </Link>
     </div>
   );
 }

@@ -133,6 +133,8 @@ class OBDGenerator:
         vehicle_odometer_km: float,
         vehicle_fuel_level_percent: float,
         tank_capacity_liters: float = 60.0,
+        fuel_efficiency_factor: float = 1.0,
+        acceleration_response: float = 1.0,
     ) -> Tuple[TelemetrySample, float, float]:
         """
         Advance the simulation by `dt_seconds` and produce one
@@ -147,9 +149,23 @@ class OBDGenerator:
         params = _PROFILE_PARAMS[self.behavior_profile]
 
 # Apply per-trip variation to profile params.
-        effective_max_accel = params["max_accel_kmh_s"] * self._accel_mult
-        effective_max_decel = params["max_decel_kmh_s"] * self._decel_mult
-        effective_fuel_intensity = params["fuel_intensity"] * self._fuel_intensity_mult
+        effective_max_accel = (
+            params["max_accel_kmh_s"]
+            * self._accel_mult
+            * acceleration_response
+        )
+        effective_max_decel = (
+            params["max_decel_kmh_s"]
+            * self._decel_mult
+            * acceleration_response
+        )
+        # A vehicle's fuel efficiency factor scales how much fuel its
+        # engine burns for a given load. Lower factor = more efficient.
+        effective_fuel_intensity = (
+            params["fuel_intensity"]
+            * self._fuel_intensity_mult
+            * max(0.1, 2.0 - fuel_efficiency_factor)
+        )
 
         route_params = _ROUTE_PARAMS[route.route_type]
 

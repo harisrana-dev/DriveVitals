@@ -11,6 +11,7 @@ import { AnalyticsPage } from './pages/Analytics';
 import { VehicleHealthPage } from './pages/VehicleHealth';
 import { MaintenancePage } from './pages/Maintenance';
 import { SettingsPage } from './pages/Settings';
+import { DigitalTwinLabPage } from './pages/DigitalTwinLab';
 import GetStarted from './pages/Introductionpage';
 import Login from './pages/login';
 import Signup from './pages/signup';
@@ -52,6 +53,7 @@ function App() {
             <Route path="/maintenance" element={<MaintenancePage />} />
             <Route element={<RoleRoute roles={['admin']} />}>
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/digital-twin-lab" element={<DigitalTwinLabPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>

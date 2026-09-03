@@ -3,8 +3,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.security import authenticate_session
+from backend.api import simulation_state
 from backend.api.v1.services.alert_service import AlertService
 from backend.api.v1.services.auth_service import AuthService
+from backend.api.v1.services.digital_twin_service import DigitalTwinService
 from backend.api.v1.services.driver_service import DriverService
 from backend.api.v1.services.driver_statistics_service import (
     DriverStatisticsService,
@@ -22,11 +24,13 @@ from backend.api.v1.services.vehicle_service import VehicleService
 from backend.db.models.user import User
 from backend.db.repositories import (
     AlertRepository,
+    AssignmentRepository,
     AuthSessionRepository,
     DriverRepository,
     DriverStatisticsRepository,
     MaintenanceRepository,
     RouteRepository,
+    ScenarioRepository,
     SystemSettingsRepository,
     TelemetryRepository,
     TripRepository,
@@ -192,3 +196,17 @@ async def get_settings_service(
     session: AsyncSession = Depends(get_session),
 ) -> SettingsService:
     return SettingsService(session)
+
+
+async def get_digital_twin_service(
+    session: AsyncSession = Depends(get_session),
+) -> DigitalTwinService:
+    return DigitalTwinService(
+        session,
+        DriverRepository(session),
+        VehicleRepository(session),
+        RouteRepository(session),
+        AssignmentRepository(session),
+        ScenarioRepository(session),
+        controller=simulation_state.simulation_controller,
+    )

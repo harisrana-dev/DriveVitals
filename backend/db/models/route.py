@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from sqlalchemy import Float, String, Text
+from sqlalchemy import Boolean, Float, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.db.base import Base, TimestampMixin
@@ -17,5 +17,7 @@ class Route(TimestampMixin, Base):
     origin: Mapped[str] = mapped_column(Text, nullable=False)
     destination: Mapped[str] = mapped_column(Text, nullable=False)
     estimated_distance_km: Mapped[float] = mapped_column(Float, nullable=False)
+    speed_limit_kmh: Mapped[float] = mapped_column(Float, nullable=False, default=60.0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     trips = relationship("Trip", back_populates="route")

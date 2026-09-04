@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Loader2,
   Zap,
+  Info,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { digitalTwinApi } from '../api/digitalTwinApi';
@@ -523,8 +524,206 @@ const STATUS_TONES = {
   stopped: 'amber',
 };
 
-function ScenariosTab({ scenarios, assignments, runsByScenario, onRefresh, onNotice, status, busy }) {
+const BEHAVIOR_DESCRIPTIONS = {
+  standard: 'Baseline simulated driving behavior.',
+  eco: 'Smoother driving behavior intended to reduce fuel consumption.',
+  aggressive: 'More aggressive acceleration and driving variation.',
+  cautious: 'More conservative driving behavior with gentler dynamics.',
+};
+
+function resolveAssignment(a, drivers, vehicles, routes) {
+  const driver = drivers.find((d) => d.driver_id === a.driver_id) || null;
+  const vehicle = vehicles.find((v) => v.vehicle_id === a.vehicle_id) || null;
+  const route = routes.find((r) => r.route_id === a.route_id) || null;
+  return { driver, vehicle, route };
+}
+
+function BehaviorBadge({ profile }) {
+  const tone = profile === 'aggressive' ? 'red'
+    : profile === 'eco' ? 'green'
+    : profile === 'cautious' ? 'amber'
+    : 'neutral';
+  return <Badge tone={tone}>{profile || 'standard'}</Badge>;
+}
+
+function AssignmentCard({ assignment, drivers, vehicles, routes, onRemove }) {
+  const { driver, vehicle, route } = resolveAssignment(assignment, drivers, vehicles, routes);
+
+  return (
+    <div style={{
+      padding: 14, borderRadius: 10,
+      border: '1px solid var(--color-border-light)',
+      background: 'var(--color-bg)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Driver */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+              Driver
+            </div>
+            {driver ? (
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {driverDisplayName(driver)}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+                  <span style={{ fontSize: 11.5, color: 'var(--color-text-muted)' }}>Behavior:</span>
+                  <BehaviorBadge profile={driver.behavior_profile} />
+                </div>
+                {BEHAVIOR_DESCRIPTIONS[driver.behavior_profile] && (
+                  <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginTop: 3, fontStyle: 'italic' }}>
+                    {BEHAVIOR_DESCRIPTIONS[driver.behavior_profile]}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>{assignment.driver_id}</span>
+            )}
+          </div>
+
+          {/* Vehicle */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+              Vehicle
+            </div>
+            {vehicle ? (
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {vehicle.manufacturer} {vehicle.model}
+                  {vehicle.year ? <span style={{ fontWeight: 400, color: 'var(--color-text-muted)', marginLeft: 4 }}>{vehicle.year}</span> : null}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginTop: 4, fontSize: 11.5, color: 'var(--color-text-muted)' }}>
+                  <span>Fuel efficiency: <strong style={{ color: 'var(--color-text-primary)' }}>{vehicle.fuel_efficiency_factor}x</strong> baseline</span>
+                  <span>Acceleration: <strong style={{ color: 'var(--color-text-primary)' }}>{vehicle.acceleration_response}x</strong> baseline</span>
+                  <span>Tank: <strong style={{ color: 'var(--color-text-primary)' }}>{vehicle.tank_capacity_liters} L</strong></span>
+                </div>
+              </div>
+            ) : (
+              <span style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>{assignment.vehicle_id}</span>
+            )}
+          </div>
+
+          {/* Route */}
+          <div>
+            <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+              Route
+            </div>
+            {route ? (
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {route.origin} → {route.destination}
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px', marginTop: 4, fontSize: 11.5, color: 'var(--color-text-muted)' }}>
+                  <span>Distance: <strong style={{ color: 'var(--color-text-primary)' }}>{route.estimated_distance_km} km</strong></span>
+                  <span>Speed limit: <strong style={{ color: 'var(--color-text-primary)' }}>{route.speed_limit_kmh} km/h</strong></span>
+                  <span>Status: {route.is_active ? <Badge tone="green">Active</Badge> : <Badge>Inactive</Badge>}</span>
+                </div>
+              </div>
+            ) : (
+              <span style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>{assignment.route_id}</span>
+            )}
+          </div>
+        </div>
+
+        <button onClick={() => onRemove(assignment.assignment_id)} title="Remove assignment" style={iconBtn}>
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ScenarioPreview({ scenarioAssignments, drivers, vehicles, routes }) {
+  const resolved = scenarioAssignments.map((a) => resolveAssignment(a, drivers, vehicles, routes));
+  const uniqueDrivers = [...new Set(resolved.filter((r) => r.driver).map((r) => r.driver))];
+  const uniqueVehicles = [...new Set(resolved.filter((r) => r.vehicle).map((r) => r.vehicle))];
+  const uniqueRoutes = [...new Set(resolved.filter((r) => r.route).map((r) => r.route))];
+
+  const dominantBehavior = uniqueDrivers.length === 1
+    ? uniqueDrivers[0].behavior_profile
+    : uniqueDrivers.length > 1
+      ? [...new Set(uniqueDrivers.map((d) => d.behavior_profile))]
+      : [];
+
+  return (
+    <div style={{
+      padding: 14, borderRadius: 10,
+      background: 'var(--color-accent-subtle)',
+      border: '1px solid var(--color-accent)',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-accent)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        Simulation preview
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Fleet</div>
+          <div style={{ fontSize: 13, color: 'var(--color-text-primary)' }}>
+            {uniqueDrivers.length} driver{uniqueDrivers.length !== 1 ? 's' : ''} · {uniqueVehicles.length} vehicle{uniqueVehicles.length !== 1 ? 's' : ''} · {uniqueRoutes.length} route{uniqueRoutes.length !== 1 ? 's' : ''}
+          </div>
+        </div>
+        {dominantBehavior.length > 0 && (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Driving behavior</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {(Array.isArray(dominantBehavior) ? dominantBehavior : [dominantBehavior]).map((b) => (
+                <BehaviorBadge key={b} profile={b} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {uniqueVehicles.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Vehicle profile</div>
+          <div style={{ fontSize: 12.5, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+            {uniqueVehicles.length === 1
+              ? `${uniqueVehicles[0].fuel_efficiency_factor}x fuel efficiency · ${uniqueVehicles[0].acceleration_response}x acceleration response · ${uniqueVehicles[0].tank_capacity_liters} L tank`
+              : `Across ${uniqueVehicles.length} vehicles with varying characteristics`
+            }
+          </div>
+        </div>
+      )}
+
+      {uniqueRoutes.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 2 }}>Route profile</div>
+          <div style={{ fontSize: 12.5, color: 'var(--color-text-secondary)' }}>
+            {uniqueRoutes.length === 1
+              ? `${uniqueRoutes[0].speed_limit_kmh} km/h speed limit · ${uniqueRoutes[0].route_type || 'urban'} route type`
+              : `Across ${uniqueRoutes.length} routes with varying speed limits`
+            }
+          </div>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: 10, paddingTop: 10,
+        borderTop: '1px solid var(--color-accent)',
+        fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5,
+      }}>
+        <strong style={{ color: 'var(--color-text-primary)' }}>Expected simulated behavior</strong>
+        <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+          {dominantBehavior.includes('aggressive') && <li>More aggressive acceleration and driving variation</li>}
+          {dominantBehavior.includes('eco') && <li>Smoother driving with reduced fuel consumption</li>}
+          {dominantBehavior.includes('cautious' ) && <li>Conservative driving with gentler dynamics</li>}
+          {dominantBehavior.includes('standard') && <li>Baseline driving behavior</li>}
+          {dominantBehavior.length === 0 && <li>Standard driving behavior</li>}
+          <li>Scenario-specific vehicle and driver telemetry</li>
+        </ul>
+        <div style={{ marginTop: 6, fontSize: 11.5, color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+          Telemetry generated by this scenario is synthetic simulation data produced from the configured driver, vehicle, and route characteristics.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScenariosTab({ scenarios, assignments, drivers, vehicles, routes, runsByScenario, onRefresh, onNotice, status, busy }) {
   const [form, setForm] = useState({ name: '', description: '', seed: 1, duration_seconds: 600, simulation_speed: 1, selected: [] });
+  const [launchConfirm, setLaunchConfirm] = useState(null);
 
   const submit = useCallback(async () => {
     if (!form.name) { onNotice('Scenario name is required'); return; }
@@ -568,6 +767,7 @@ function ScenariosTab({ scenarios, assignments, runsByScenario, onRefresh, onNot
     try {
       await digitalTwinApi.launchScenario(id);
       onNotice('Scenario launched');
+      setLaunchConfirm(null);
       await onRefresh();
     } catch (err) {
       onNotice(err?.detail || err?.message || 'Launch failed');
@@ -583,6 +783,19 @@ function ScenariosTab({ scenarios, assignments, runsByScenario, onRefresh, onNot
       onNotice(err?.detail || err?.message || 'Stop failed');
     }
   }, [onRefresh, onNotice]);
+
+  const removeAssignmentFromScenario = useCallback(async (scenarioId, assignmentId) => {
+    try {
+      const scenario = scenarios.find((s) => s.scenario_id === scenarioId);
+      if (!scenario) return;
+      const currentIds = (scenario.assignment_ids || []).filter((id) => id !== assignmentId);
+      await digitalTwinApi.setScenarioAssignments(scenarioId, currentIds);
+      onNotice('Assignment removed from scenario');
+      await onRefresh();
+    } catch (err) {
+      onNotice(err?.detail || err?.message || 'Failed to remove assignment');
+    }
+  }, [scenarios, onRefresh, onNotice]);
 
   const remove = useCallback(async (id) => {
     try {
@@ -602,38 +815,129 @@ function ScenariosTab({ scenarios, assignments, runsByScenario, onRefresh, onNot
     fontSize: 12.5, width: '100%',
   };
 
+  const labelStyle = {
+    fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)',
+    textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4, display: 'block',
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <Card title="Create scenario">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-          <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
-          <input placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inputStyle} />
-          <input type="number" placeholder="Seed" value={form.seed} onChange={(e) => setForm({ ...form, seed: e.target.value })} style={inputStyle} />
-          <input type="number" placeholder="Duration (s)" value={form.duration_seconds} onChange={(e) => setForm({ ...form, duration_seconds: e.target.value })} style={inputStyle} />
-          <input type="number" step="0.1" placeholder="Speed" value={form.simulation_speed} onChange={(e) => setForm({ ...form, simulation_speed: e.target.value })} style={inputStyle} />
+      {/* Launch confirmation dialog */}
+      {launchConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.4)',
+        }}>
+          <div style={{
+            padding: 24, borderRadius: 12, maxWidth: 420, width: '90%',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border-light)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 8 }}>
+              Launch scenario?
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 16 }}>
+              This will stop the currently active Digital Twin runtime and start <strong>{launchConfirm.name}</strong> instead.
+              Only one simulation runtime can be active at a time.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setLaunchConfirm(null)}
+                style={{
+                  padding: '7px 14px', borderRadius: 7, fontSize: 12.5, fontWeight: 600,
+                  background: 'var(--color-surface)', color: 'var(--color-text-primary)',
+                  border: '1px solid var(--color-border)', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => launch(launchConfirm.scenario_id)}
+                disabled={busy}
+                style={{
+                  padding: '7px 14px', borderRadius: 7, fontSize: 12.5, fontWeight: 600,
+                  background: 'var(--color-accent)', color: '#fff',
+                  border: '1px solid var(--color-accent)', cursor: busy ? 'wait' : 'pointer',
+                }}
+              >
+                Launch scenario
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Section 1: Scenario Identity — Create Form */}
+      <Card title="Scenario">
+        <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)', marginBottom: 12 }}>
+          Configure a simulation recipe for the Digital Twin.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div>
+            <label style={labelStyle}>Scenario name</label>
+            <input placeholder="e.g. Aggressive Urban Test" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Description</label>
+            <input placeholder="e.g. Simulates aggressive city driving" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} style={inputStyle} />
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginTop: 10 }}>
+          <div>
+            <label style={labelStyle}>Seed</label>
+            <input type="number" value={form.seed} onChange={(e) => setForm({ ...form, seed: e.target.value })} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Duration (seconds)</label>
+            <input type="number" value={form.duration_seconds} onChange={(e) => setForm({ ...form, duration_seconds: e.target.value })} style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>Simulation speed</label>
+            <input type="number" step="0.1" value={form.simulation_speed} onChange={(e) => setForm({ ...form, simulation_speed: e.target.value })} style={inputStyle} />
+          </div>
         </div>
 
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6 }}>Assignments in this scenario</div>
+        {/* Fleet composition — assignment picker */}
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6 }}>
+            Scenario fleet
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 8 }}>
+            Choose the driver, vehicle, and route combinations that will participate in this simulation.
+          </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {assignments.map((a) => {
               const checked = form.selected.includes(a.assignment_id);
+              const { driver, vehicle, route } = resolveAssignment(a, drivers, vehicles, routes);
+              const label = [
+                driver ? driverDisplayName(driver) : a.driver_id,
+                vehicle ? `${vehicle.manufacturer} ${vehicle.model}` : a.vehicle_id,
+                route ? `${route.origin}→${route.destination}` : a.route_id,
+              ].join(' · ');
               return (
                 <button
                   key={a.assignment_id}
                   onClick={() => toggleAssignment(a.assignment_id)}
                   style={{
-                    padding: '4px 10px', borderRadius: 999, fontSize: 11.5, cursor: 'pointer',
+                    padding: '5px 12px', borderRadius: 999, fontSize: 11.5, cursor: 'pointer',
                     background: checked ? 'var(--color-accent)' : 'var(--color-surface)',
                     color: checked ? '#fff' : 'var(--color-text-secondary)',
                     border: checked ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
+                    maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}
+                  title={label}
                 >
-                  {a.assignment_id}
+                  {label}
                 </button>
               );
             })}
-            {!assignments.length && <span style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>No assignments yet.</span>}
+            {!assignments.length && (
+              <span style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>
+                No assignments exist yet. Create driver, vehicle, and route assignments on the Assignments tab first.
+              </span>
+            )}
           </div>
         </div>
 
@@ -649,70 +953,165 @@ function ScenariosTab({ scenarios, assignments, runsByScenario, onRefresh, onNot
         </button>
       </Card>
 
-      <Card title="Scenarios">
-        {!scenarios.length && <EmptyRow text="No scenarios yet. Create one above." />}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {scenarios.map((s) => {
-            const runningThis = status?.running && status?.scenario_id === s.scenario_id;
-            return (
-              <div key={s.scenario_id} style={{
-                padding: 12, borderRadius: 10,
-                border: '1px solid var(--color-border-light)',
-                background: 'var(--color-bg)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-text-primary)' }}>{s.name}</span>
-                      <Badge tone={STATUS_TONES[s.status] || 'neutral'}>{s.status}</Badge>
-                      {runningThis && <Badge tone="green"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Zap size={10} />Live</span></Badge>}
-                    </div>
-                    {s.description && (
-                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{s.description}</div>
-                    )}
-                    <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                      ID {s.scenario_id} · Seed {s.seed ?? '—'} · {s.duration_seconds ?? '∞'}s · Speed {s.simulation_speed ?? 1}
-                    </div>
-                    {s.assignment_ids?.length > 0 && (
-                      <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                        Assignments: {s.assignment_ids.join(', ')}
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {s.status !== 'ready' && s.status !== 'running' && (
-                      <button onClick={() => activate(s.scenario_id)} style={smallBtn('accent')}>Activate</button>
-                    )}
-                    {s.status === 'ready' && (
-                      <button onClick={() => launch(s.scenario_id)} disabled={busy} style={smallBtn('accent')}><Play size={12} /> Launch</button>
-                    )}
-                    {runningThis && (
-                      <button onClick={() => stop(s.scenario_id)} disabled={busy} style={smallBtn('neutral')}><Square size={12} /> Stop</button>
-                    )}
-                    <button onClick={() => remove(s.scenario_id)} title="Delete" style={iconBtn}><Trash2 size={14} /></button>
-                  </div>
-                </div>
+      {/* Scenario list */}
+      {!scenarios.length && (
+        <Card title="Scenarios">
+          <EmptyRow text="No scenarios yet. Create one above to define a simulation recipe." />
+        </Card>
+      )}
 
-                {runsByScenario[s.scenario_id]?.length > 0 && (
-                  <div style={{ marginTop: 10, borderTop: '1px solid var(--color-border-light)', paddingTop: 8 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-                      Runs
+      {scenarios.map((s) => {
+        const runningThis = status?.running && status?.scenario_id === s.scenario_id;
+        const scenarioAssignments = (s.assignment_ids || [])
+          .map((aid) => assignments.find((a) => a.assignment_id === aid))
+          .filter(Boolean);
+
+        return (
+          <div key={s.scenario_id} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {/* Scenario header card */}
+            <Card
+              title={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span>{s.name}</span>
+                  <Badge tone={STATUS_TONES[s.status] || 'neutral'}>{s.status}</Badge>
+                  {runningThis && <Badge tone="green"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Zap size={10} />Live</span></Badge>}
+                </div>
+              }
+              action={
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {s.status !== 'ready' && s.status !== 'running' && (
+                    <button onClick={() => activate(s.scenario_id)} style={smallBtn('accent')}>Activate</button>
+                  )}
+                  {s.status === 'ready' && (
+                    <button onClick={() => setLaunchConfirm({ scenario_id: s.scenario_id, name: s.name })} disabled={busy} style={smallBtn('accent')}><Play size={12} /> Launch</button>
+                  )}
+                  {runningThis && (
+                    <button onClick={() => stop(s.scenario_id)} disabled={busy} style={smallBtn('neutral')}><Square size={12} /> Stop</button>
+                  )}
+                  <button onClick={() => remove(s.scenario_id)} title="Delete scenario" style={iconBtn}><Trash2 size={14} /></button>
+                </div>
+              }
+            >
+              {/* Active scenario banner */}
+              {runningThis && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 8, marginBottom: 12,
+                  background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.3)',
+                  fontSize: 12.5, color: 'var(--color-green)', fontWeight: 500,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}>
+                  <Zap size={14} />
+                  Active scenario — simulation is running
+                </div>
+              )}
+
+              {/* Description */}
+              {s.description && (
+                <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 10, lineHeight: 1.5 }}>
+                  {s.description}
+                </div>
+              )}
+
+              {/* Scenario config */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 18px', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 12 }}>
+                <span>ID: {s.scenario_id}</span>
+                <span>Seed: {s.seed ?? '—'}</span>
+                <span>Duration: {s.duration_seconds != null ? `${s.duration_seconds}s` : '—'}</span>
+                <span>Speed: {s.simulation_speed ?? 1}x</span>
+              </div>
+
+              {/* Launch warning */}
+              {s.status === 'ready' && (
+                <div style={{
+                  padding: '8px 12px', borderRadius: 8, marginBottom: 12,
+                  background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)',
+                  fontSize: 12, color: 'var(--color-amber)', lineHeight: 1.5,
+                  display: 'flex', alignItems: 'flex-start', gap: 6,
+                }}>
+                  <Info size={14} style={{ marginTop: 1, flexShrink: 0 }} />
+                  <span>Launching this scenario replaces the currently active Digital Twin simulation. Only one simulation runtime can be active at a time.</span>
+                </div>
+              )}
+
+              {/* Fleet composition */}
+              <div style={{ marginBottom: 4 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Scenario fleet
+                </div>
+                {scenarioAssignments.length === 0 ? (
+                  <div style={{
+                    padding: '16px', borderRadius: 8, textAlign: 'center',
+                    background: 'var(--color-bg)', border: '1px solid var(--color-border-light)',
+                  }}>
+                    <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+                      No vehicles are assigned to this scenario yet.
                     </div>
-                    {runsByScenario[s.scenario_id].map((r) => (
-                      <div key={r.run_id} style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--color-text-secondary)' }}>
-                        <span>{r.status}</span>
-                        <span>{r.created_at || '—'}</span>
-                        {r.started_at && <span>started {r.started_at}</span>}
-                        {r.completed_at && <span>completed {r.completed_at}</span>}
-                      </div>
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                      Add a driver, vehicle, and route combination to define which fleet units will participate in the simulation.
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {scenarioAssignments.map((a) => (
+                      <AssignmentCard
+                        key={a.assignment_id}
+                        assignment={a}
+                        drivers={drivers}
+                        vehicles={vehicles}
+                        routes={routes}
+                        onRemove={(aid) => removeAssignmentFromScenario(s.scenario_id, aid)}
+                      />
                     ))}
                   </div>
                 )}
               </div>
-            );
-          })}
-        </div>
-      </Card>
+            </Card>
+
+            {/* Simulation preview */}
+            {scenarioAssignments.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <ScenarioPreview
+                  scenarioAssignments={scenarioAssignments}
+                  drivers={drivers}
+                  vehicles={vehicles}
+                  routes={routes}
+                />
+              </div>
+            )}
+
+            {/* Run history */}
+            {runsByScenario[s.scenario_id]?.length > 0 && (
+              <div style={{
+                marginTop: 10, padding: 14, borderRadius: 10,
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border-light)',
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  Simulation runs
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {runsByScenario[s.scenario_id].map((r) => (
+                    <div key={r.run_id} style={{
+                      display: 'grid', gridTemplateColumns: 'auto 1fr auto auto', gap: 10, alignItems: 'center',
+                      padding: '6px 10px', borderRadius: 6,
+                      background: 'var(--color-bg)', fontSize: 12,
+                    }}>
+                      <Badge tone={r.status === 'running' ? 'green' : r.status === 'completed' ? 'neutral' : r.status === 'stopped' ? 'amber' : 'neutral'}>
+                        {r.status}
+                      </Badge>
+                      <span style={{ color: 'var(--color-text-muted)' }}>
+                        Run {r.run_id.slice(0, 8)}{r.vehicles_active ? ` · ${r.vehicles_active} vehicle${r.vehicles_active !== 1 ? 's' : ''}` : ''}{r.trips_completed ? ` · ${r.trips_completed} trip${r.trips_completed !== 1 ? 's' : ''}` : ''}
+                      </span>
+                      {r.start_time && <span style={{ color: 'var(--color-text-muted)' }}>Started {r.start_time}</span>}
+                      {r.end_time && <span style={{ color: 'var(--color-text-muted)' }}>Ended {r.end_time}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -986,6 +1385,9 @@ export function DigitalTwinLabPage() {
             <ScenariosTab
               scenarios={scenarios}
               assignments={assignments}
+              drivers={drivers}
+              vehicles={vehicles}
+              routes={routes}
               runsByScenario={runsByScenario}
               onRefresh={fleetRefresh}
               onNotice={flash}

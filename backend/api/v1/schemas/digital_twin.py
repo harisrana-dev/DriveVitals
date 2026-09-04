@@ -8,7 +8,7 @@ carry the strictly-validated payloads accepted by the admin API.
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -188,8 +188,17 @@ class ScenarioRead(BaseModel):
     duration_seconds: int | None = None
     simulation_speed: float
     seed: int | None = None
+    assignment_ids: list[str] = []
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="after")
+    def _extract_assignment_ids(self) -> "ScenarioRead":
+        if not self.assignment_ids:
+            assignments = getattr(self, "assignments", None)
+            if assignments is not None:
+                self.assignment_ids = [a.assignment_id for a in assignments]
+        return self
 
 
 class ScenarioCreate(BaseModel):

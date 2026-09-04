@@ -2,6 +2,7 @@ import logging
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.db.models.scenario import SimulationRun, SimulationScenario
 from backend.db.repositories.base_repository import BaseRepository
@@ -100,7 +101,11 @@ class ScenarioRepository(BaseRepository):
     async def list(
         self, limit: int, offset: int, status: str | None = None
     ) -> tuple[list[SimulationScenario], int]:
-        query = select(SimulationScenario).order_by(SimulationScenario.created_at.desc())
+        query = (
+            select(SimulationScenario)
+            .options(selectinload(SimulationScenario.assignments))
+            .order_by(SimulationScenario.created_at.desc())
+        )
         if status is not None:
             query = query.where(SimulationScenario.status == status)
         total_result = await self._session.execute(

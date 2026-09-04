@@ -96,6 +96,9 @@ async def _seed() -> dict[str, str]:
                 year=2024,
                 fuel_type="diesel",
                 status="active",
+                fuel_efficiency_factor=1.0,
+                acceleration_response=1.0,
+                tank_capacity_liters=60.0,
             ),
             Vehicle(
                 vehicle_id="v-2",
@@ -106,6 +109,9 @@ async def _seed() -> dict[str, str]:
                 year=2023,
                 fuel_type="diesel",
                 status="active",
+                fuel_efficiency_factor=1.0,
+                acceleration_response=1.0,
+                tank_capacity_liters=60.0,
             ),
             Vehicle(
                 vehicle_id="v-3",
@@ -116,6 +122,9 @@ async def _seed() -> dict[str, str]:
                 year=2022,
                 fuel_type="diesel",
                 status="active",
+                fuel_efficiency_factor=1.0,
+                acceleration_response=1.0,
+                tank_capacity_liters=60.0,
             ),
             Vehicle(
                 vehicle_id="v-4",
@@ -126,6 +135,9 @@ async def _seed() -> dict[str, str]:
                 year=2021,
                 fuel_type="gasoline",
                 status="active",
+                fuel_efficiency_factor=1.0,
+                acceleration_response=1.0,
+                tank_capacity_liters=60.0,
             ),
             Vehicle(
                 vehicle_id="v-5",
@@ -136,6 +148,9 @@ async def _seed() -> dict[str, str]:
                 year=2020,
                 fuel_type="gasoline",
                 status="maintenance",
+                fuel_efficiency_factor=1.0,
+                acceleration_response=1.0,
+                tank_capacity_liters=60.0,
             ),
         ]
         drivers = [

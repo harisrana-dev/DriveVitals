@@ -207,23 +207,28 @@ function ManagementList({ items, columns, renderActions }) {
   );
 }
 
+function driverDisplayName(d) {
+  const full = [d.first_name, d.last_name].filter(Boolean).join(' ').trim();
+  return full || '—';
+}
+
 // ────────────────────────────────────────────────────────────
 // Fleet tab
 // ────────────────────────────────────────────────────────────
 
 function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
-  const [driverForm, setDriverForm] = useState({ driver_id: '', name: '', behavior_profile: 'eco' });
-  const [vehicleForm, setVehicleForm] = useState({ vehicle_id: '', make: '', model: '' });
-  const [routeForm, setRouteForm] = useState({ route_id: '', origin: '', destination: '', distance_km: 10 });
+  const [driverForm, setDriverForm] = useState({ driver_id: '', first_name: '', last_name: '', behavior_profile: 'eco' });
+  const [vehicleForm, setVehicleForm] = useState({ vehicle_id: '', manufacturer: '', model: '' });
+  const [routeForm, setRouteForm] = useState({ route_id: '', origin: '', destination: '', estimated_distance_km: 10 });
   const [saving, setSaving] = useState(false);
 
   const submitDriver = useCallback(async () => {
-    if (!driverForm.driver_id || !driverForm.name) return;
+    if (!driverForm.driver_id || !driverForm.first_name) return;
     setSaving(true);
     try {
       await digitalTwinApi.createDriver({ ...driverForm, behavior_profile: driverForm.behavior_profile });
       onNotice('Driver created');
-      setDriverForm({ driver_id: '', name: '', behavior_profile: 'eco' });
+      setDriverForm({ driver_id: '', first_name: '', last_name: '', behavior_profile: 'eco' });
       await onRefresh();
     } catch (err) {
       onNotice(err?.detail || err?.message || 'Failed to create driver');
@@ -233,12 +238,12 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
   }, [driverForm, onRefresh, onNotice]);
 
   const submitVehicle = useCallback(async () => {
-    if (!vehicleForm.vehicle_id || !vehicleForm.make || !vehicleForm.model) return;
+    if (!vehicleForm.vehicle_id || !vehicleForm.manufacturer || !vehicleForm.model) return;
     setSaving(true);
     try {
       await digitalTwinApi.createVehicle(vehicleForm);
       onNotice('Vehicle created');
-      setVehicleForm({ vehicle_id: '', make: '', model: '' });
+      setVehicleForm({ vehicle_id: '', manufacturer: '', model: '' });
       await onRefresh();
     } catch (err) {
       onNotice(err?.detail || err?.message || 'Failed to create vehicle');
@@ -251,9 +256,9 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
     if (!routeForm.route_id || !routeForm.origin || !routeForm.destination) return;
     setSaving(true);
     try {
-      await digitalTwinApi.createRoute({ ...routeForm, distance_km: parseFloat(routeForm.distance_km) || 0 });
+      await digitalTwinApi.createRoute({ ...routeForm, estimated_distance_km: parseFloat(routeForm.estimated_distance_km) || 0 });
       onNotice('Route created');
-      setRouteForm({ route_id: '', origin: '', destination: '', distance_km: 10 });
+      setRouteForm({ route_id: '', origin: '', destination: '', estimated_distance_km: 10 });
       await onRefresh();
     } catch (err) {
       onNotice(err?.detail || err?.message || 'Failed to create route');
@@ -325,7 +330,7 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
         <ManagementList
           items={vehicles.map((v) => ({
             id: v.vehicle_id,
-            cells: [v.vehicle_id, `${v.make} ${v.model}`, v.year || '—'],
+            cells: [v.vehicle_id, `${v.manufacturer} ${v.model}`, v.year || '—'],
           }))}
           columns="0.8fr 1.2fr 0.6fr"
           renderActions={({ id }) => (
@@ -336,7 +341,7 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
           <input placeholder="ID" value={vehicleForm.vehicle_id} onChange={(e) => setVehicleForm({ ...vehicleForm, vehicle_id: e.target.value })} style={inputStyle} />
-          <input placeholder="Make" value={vehicleForm.make} onChange={(e) => setVehicleForm({ ...vehicleForm, make: e.target.value })} style={inputStyle} />
+          <input placeholder="Manufacturer" value={vehicleForm.manufacturer} onChange={(e) => setVehicleForm({ ...vehicleForm, manufacturer: e.target.value })} style={inputStyle} />
           <input placeholder="Model" value={vehicleForm.model} onChange={(e) => setVehicleForm({ ...vehicleForm, model: e.target.value })} style={inputStyle} />
           <button onClick={submitVehicle} disabled={saving} style={addBtn}>
             {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Plus size={14} />}
@@ -348,7 +353,7 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
         <ManagementList
           items={drivers.map((d) => ({
             id: d.driver_id,
-            cells: [d.driver_id, d.name || '—', d.behavior_profile || '—'],
+            cells: [d.driver_id, driverDisplayName(d), d.behavior_profile || '—'],
           }))}
           columns="0.8fr 1.2fr 0.8fr"
           renderActions={({ id }) => (
@@ -357,9 +362,10 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
             </button>
           )}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
           <input placeholder="ID" value={driverForm.driver_id} onChange={(e) => setDriverForm({ ...driverForm, driver_id: e.target.value })} style={inputStyle} />
-          <input placeholder="Name" value={driverForm.name} onChange={(e) => setDriverForm({ ...driverForm, name: e.target.value })} style={inputStyle} />
+          <input placeholder="First name" value={driverForm.first_name} onChange={(e) => setDriverForm({ ...driverForm, first_name: e.target.value })} style={inputStyle} />
+          <input placeholder="Last name" value={driverForm.last_name} onChange={(e) => setDriverForm({ ...driverForm, last_name: e.target.value })} style={inputStyle} />
           <select value={driverForm.behavior_profile} onChange={(e) => setDriverForm({ ...driverForm, behavior_profile: e.target.value })} style={inputStyle}>
             <option value="eco">Eco</option>
             <option value="balanced">Balanced</option>
@@ -376,7 +382,7 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
         <ManagementList
           items={routes.map((r) => ({
             id: r.route_id,
-            cells: [r.route_id, `${r.origin} → ${r.destination}`, `${r.distance_km} km`],
+            cells: [r.route_id, `${r.origin} → ${r.destination}`, `${r.estimated_distance_km} km`],
           }))}
           columns="0.8fr 1.4fr 0.6fr"
           renderActions={({ id }) => (
@@ -389,7 +395,7 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
           <input placeholder="ID" value={routeForm.route_id} onChange={(e) => setRouteForm({ ...routeForm, route_id: e.target.value })} style={inputStyle} />
           <input placeholder="Origin" value={routeForm.origin} onChange={(e) => setRouteForm({ ...routeForm, origin: e.target.value })} style={inputStyle} />
           <input placeholder="Destination" value={routeForm.destination} onChange={(e) => setRouteForm({ ...routeForm, destination: e.target.value })} style={inputStyle} />
-          <input type="number" placeholder="Distance km" value={routeForm.distance_km} onChange={(e) => setRouteForm({ ...routeForm, distance_km: e.target.value })} style={inputStyle} />
+          <input type="number" placeholder="Distance km" value={routeForm.estimated_distance_km} onChange={(e) => setRouteForm({ ...routeForm, estimated_distance_km: e.target.value })} style={inputStyle} />
           <button onClick={submitRoute} disabled={saving} style={addBtn}>
             {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Plus size={14} />}
           </button>
@@ -452,10 +458,13 @@ function AssignmentsTab({ assignments, drivers, vehicles, routes, onRefresh, onN
     }
   }, [onRefresh, onNotice]);
 
-  const driverLabel = (id) => drivers.find((d) => d.driver_id === id)?.name || id;
+  const driverLabel = (id) => {
+    const d = drivers.find((x) => x.driver_id === id);
+    return d ? driverDisplayName(d) : id;
+  };
   const vehicleLabel = (id) => {
     const v = vehicles.find((x) => x.vehicle_id === id);
-    return v ? `${v.make} ${v.model}` : id;
+    return v ? `${v.manufacturer} ${v.model}` : id;
   };
   const routeLabel = (id) => {
     const r = routes.find((x) => x.route_id === id);
@@ -483,11 +492,11 @@ function AssignmentsTab({ assignments, drivers, vehicles, routes, onRefresh, onN
             style={{ ...selectStyle, border: '1px solid var(--color-border)' }} />
           <select value={form.driver_id} onChange={(e) => setForm({ ...form, driver_id: e.target.value })} style={selectStyle}>
             <option value="">Driver…</option>
-            {drivers.map((d) => <option key={d.driver_id} value={d.driver_id}>{d.driver_id} · {d.name || ''}</option>)}
+            {drivers.map((d) => <option key={d.driver_id} value={d.driver_id}>{d.driver_id} · {driverDisplayName(d)}</option>)}
           </select>
           <select value={form.vehicle_id} onChange={(e) => setForm({ ...form, vehicle_id: e.target.value })} style={selectStyle}>
             <option value="">Vehicle…</option>
-            {vehicles.map((v) => <option key={v.vehicle_id} value={v.vehicle_id}>{v.vehicle_id} · {v.make} {v.model}</option>)}
+            {vehicles.map((v) => <option key={v.vehicle_id} value={v.vehicle_id}>{v.vehicle_id} · {v.manufacturer} {v.model}</option>)}
           </select>
           <select value={form.route_id} onChange={(e) => setForm({ ...form, route_id: e.target.value })} style={selectStyle}>
             <option value="">Route…</option>

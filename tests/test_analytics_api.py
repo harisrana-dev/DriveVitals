@@ -53,19 +53,20 @@ async def _seed_data(eng):
 
         for vid in ["V-101", "V-102", "V-103"]:
             await conn.execute(text(
-                "INSERT INTO vehicles (vehicle_id, registration_number, vin, manufacturer, model, year, fuel_type, status) "
-                "VALUES (:vid, :reg, :vin, 'Toyota', 'Hilux', 2023, 'diesel', 'active')"
+                "INSERT INTO vehicles (vehicle_id, registration_number, vin, manufacturer, model, year, fuel_type, status, "
+                "fuel_efficiency_factor, acceleration_response, tank_capacity_liters) "
+                "VALUES (:vid, :reg, :vin, 'Toyota', 'Hilux', 2023, 'diesel', 'active', 1.0, 1.0, 60.0)"
             ), {"vid": vid, "reg": f"ABC-{vid[-3:]}", "vin": f"1HGBH41JXMN{vid[-3:]}000"})
 
         for did in ["D-01", "D-02", "D-03"]:
             await conn.execute(text(
-                "INSERT INTO drivers (driver_id, first_name, last_name, license_number, employment_status) "
-                "VALUES (:did, 'Test', :name, :lic, 'active')"
+                "INSERT INTO drivers (driver_id, first_name, last_name, license_number, employment_status, behavior_profile) "
+                "VALUES (:did, 'Test', :name, :lic, 'active', 'standard')"
             ), {"did": did, "name": f"Driver{did[-2:]}", "lic": f"LIC-{did}"})
 
         await conn.execute(text(
-            "INSERT INTO routes (route_id, name, route_type, origin, destination, estimated_distance_km) "
-            "VALUES ('R-001', 'Urban Route', 'urban', 'A', 'B', 10.0)"
+            "INSERT INTO routes (route_id, name, route_type, origin, destination, estimated_distance_km, speed_limit_kmh, is_active) "
+            "VALUES ('R-001', 'Urban Route', 'urban', 'A', 'B', 10.0, 60.0, true)"
         ))
 
         for i in range(5):

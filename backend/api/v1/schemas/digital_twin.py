@@ -188,17 +188,36 @@ class ScenarioRead(BaseModel):
     duration_seconds: int | None = None
     simulation_speed: float
     seed: int | None = None
-    assignment_ids: list[str] = []
+    assignment_ids: list[str] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
-    @model_validator(mode="after")
-    def _extract_assignment_ids(self) -> "ScenarioRead":
-        if not self.assignment_ids:
-            assignments = getattr(self, "assignments", None)
-            if assignments is not None:
-                self.assignment_ids = [a.assignment_id for a in assignments]
-        return self
+    @model_validator(mode="before")
+    @classmethod
+    def _extract_assignment_ids(cls, data: object) -> object:
+        if isinstance(data, dict):
+            return data
+        # Only extract from ORM objects with an eagerly-loaded assignments
+        # relationship.  Triggering a lazy load here would raise
+        # MissingGreenlet in async sessions, so we guard with a __dict__
+        # presence check — loaded relationships are stored there.
+        if "assignments" not in data.__dict__:
+            return data
+        assignment_ids = [a.assignment_id for a in data.assignments]
+        if not assignment_ids:
+            return data
+        return {
+            "scenario_id": data.scenario_id,
+            "name": data.name,
+            "description": data.description,
+            "status": data.status,
+            "duration_seconds": data.duration_seconds,
+            "simulation_speed": data.simulation_speed,
+            "seed": data.seed,
+            "assignment_ids": assignment_ids,
+            "created_at": data.created_at,
+            "updated_at": data.updated_at,
+        }
 
 
 class ScenarioCreate(BaseModel):

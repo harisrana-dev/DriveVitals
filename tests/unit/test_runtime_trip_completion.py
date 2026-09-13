@@ -54,6 +54,9 @@ class _StubPersistence:
     async def complete_trip(self, **kwargs):
         self.complete_trip_calls.append(kwargs)
 
+    def schedule_background(self, coro):
+        return asyncio.ensure_future(coro)
+
     async def _noop(self, *args, **kwargs):
         pass
 

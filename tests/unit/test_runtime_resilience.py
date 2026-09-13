@@ -79,6 +79,9 @@ class _RecordingConsumer:
 class _StubPersistence:
     """In-memory stand-in for PersistenceService (async no-ops)."""
 
+    def schedule_background(self, coro):
+        return asyncio.ensure_future(coro)
+
     async def _noop(self, *args, **kwargs):
         pass
 

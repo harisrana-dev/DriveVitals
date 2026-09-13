@@ -7,6 +7,7 @@ exercised directly against the controller in the integration suite.
 """
 
 import pytest
+from sqlalchemy import select
 
 from backend.api import simulation_state
 
@@ -281,6 +282,12 @@ async def test_scenario_lifecycle(fleet_ids, admin_client):
         json=["scen-a-1"],
     )
     assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["assignment_ids"] == ["scen-a-1"]
+
+    # GET individual scenario serializes assignment_ids
+    resp = await admin_client.get(f"/api/v1/digital-twin/scenarios/{scenario_id}")
+    assert resp.status_code == 200
+    assert resp.json()["data"]["assignment_ids"] == ["scen-a-1"]
 
     # activate requires at least one assignment; it has one -> ready
     resp = await admin_client.post(
@@ -288,6 +295,7 @@ async def test_scenario_lifecycle(fleet_ids, admin_client):
     )
     assert resp.status_code == 200, resp.text
     assert resp.json()["data"]["status"] == "ready"
+    assert resp.json()["data"]["assignment_ids"] == ["scen-a-1"]
 
     # cannot edit a scenario with invalid status
     resp = await admin_client.patch(
@@ -296,11 +304,14 @@ async def test_scenario_lifecycle(fleet_ids, admin_client):
     )
     assert resp.status_code == 422
 
-    # list scenarios
+    # list scenarios — verify assignment_ids present in the list response
     resp = await admin_client.get("/api/v1/digital-twin/scenarios")
     assert resp.status_code == 200
-    names = [s["name"] for s in resp.json()["data"]]
+    scenarios = resp.json()["data"]
+    names = [s["name"] for s in scenarios]
     assert "Test Scenario" in names
+    listed = next(s for s in scenarios if s["scenario_id"] == scenario_id)
+    assert listed["assignment_ids"] == ["scen-a-1"]
 
     # runs endpoint lists (empty)
     resp = await admin_client.get(f"/api/v1/digital-twin/scenarios/{scenario_id}/runs")
@@ -349,3 +360,399 @@ async def test_launch_unavailable_without_controller(fleet_ids, admin_client):
         f"/api/v1/digital-twin/scenarios/{scenario_id}/launch"
     )
     assert resp.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# Assignment-serialization regression
+# ---------------------------------------------------------------------------
+
+
+async def test_scenario_read_serializes_persisted_assignments(fleet_ids, admin_client):
+    """ScenarioRead must surface persisted assignment_ids (not []).
+
+    Reproduces the exact failure mode from the forensic audit: DB had a
+    persisted scenario→assignment link but the API returned assignment_ids=[].
+    """
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/assignments",
+        json={
+            "assignment_id": "regression-a-1",
+            "driver_id": fleet_ids["driver"],
+            "vehicle_id": fleet_ids["vehicle"],
+            "route_id": fleet_ids["route"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+
+    # Create scenario with assignment via query param
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/scenarios?assignment_ids=regression-a-1",
+        json={"name": "Regression Scenario", "seed": 1},
+    )
+    assert resp.status_code == 200, resp.text
+    scenario_id = resp.json()["data"]["scenario_id"]
+    assert resp.json()["data"]["assignment_ids"] == ["regression-a-1"]
+
+    # Single-get serializes assignment_ids
+    resp = await admin_client.get(f"/api/v1/digital-twin/scenarios/{scenario_id}")
+    assert resp.status_code == 200
+    assert resp.json()["data"]["assignment_ids"] == ["regression-a-1"]
+
+    # List serializes assignment_ids
+    resp = await admin_client.get("/api/v1/digital-twin/scenarios")
+    assert resp.status_code == 200
+    target = next(s for s in resp.json()["data"] if s["scenario_id"] == scenario_id)
+    assert target["assignment_ids"] == ["regression-a-1"]
+
+
+async def test_scenario_without_assignments_returns_empty_assignment_ids(admin_client):
+    """A scenario with no assignments must return assignment_ids == []."""
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/scenarios",
+        json={"name": "No Fleet Scenario"},
+    )
+    assert resp.status_code == 200
+    scenario_id = resp.json()["data"]["scenario_id"]
+    assert resp.json()["data"]["assignment_ids"] == []
+
+    # Single-get
+    resp = await admin_client.get(f"/api/v1/digital-twin/scenarios/{scenario_id}")
+    assert resp.status_code == 200
+    assert resp.json()["data"]["assignment_ids"] == []
+
+    # List
+    resp = await admin_client.get("/api/v1/digital-twin/scenarios")
+    target = next(s for s in resp.json()["data"] if s["scenario_id"] == scenario_id)
+    assert target["assignment_ids"] == []
+
+
+# ---------------------------------------------------------------------------
+# Scenario-delete FK regression
+# ---------------------------------------------------------------------------
+
+
+async def test_delete_scenario_removes_child_runs(fleet_ids, admin_client, session):
+    """Deleting a scenario must also delete its historical SimulationRun records.
+
+    Reproduces the FK violation from the forensic audit: the DB rejected
+    DELETE FROM simulation_scenarios because simulation_runs.scenario_id
+    still referenced the row.
+    """
+    from backend.db.models.scenario import SimulationRun
+
+    # Create scenario with an assignment so it can be activated
+    await admin_client.post(
+        "/api/v1/digital-twin/assignments",
+        json={
+            "assignment_id": "del-a-1",
+            "driver_id": fleet_ids["driver"],
+            "vehicle_id": fleet_ids["vehicle"],
+            "route_id": fleet_ids["route"],
+        },
+    )
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/scenarios?assignment_ids=del-a-1",
+        json={"name": "Delete Me Scenario", "seed": 1},
+    )
+    assert resp.status_code == 200, resp.text
+    scenario_id = resp.json()["data"]["scenario_id"]
+
+    # Insert a SimulationRun directly (launch requires a wired controller)
+    run = SimulationRun(
+        scenario_id=scenario_id,
+        status="completed",
+        seed=42,
+        vehicles_active=3,
+        trips_completed=10,
+    )
+    session.add(run)
+    await session.flush()
+    run_id = run.run_id
+
+    # Commit so the API session (separate connection) can see the run
+    await session.commit()
+
+    # Confirm the run exists via the API
+    resp = await admin_client.get(
+        f"/api/v1/digital-twin/scenarios/{scenario_id}/runs"
+    )
+    assert resp.status_code == 200
+    assert resp.json()["count"] == 1
+
+    # Delete the scenario — must NOT raise FK violation
+    resp = await admin_client.delete(
+        f"/api/v1/digital-twin/scenarios/{scenario_id}"
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["deleted"] == scenario_id
+
+    # Scenario is gone
+    resp = await admin_client.get(f"/api/v1/digital-twin/scenarios/{scenario_id}")
+    assert resp.status_code == 404
+
+    # Run is gone (no orphaned rows)
+    from sqlalchemy import select
+
+    result = await session.execute(
+        select(SimulationRun).where(SimulationRun.run_id == run_id)
+    )
+    assert result.scalar_one_or_none() is None
+
+
+async def test_delete_scenario_without_runs_succeeds(admin_client, session):
+    """Deleting a scenario that has no runs must succeed (no FK issue)."""
+
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/scenarios",
+        json={"name": "Empty Delete Scenario"},
+    )
+    assert resp.status_code == 200
+    scenario_id = resp.json()["data"]["scenario_id"]
+
+    # Confirm no runs
+    resp = await admin_client.get(
+        f"/api/v1/digital-twin/scenarios/{scenario_id}/runs"
+    )
+    assert resp.json()["count"] == 0
+
+    # Delete succeeds
+    resp = await admin_client.delete(
+        f"/api/v1/digital-twin/scenarios/{scenario_id}"
+    )
+    assert resp.status_code == 200, resp.text
+
+    # Confirm gone
+    resp = await admin_client.get(f"/api/v1/digital-twin/scenarios/{scenario_id}")
+    assert resp.status_code == 404
+
+
+async def test_delete_running_scenario_blocked(fleet_ids, admin_client, session):
+    """Deleting a scenario with status 'running' must be blocked (409)."""
+    from backend.db.models.scenario import SimulationRun
+
+    await admin_client.post(
+        "/api/v1/digital-twin/assignments",
+        json={
+            "assignment_id": "del-run-a-1",
+            "driver_id": fleet_ids["driver"],
+            "vehicle_id": fleet_ids["vehicle"],
+            "route_id": fleet_ids["route"],
+        },
+    )
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/scenarios?assignment_ids=del-run-a-1",
+        json={"name": "Running Scenario", "seed": 1},
+    )
+    scenario_id = resp.json()["data"]["scenario_id"]
+
+    # Force status to 'running' via direct DB update
+    from sqlalchemy import update as sa_update
+
+    from backend.db.models.scenario import SimulationScenario
+
+    await session.execute(
+        sa_update(SimulationScenario)
+        .where(SimulationScenario.scenario_id == scenario_id)
+        .values(status="running")
+    )
+    await session.flush()
+
+    # Insert a run (representing the active execution)
+    run = SimulationRun(
+        scenario_id=scenario_id,
+        status="running",
+        seed=42,
+    )
+    session.add(run)
+    await session.flush()
+    await session.commit()
+
+    # Delete is blocked
+    resp = await admin_client.delete(
+        f"/api/v1/digital-twin/scenarios/{scenario_id}"
+    )
+    assert resp.status_code == 409, resp.text
+
+    # Scenario still exists
+    resp = await admin_client.get(f"/api/v1/digital-twin/scenarios/{scenario_id}")
+    assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Scenario creation: comma-separated assignment_ids query contract
+# ---------------------------------------------------------------------------
+
+
+async def _make_assignments(admin_client, prefix: str) -> list[str]:
+    """Create 3 drivers/vehicles/routes and 3 assignments with unique
+    triples; returns the assignment ids."""
+    ids = []
+    for i in (1, 2, 3):
+        driver_id = f"{prefix}-d{i}"
+        vehicle_id = f"{prefix}-v{i}"
+        route_id = f"{prefix}-r{i}"
+        assignment_id = f"{prefix}-a{i}"
+
+        resp = await admin_client.post(
+            "/api/v1/digital-twin/drivers",
+            json={
+                "driver_id": driver_id,
+                "first_name": f"FN{i}",
+                "last_name": f"LN{i}",
+                "license_number": f"{prefix.upper()}-LIC-{i}",
+            },
+        )
+        assert resp.status_code == 200, resp.text
+
+        resp = await admin_client.post(
+            "/api/v1/digital-twin/vehicles",
+            json={
+                "vehicle_id": vehicle_id,
+                "registration_number": f"{prefix.upper()}-REG-{i}",
+                "vin": f"{prefix.upper()}VIN0000000{i}",
+                "manufacturer": "Test",
+                "model": "Model",
+                "year": 2024,
+            },
+        )
+        assert resp.status_code == 200, resp.text
+
+        resp = await admin_client.post(
+            "/api/v1/digital-twin/routes",
+            json={
+                "route_id": route_id,
+                "name": f"Route {i}",
+                "route_type": "urban",
+                "origin": "O",
+                "destination": f"D{i}",
+                "estimated_distance_km": 5.0,
+                "speed_limit_kmh": 60.0,
+            },
+        )
+        assert resp.status_code == 200, resp.text
+
+        resp = await admin_client.post(
+            "/api/v1/digital-twin/assignments",
+            json={
+                "assignment_id": assignment_id,
+                "driver_id": driver_id,
+                "vehicle_id": vehicle_id,
+                "route_id": route_id,
+            },
+        )
+        assert resp.status_code == 200, resp.text
+        ids.append(assignment_id)
+    return ids
+
+
+async def _scenario_assignment_rows(session, scenario_id: str):
+    from backend.db.models.scenario import scenario_assignments
+
+    result = await session.execute(
+        select(scenario_assignments.c.assignment_id).where(
+            scenario_assignments.c.scenario_id == scenario_id
+        )
+    )
+    return list(result.scalars())
+
+
+async def test_create_scenario_with_comma_separated_assignment_ids(
+    admin_client, session
+):
+    """POST /digital-twin/scenarios?assignment_ids=A01,A02,A03 must accept
+    the comma-separated form produced by the Digital Twin Lab UI and persist
+    every assignment."""
+    ids = await _make_assignments(admin_client, prefix="csa")
+
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/scenarios?assignment_ids=" + ",".join(ids),
+        json={"name": "Comma Scenario", "seed": 7},
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()["data"]
+    scenario_id = data["scenario_id"]
+    assert data["name"] == "Comma Scenario"
+    assert sorted(data["assignment_ids"]) == sorted(ids)
+
+    # scenario_assignments association rows exist exactly once per id
+    assert sorted(await _scenario_assignment_rows(session, scenario_id)) == sorted(ids)
+
+    # GET individual scenario serializes the persisted ids
+    resp = await admin_client.get(
+        f"/api/v1/digital-twin/scenarios/{scenario_id}"
+    )
+    assert resp.status_code == 200
+    assert sorted(resp.json()["data"]["assignment_ids"]) == sorted(ids)
+
+    # GET list serializes the persisted ids
+    resp = await admin_client.get("/api/v1/digital-twin/scenarios")
+    listed = next(
+        s for s in resp.json()["data"] if s["scenario_id"] == scenario_id
+    )
+    assert sorted(listed["assignment_ids"]) == sorted(ids)
+
+
+async def test_create_scenario_with_repeated_assignment_ids(admin_client):
+    """The repeated-parameter form (?a=1&a=2) must keep working."""
+    ids = await _make_assignments(admin_client, prefix="rep")
+
+    url = (
+        "/api/v1/digital-twin/scenarios?"
+        + "&".join(f"assignment_ids={aid}" for aid in ids)
+    )
+    resp = await admin_client.post(url, json={"name": "Repeated Scenario"})
+    assert resp.status_code == 200, resp.text
+    assert sorted(resp.json()["data"]["assignment_ids"]) == sorted(ids)
+
+
+async def test_create_scenario_invalid_assignment_id_creates_nothing(
+    admin_client, session
+):
+    """A nonexistent assignment id in the comma list must 404 and must not
+    leave a partial scenario or partial scenario_assignments rows behind."""
+    ids = await _make_assignments(admin_client, prefix="inv")
+    before = await _scenario_assignment_rows(session, "__never__")
+
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/scenarios?assignment_ids="
+        + ",".join(ids)
+        + ",does-not-exist-99",
+        json={"name": "Invalid Scenario"},
+    )
+    assert resp.status_code == 404, resp.text
+    assert "does-not-exist-99" in resp.json()["detail"]
+
+    # No partial scenario leaked into the list
+    resp = await admin_client.get("/api/v1/digital-twin/scenarios")
+    names = [s["name"] for s in resp.json()["data"]]
+    assert "Invalid Scenario" not in names
+
+    # scenario_assignments has no partial rows for any of the supplied ids
+    from backend.db.models.scenario import scenario_assignments
+
+    result = await session.execute(
+        select(scenario_assignments.c.scenario_id)
+        .where(scenario_assignments.c.assignment_id.in_(ids + ["does-not-exist-99"]))
+    )
+    assert list(result.scalars()) == []
+
+
+async def test_create_scenario_single_assignment_keeps_working(fleet_ids, admin_client):
+    """The single-value form used by the lifecycle tests still works."""
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/assignments",
+        json={
+            "assignment_id": "single-a-1",
+            "driver_id": fleet_ids["driver"],
+            "vehicle_id": fleet_ids["vehicle"],
+            "route_id": fleet_ids["route"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+
+    resp = await admin_client.post(
+        "/api/v1/digital-twin/scenarios?assignment_ids=single-a-1",
+        json={"name": "Single Assignment Scenario"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["data"]["assignment_ids"] == ["single-a-1"]

@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -50,9 +50,12 @@ class ScenarioRepository(BaseRepository):
 
     async def get(self, scenario_id: str) -> SimulationScenario | None:
         result = await self._session.execute(
-            select(SimulationScenario).where(
-                SimulationScenario.scenario_id == scenario_id
+            select(SimulationScenario)
+            .options(
+                selectinload(SimulationScenario.assignments),
+                selectinload(SimulationScenario.runs),
             )
+            .where(SimulationScenario.scenario_id == scenario_id)
         )
         return result.scalar_one_or_none()
 
@@ -90,13 +93,12 @@ class ScenarioRepository(BaseRepository):
         return scenario
 
     async def delete(self, scenario_id: str) -> bool:
-        result = await self._session.execute(
-            delete(SimulationScenario).where(
-                SimulationScenario.scenario_id == scenario_id
-            )
-        )
+        scenario = await self.get(scenario_id)
+        if scenario is None:
+            return False
+        await self._session.delete(scenario)
         await self._session.flush()
-        return result.rowcount > 0
+        return True
 
     async def list(
         self, limit: int, offset: int, status: str | None = None

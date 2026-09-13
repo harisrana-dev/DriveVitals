@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import Sequence
 from datetime import datetime
@@ -42,10 +43,64 @@ logger = logging.getLogger(__name__)
 class PersistenceService:
     def __init__(self) -> None:
         self._alert_event_callback: Callable[[dict], None] | None = None
+        # Serializes every alert-table write so that at most one alert
+        # transaction is active in the process at a time. The runtime fans
+        # out persist_alerts / resolve_cleared_alerts /
+        # resolve_stale_trip_alerts through independent asyncio tasks, each
+        # opening its own AsyncSession; without a single-writer gate those
+        # transactions can acquire overlapping row locks on the same
+        # ``alerts`` rows in different orders and deadlock (PostgreSQL:
+        # "deadlock detected ... Process N waits for ShareLock on
+        # transaction M"). One gate removes concurrent alert writes by
+        # construction.
+        self._alert_write_lock = asyncio.Lock()
+        # Fire-and-forget persistence tasks spawned by the runtime so the
+        # simulation controller can drain/cancel them on stop/shutdown
+        # instead of leaving uncontrolled writers behind.
+        self._background_tasks: set[asyncio.Task] = set()
 
     def set_alert_event_callback(self, callback: Callable[[dict], None] | None) -> None:
         """Set a callback to receive alert events for WebSocket broadcast."""
         self._alert_event_callback = callback
+
+    def schedule_background(self, coro) -> asyncio.Task:
+        """Run ``coro`` as a tracked background persistence task.
+
+        Replaces the raw ``asyncio.ensure_future`` pattern used by the
+        runtime's telemetry/snapshot consumers and trip-completion hooks so
+        the task is registered with this service. ``drain_background_tasks``
+        and ``cancel_background_tasks`` can then bound its lifetime, which
+        matters because an untracked task can survive a simulation stop and
+        keep mutating ``alerts`` after a new run has started.
+        """
+        task = asyncio.ensure_future(coro)
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
+        return task
+
+    async def drain_background_tasks(self) -> None:
+        """Wait for every tracked background persistence task to finish.
+
+        Failures are not re-raised: each task already logs via its own
+        ``except`` handler in the persistence method, matching the
+        service's defensive behavior. This is used by the simulation
+        controller on stop so a new launch never races the previous run's
+        writers.
+        """
+        tasks = [task for task in self._background_tasks if not task.done()]
+        if not tasks:
+            return
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    def cancel_background_tasks(self) -> None:
+        """Best-effort synchronous cancel of tracked background tasks.
+
+        Used by app teardown (which cannot await). Tasks that are already
+        running their DB transaction are cancelled at the next await point;
+        the alert write lock is released on cancellation via ``async with``.
+        """
+        for task in list(self._background_tasks):
+            task.cancel()
 
     def _emit_alert_event(
         self,
@@ -406,43 +461,44 @@ class PersistenceService:
         try:
             if not alerts:
                 return
-            async with async_session_factory() as session:
-                repo = AlertRepository(session)
-                for alert in alerts:
-                    row = await repo.upsert(
-                        alert_id=alert.alert_id,
-                        vehicle_id=alert.vehicle_id,
-                        alert_type=(
-                            alert.alert_type.value
-                            if hasattr(alert.alert_type, "value")
-                            else str(alert.alert_type)
-                        ),
-                        severity=(
-                            alert.severity.value
-                            if hasattr(alert.severity, "value")
-                            else str(alert.severity)
-                        ),
-                        message=alert.message,
-                        created_at=alert.created_at,
-                        driver_id=alert.driver_id,
-                        trip_id=alert.trip_id,
-                        condition=alert.condition,
-                        category=(
-                            alert.category.value
-                            if hasattr(alert.category, "value")
-                            else str(alert.category)
-                        ),
-                        evidence=alert.evidence,
-                        source=alert.source,
-                    )
-                    # Emit event for created/updated, keyed by the stored
-                    # (vehicle-scoped) id so the frontend can reconcile.
-                    self._emit_alert_event(
-                        "alert_created",
-                        alert,
-                        stored_alert_id=row.alert_id,
-                    )
-                await session.commit()
+            async with self._alert_write_lock:
+                async with async_session_factory() as session:
+                    repo = AlertRepository(session)
+                    for alert in alerts:
+                        row = await repo.upsert(
+                            alert_id=alert.alert_id,
+                            vehicle_id=alert.vehicle_id,
+                            alert_type=(
+                                alert.alert_type.value
+                                if hasattr(alert.alert_type, "value")
+                                else str(alert.alert_type)
+                            ),
+                            severity=(
+                                alert.severity.value
+                                if hasattr(alert.severity, "value")
+                                else str(alert.severity)
+                            ),
+                            message=alert.message,
+                            created_at=alert.created_at,
+                            driver_id=alert.driver_id,
+                            trip_id=alert.trip_id,
+                            condition=alert.condition,
+                            category=(
+                                alert.category.value
+                                if hasattr(alert.category, "value")
+                                else str(alert.category)
+                            ),
+                            evidence=alert.evidence,
+                            source=alert.source,
+                        )
+                        # Emit event for created/updated, keyed by the stored
+                        # (vehicle-scoped) id so the frontend can reconcile.
+                        self._emit_alert_event(
+                            "alert_created",
+                            alert,
+                            stored_alert_id=row.alert_id,
+                        )
+                    await session.commit()
         except Exception:
             logger.exception(
                 "Failed to persist %d alert(s)",
@@ -463,55 +519,56 @@ class PersistenceService:
         ``resolved``; history is preserved.
         """
         try:
-            async with async_session_factory() as session:
-                repo = AlertRepository(session)
-                resolved_count, resolved_alerts = await repo.resolve_stale(
-                    vehicle_id=vehicle_id,
-                    categories=categories,
-                    active_alert_ids=active_alert_ids,
-                )
-                if resolved_count:
-                    await session.commit()
-                    logger.info(
-                        "Resolved %d cleared alert(s) for vehicle %s",
-                        resolved_count,
-                        vehicle_id,
+            async with self._alert_write_lock:
+                async with async_session_factory() as session:
+                    repo = AlertRepository(session)
+                    resolved_count, resolved_alerts = await repo.resolve_stale(
+                        vehicle_id=vehicle_id,
+                        categories=categories,
+                        active_alert_ids=active_alert_ids,
                     )
-                    # Emit events for resolved alerts (row.alert_id is the
-                    # stored, vehicle-scoped id used by the REST API).
-                    for alert in resolved_alerts:
-                        self._emit_alert_event(
-                            "alert_resolved",
-                            FleetAlert(
-                                alert_id=alert.alert_id,
-                                vehicle_id=alert.vehicle_id,
-                                alert_type=(
-                                    alert.alert_type.value
-                                    if hasattr(alert.alert_type, "value")
-                                    else alert.alert_type
-                                ),
-                                severity=(
-                                    alert.severity.value
-                                    if hasattr(alert.severity, "value")
-                                    else alert.severity
-                                ),
-                                message=alert.message or "",
-                                created_at=alert.created_at,
-                                last_triggered_at=alert.last_triggered_at,
-                                driver_id=alert.driver_id,
-                                trip_id=alert.trip_id,
-                                condition=alert.condition,
-                                category=(
-                                    alert.category.value
-                                    if hasattr(alert.category, "value")
-                                    else alert.category
-                                ),
-                                evidence=alert.evidence,
-                                source=alert.source,
-                            ),
-                            stored_alert_id=alert.alert_id,
+                    if resolved_count:
+                        await session.commit()
+                        logger.info(
+                            "Resolved %d cleared alert(s) for vehicle %s",
+                            resolved_count,
+                            vehicle_id,
                         )
-                return resolved_count
+                        # Emit events for resolved alerts (row.alert_id is the
+                        # stored, vehicle-scoped id used by the REST API).
+                        for alert in resolved_alerts:
+                            self._emit_alert_event(
+                                "alert_resolved",
+                                FleetAlert(
+                                    alert_id=alert.alert_id,
+                                    vehicle_id=alert.vehicle_id,
+                                    alert_type=(
+                                        alert.alert_type.value
+                                        if hasattr(alert.alert_type, "value")
+                                        else alert.alert_type
+                                    ),
+                                    severity=(
+                                        alert.severity.value
+                                        if hasattr(alert.severity, "value")
+                                        else alert.severity
+                                    ),
+                                    message=alert.message or "",
+                                    created_at=alert.created_at,
+                                    last_triggered_at=alert.last_triggered_at,
+                                    driver_id=alert.driver_id,
+                                    trip_id=alert.trip_id,
+                                    condition=alert.condition,
+                                    category=(
+                                        alert.category.value
+                                        if hasattr(alert.category, "value")
+                                        else alert.category
+                                    ),
+                                    evidence=alert.evidence,
+                                    source=alert.source,
+                                ),
+                                stored_alert_id=alert.alert_id,
+                            )
+                    return resolved_count
         except Exception:
             logger.exception(
                 "Failed to resolve cleared alerts for vehicle %s",
@@ -530,49 +587,50 @@ class PersistenceService:
         indefinitely when the triggering condition is no longer present.
         """
         try:
-            async with async_session_factory() as session:
-                repo = AlertRepository(session)
-                resolved_count, resolved_alerts = await repo.resolve_stale_trip_alerts(
-                    stale_after_seconds=stale_after_seconds,
-                )
-                if resolved_count:
-                    await session.commit()
-                    logger.info(
-                        "Resolved %d stale trip alert(s)",
-                        resolved_count,
+            async with self._alert_write_lock:
+                async with async_session_factory() as session:
+                    repo = AlertRepository(session)
+                    resolved_count, resolved_alerts = await repo.resolve_stale_trip_alerts(
+                        stale_after_seconds=stale_after_seconds,
                     )
-                    for alert in resolved_alerts:
-                        self._emit_alert_event(
-                            "alert_resolved",
-                            FleetAlert(
-                                alert_id=alert.alert_id,
-                                vehicle_id=alert.vehicle_id,
-                                alert_type=(
-                                    alert.alert_type.value
-                                    if hasattr(alert.alert_type, "value")
-                                    else alert.alert_type
-                                ),
-                                severity=(
-                                    alert.severity.value
-                                    if hasattr(alert.severity, "value")
-                                    else alert.severity
-                                ),
-                                message=alert.message or "",
-                                created_at=alert.created_at,
-                                last_triggered_at=alert.last_triggered_at,
-                                driver_id=alert.driver_id,
-                                trip_id=alert.trip_id,
-                                condition=alert.condition,
-                                category=(
-                                    alert.category.value
-                                    if hasattr(alert.category, "value")
-                                    else alert.category
-                                ),
-                                evidence=alert.evidence,
-                                source=alert.source,
-                            ),
+                    if resolved_count:
+                        await session.commit()
+                        logger.info(
+                            "Resolved %d stale trip alert(s)",
+                            resolved_count,
                         )
-                return resolved_count
+                        for alert in resolved_alerts:
+                            self._emit_alert_event(
+                                "alert_resolved",
+                                FleetAlert(
+                                    alert_id=alert.alert_id,
+                                    vehicle_id=alert.vehicle_id,
+                                    alert_type=(
+                                        alert.alert_type.value
+                                        if hasattr(alert.alert_type, "value")
+                                        else alert.alert_type
+                                    ),
+                                    severity=(
+                                        alert.severity.value
+                                        if hasattr(alert.severity, "value")
+                                        else alert.severity
+                                    ),
+                                    message=alert.message or "",
+                                    created_at=alert.created_at,
+                                    last_triggered_at=alert.last_triggered_at,
+                                    driver_id=alert.driver_id,
+                                    trip_id=alert.trip_id,
+                                    condition=alert.condition,
+                                    category=(
+                                        alert.category.value
+                                        if hasattr(alert.category, "value")
+                                        else alert.category
+                                    ),
+                                    evidence=alert.evidence,
+                                    source=alert.source,
+                                ),
+                            )
+                    return resolved_count
         except Exception:
             logger.exception("Failed to resolve stale trip alerts")
             return 0

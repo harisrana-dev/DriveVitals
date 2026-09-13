@@ -359,6 +359,9 @@ class _RecordingManager:
 
 
 class _StubPersistence:
+    def schedule_background(self, coro):
+        return asyncio.ensure_future(coro)
+
     async def _noop(self, *args, **kwargs):
         pass
 

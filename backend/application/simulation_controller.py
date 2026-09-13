@@ -138,7 +138,10 @@ class SimulationController:
     async def stop(self) -> dict:
         """Stop the currently-running simulation, if any.
 
-        Cancels the run task and halts the runtime loop. In-memory
+        Cancels the run task, halts the runtime loop, and drains every
+        tracked background persistence task (telemetry, alerts, trip
+        completion, ...) so no writer from the stopped run can keep
+        mutating rows while a fresh run is being launched. In-memory
         analytics are preserved; stale in-progress trips are aborted by
         the next launch or by an explicit reset.
         """
@@ -157,6 +160,10 @@ class SimulationController:
                     "Simulation task raised during stop for scenario=%s",
                     self._scenario_id,
                 )
+
+        persistence = self._runtime.persistence_service
+        if persistence is not None:
+            await persistence.drain_background_tasks()
 
         self._scenario_id = None
         self._scenario_name = None
@@ -184,3 +191,6 @@ class SimulationController:
         if self._task is not None and not self._task.done():
             self._runtime.stop()
             self._task.cancel()
+        persistence = self._runtime.persistence_service
+        if persistence is not None:
+            persistence.cancel_background_tasks()

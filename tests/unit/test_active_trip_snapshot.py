@@ -48,6 +48,9 @@ START_TIME = datetime(2026, 8, 7, 10, 0, 0, tzinfo=timezone.utc)
 class _StubPersistence:
     """In-memory stand-in for PersistenceService; every write is a no-op."""
 
+    def schedule_background(self, coro):
+        return asyncio.ensure_future(coro)
+
     async def _noop(self, *args, **kwargs):
         pass
 

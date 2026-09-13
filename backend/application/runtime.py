@@ -195,12 +195,12 @@ class _PersistenceTelemetryConsumer:
         self._state = state
 
     def consume(self, sample: TelemetrySample) -> None:
-        asyncio.ensure_future(self._svc.persist_telemetry(sample))
+        self._svc.schedule_background(self._svc.persist_telemetry(sample))
 
         health = self._state.get_health_snapshot(sample.vehicle_id)
 
         if health is not None:
-            asyncio.ensure_future(self._svc.persist_vehicle_health(health))
+            self._svc.schedule_background(self._svc.persist_vehicle_health(health))
 
         alerts = self._engine.generate_alerts(
             health_snapshot=health,
@@ -208,13 +208,13 @@ class _PersistenceTelemetryConsumer:
         )
 
         if alerts:
-            asyncio.ensure_future(self._svc.persist_alerts(alerts))
+            self._svc.schedule_background(self._svc.persist_alerts(alerts))
 
         active_keys = self._engine.active_alert_keys(
             health_snapshot=health,
             telemetry=(sample,),
         )
-        asyncio.ensure_future(
+        self._svc.schedule_background(
             self._svc.resolve_cleared_alerts(
                 sample.vehicle_id,
                 (
@@ -233,7 +233,7 @@ class _PersistenceSnapshotSubscriber:
         self._svc = svc
 
     def publish(self, snapshot: AnalyticsSnapshot) -> None:
-        asyncio.ensure_future(self._svc.persist_behaviour_events(snapshot))
+        self._svc.schedule_background(self._svc.persist_behaviour_events(snapshot))
 
 
 def _compute_safety_score(
@@ -518,6 +518,10 @@ class DriveVitalsRuntime:
 
         self._simulation_run_id: str = str(uuid.uuid4())
         self._simulation_start_time: datetime | None = None
+
+    @property
+    def persistence_service(self) -> PersistenceService | None:
+        return self._persistence_service
 
     @property
     def run_id(self) -> str:
@@ -898,7 +902,7 @@ class DriveVitalsRuntime:
                             all_events,
                             None,
                         )
-                    asyncio.ensure_future(
+                    persistence.schedule_background(
                         persistence.complete_trip(
                             trip_id=summary.trip_id,
                             end_time=datetime.now(timezone.utc),
@@ -957,7 +961,7 @@ class DriveVitalsRuntime:
                         trip_obj,
                     )
 
-                asyncio.ensure_future(
+                persistence.schedule_background(
                     persistence.complete_trip(
                         trip_id=summary.trip_id,
                         end_time=datetime.now(timezone.utc),
@@ -1230,7 +1234,7 @@ class DriveVitalsRuntime:
                     )
 
                     if persistence is not None:
-                        asyncio.ensure_future(
+                        persistence.schedule_background(
                             persistence.persist_driver_statistics(
                                 statistics
                             )
@@ -1283,7 +1287,7 @@ class DriveVitalsRuntime:
                                 records = ()
 
                         if records:
-                            asyncio.ensure_future(
+                            persistence.schedule_background(
                                 persistence.persist_maintenance_records(
                                     records
                                 )
@@ -1299,7 +1303,7 @@ class DriveVitalsRuntime:
                         )
 
                         if trip_alerts:
-                            asyncio.ensure_future(
+                            persistence.schedule_background(
                                 persistence.persist_alerts(
                                     trip_alerts
                                 )
@@ -1319,7 +1323,7 @@ class DriveVitalsRuntime:
                             behaviour_events=all_events,
                         )
                         active_keys = [alert_id for _, alert_id in active_keys_raw]
-                        asyncio.ensure_future(
+                        persistence.schedule_background(
                             persistence.resolve_cleared_alerts(
                                 vehicle_id,
                                 (
@@ -1336,7 +1340,7 @@ class DriveVitalsRuntime:
                         # as a reasonable default: a trip alert
                         # that hasn't re-fired in a full day is
                         # likely no longer relevant.
-                        asyncio.ensure_future(
+                        persistence.schedule_background(
                             persistence.resolve_stale_trip_alerts(
                                 stale_after_seconds=24 * 3600,
                             )

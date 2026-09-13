@@ -44,6 +44,9 @@ class _RecordingPersistence:
     async def complete_trip(self, **kwargs):
         self.calls.append(("complete_trip", kwargs))
 
+    def schedule_background(self, coro):
+        return asyncio.ensure_future(coro)
+
     async def _noop(self, *args, **kwargs):
         pass
 

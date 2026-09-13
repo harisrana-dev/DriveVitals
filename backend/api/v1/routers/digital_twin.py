@@ -39,6 +39,21 @@ from backend.db.models.user import User
 router = APIRouter(prefix="/digital-twin")
 
 
+def _normalize_assignment_ids(values: list[str] | None) -> list[str]:
+    """Split comma-separated ``assignment_ids`` query values into ids.
+
+    The Digital Twin Lab UI joins the selected assignment ids into one
+    query value (``?assignment_ids=A01,A02,A03``). FastAPI parses that
+    single pair into one list element (``["A01,A02,A03"]``), so each
+    element is split on commas to recover the individual ids. Repetition
+    (``?assignment_ids=A01&assignment_ids=A02``) keeps working too.
+    """
+    ids: list[str] = []
+    for chunk in values or []:
+        ids.extend(part.strip() for part in chunk.split(",") if part.strip())
+    return ids
+
+
 # ---------------------------------------------------------------------------
 # Simulation status / lifecycle
 # ---------------------------------------------------------------------------
@@ -414,7 +429,7 @@ async def create_scenario(
     service: DigitalTwinService = Depends(get_digital_twin_service),
 ) -> Response[ScenarioRead]:
     scenario = await service.create_scenario(
-        payload, assignment_ids=assignment_ids or []
+        payload, assignment_ids=_normalize_assignment_ids(assignment_ids)
     )
     return Response[ScenarioRead](data=ScenarioRead.model_validate(scenario))
 

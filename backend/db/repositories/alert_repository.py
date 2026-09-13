@@ -215,7 +215,7 @@ class AlertRepository(BaseRepository):
                 Alert.vehicle_id == vehicle_id,
                 Alert.alert_type.in_(categories),
                 Alert.resolved_at.is_(None),
-            )
+            ).order_by(Alert.alert_id)
         )
 
         resolved_at = datetime.now(timezone.utc)
@@ -275,7 +275,7 @@ class AlertRepository(BaseRepository):
                 Alert.alert_type == "trip",
                 Alert.resolved_at.is_(None),
                 trigger_time < stale_threshold,
-            )
+            ).order_by(Alert.alert_id)
         )
 
         resolved_at = datetime.now(timezone.utc)

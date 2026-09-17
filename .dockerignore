@@ -1,0 +1,31 @@
+# Build context is the repository root (shared by backend/ and frontend/
+# images). Keep it small and never leak local secrets or heavyweight
+# directories into an image.
+
+.git
+.github
+.venv
+venv
+
+**/__pycache__
+**/*.pyc
+**/*.pyo
+
+**/node_modules
+**/dist
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.brain_content
+.mimocode
+
+.env
+.env.*
+!*.env.example
+
+*.log
+*.pem
+*.key
+*.crt
+*.sqlite3
+*.db

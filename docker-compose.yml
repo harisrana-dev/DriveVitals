@@ -1,21 +1,102 @@
+# DriveVitals development environment.
+#
+# Target experience for team members:
+#
+#   git clone <repo>
+#   cd DriveVitals
+#   docker compose up --build
+#
+# Startup order is enforced by health conditions:
+#
+#   postgres            PostgreSQL 16 (named volume for persistence)
+#      \_ service_healthy
+#   migration           `alembic upgrade head` on the SAME image as backend
+#      \_ service_completed_successfully
+#   backend             FastAPI/uvicorn on port 8000
+#   frontend            Vite dev server on port 5173 (ordered after backend)
+#
+# The migration service runs once and exits 0; a fresh database is always
+# migrated to the current Alembic head before FastAPI accepts traffic.
+#
+# Host ports: PostgreSQL 5432, FastAPI 8000, Vite 5173.
+
 services:
   postgres:
     image: postgres:16
-
     container_name: drivevitals-postgres
-
     restart: unless-stopped
-
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-drivevitals}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: ${POSTGRES_DB:-drivevitals}
-
     ports:
       - "5432:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  migration:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: drivevitals-backend
+    command: ["sh", "-c", "cd /app/backend && alembic upgrade head"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-drivevitals}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-drivevitals}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    image: drivevitals-backend
+    restart: unless-stopped
+    command: ["uvicorn", "backend.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-drivevitals}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-drivevitals}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      ACCESS_TOKEN_TTL_HOURS: ${ACCESS_TOKEN_TTL_HOURS:-24}
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: drivevitals-frontend
+    restart: unless-stopped
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      - frontend_node_modules:/app/frontend/node_modules
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
+  frontend_node_modules:

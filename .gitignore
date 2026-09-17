@@ -143,3 +143,4 @@ coverage/
 # ----------------------------
 *.sql
 *.dump
+!docker/postgres/init.sql

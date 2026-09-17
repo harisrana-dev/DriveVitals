@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from contextlib import asynccontextmanager
 
@@ -346,11 +347,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Comma-separated list of allowed browser origins. Defaults to the
+# Dockerized Vite dev server on its standard port.
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS", "http://localhost:5173"
+    ).split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=False,
     allow_methods=[
         "GET",

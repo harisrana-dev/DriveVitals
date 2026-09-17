@@ -305,7 +305,101 @@ Core product is **feature-frozen** and undergoing product polish, validation, an
 
 ---
 
-## Getting Started
+## Docker Development Setup
+
+The recommended way to run the full application is Docker Compose. It
+provisions PostgreSQL, runs the Alembic migrations automatically, starts
+the FastAPI backend, and starts the Vite dev server — no manual database
+install or migration step required.
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/products/docker-desktop/) (Docker Desktop
+  with Docker Compose v2)
+- `git`
+
+### Clone repository
+
+```bash
+git clone <repo>
+cd DriveVitals
+```
+
+### Create .env from .env.example
+
+```bash
+cp .env.example .env          # Windows: copy .env.example .env
+```
+
+Then edit `.env` and set a **development** `POSTGRES_PASSWORD`. The
+optional `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` /
+`BOOTSTRAP_ADMIN_NAME` triple provisions the first administrator (email/
+password) on a fresh database so you can log in to the application.
+
+### Start everything
+
+```bash
+docker compose up --build
+```
+
+This starts, in order:
+
+1. `postgres` — PostgreSQL 16 on `localhost:5432` (data persists in the
+   named `postgres_data` volume)
+2. `migration` — runs `alembic upgrade head`, then exits
+3. `backend` — FastAPI/uvicorn on `http://localhost:8000`
+4. `frontend` — Vite dev server on `http://localhost:5173`
+
+### Open the app
+
+- Frontend: <http://localhost:5173>
+- API docs: <http://localhost:8000/docs>
+- Backend health: <http://localhost:8000/api/v1/system/health>
+
+The backend REST API lives at `http://localhost:8000/api/v1` and the
+WebSocket channels at `ws://localhost:8000/ws/{dashboard,trips,alerts}`.
+The browser talks to the backend directly on `localhost:8000`; no proxy
+configuration is required.
+
+### Stopping and restarting
+
+```bash
+docker compose down          # stop containers; development data is kept
+docker compose down -v       # stop AND DELETE the PostgreSQL volume (-v)
+```
+
+> **Warning**: `docker compose down -v` deletes the `postgres_data` volume,
+> i.e. all development database data. A following `docker compose up --build`
+> recreates the database and re-runs all migrations from scratch.
+
+Data persists across normal restarts:
+
+```bash
+docker compose down
+docker compose up            # same volume, same data, no re-migration needed
+```
+
+### Logs and shell access
+
+```bash
+docker compose logs -f backend
+docker compose logs -f postgres
+docker compose logs -f migration
+docker compose exec backend sh          # shell inside the backend container
+docker compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB
+```
+
+### Development workflow
+
+Backend and frontend source directories are bind-mounted, so edits on the
+host are picked up automatically by the frontend (Vite HMR). The backend
+runs without `--reload`; after changing Python code, restart the process:
+
+```bash
+docker compose restart backend
+```
+
+## Getting Started (without Docker)
 
 ### Database
 
@@ -340,8 +434,10 @@ Dashboard: `http://localhost:5173`
 ### Tests
 
 ```bash
-pytest                       # Backend: 265 tests
-cd frontend && npm test      # Frontend: 140 tests
+pytest                       # Backend (requires the postgres container
+                             #   and the drivevitals_test database, which
+                             #   the container creates on first init)
+cd frontend && npm test      # Frontend: 234 tests
 ```
 
 ---

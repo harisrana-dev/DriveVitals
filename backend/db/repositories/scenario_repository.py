@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -126,11 +127,13 @@ class _RunRepository(BaseRepository):
         status: str = "ready",
         seed: int | None = None,
         run_id: str | None = None,
+        start_time: datetime | None = None,
     ) -> SimulationRun:
         run = SimulationRun(
             scenario_id=scenario_id,
             status=status,
             seed=seed,
+            start_time=start_time,
         )
         if run_id is not None:
             run.run_id = run_id

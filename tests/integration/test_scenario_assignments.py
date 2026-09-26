@@ -208,6 +208,9 @@ async def test_scenario_assignments_flow_into_launch():
             assert count == 1
             assert runs[0].run_id == run.run_id
             assert runs[0].status == "running"
+            # M5.1: the run record must carry its launch timestamp so run
+            # history is complete (end_time is written on stop).
+            assert runs[0].start_time is not None
 
             await controller.stop()
             assert controller.running is False

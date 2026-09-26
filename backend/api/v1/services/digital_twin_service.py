@@ -485,10 +485,13 @@ class DigitalTwinService:
                 detail="None of the scenario's assignments could be resolved into a fleet",
             )
 
+        from datetime import datetime, timezone
+
         run = await self._scenarios.runs.create(
             scenario.scenario_id,
             status="running",
             seed=scenario.seed,
+            start_time=datetime.now(timezone.utc),
         )
         await self._scenarios.update(scenario, status="running")
         await self._session.commit()

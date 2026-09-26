@@ -18,7 +18,17 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { digitalTwinApi } from '../api/digitalTwinApi';
+import { formatApiError } from '../api/errors';
 import { Skeleton } from '../components/ui/Skeleton';
+import {
+  buildDriverPayload,
+  buildRoutePayload,
+  buildVehiclePayload,
+  EMPTY_DRIVER_FORM,
+  EMPTY_ROUTE_FORM,
+  EMPTY_VEHICLE_FORM,
+} from './digitalTwinPayloads';
+import { pickLaunchTarget } from './digitalTwinLaunch';
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: Activity },
@@ -86,7 +96,7 @@ function StatusPill({ running }) {
 // Overview tab
 // ────────────────────────────────────────────────────────────
 
-function OverviewTab({ status, onLaunch, onStop, onReset, busy }) {
+function OverviewTab({ status, launchName, onLaunch, onStop, onReset, busy }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <Card title="Simulation status">
@@ -127,11 +137,12 @@ function OverviewTab({ status, onLaunch, onStop, onReset, busy }) {
             }}
           >
             {busy ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Play size={14} />}
-            Launch scenario
+            {launchName ? `Launch \u201C${launchName}\u201D` : 'Launch scenario'}
           </button>
           <button
             onClick={onStop}
-            disabled={busy || !status?.running}
+            title={status?.running && !status?.scenario_id ? 'The default fleet run cannot be stopped from here — use Reset' : undefined}
+            disabled={busy || !status?.running || !status?.scenario_id}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '8px 16px', borderRadius: 8,
@@ -218,21 +229,21 @@ function driverDisplayName(d) {
 // ────────────────────────────────────────────────────────────
 
 function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
-  const [driverForm, setDriverForm] = useState({ driver_id: '', first_name: '', last_name: '', behavior_profile: 'eco' });
-  const [vehicleForm, setVehicleForm] = useState({ vehicle_id: '', manufacturer: '', model: '' });
-  const [routeForm, setRouteForm] = useState({ route_id: '', origin: '', destination: '', estimated_distance_km: 10 });
+  const [driverForm, setDriverForm] = useState(EMPTY_DRIVER_FORM);
+  const [vehicleForm, setVehicleForm] = useState(EMPTY_VEHICLE_FORM);
+  const [routeForm, setRouteForm] = useState(EMPTY_ROUTE_FORM);
   const [saving, setSaving] = useState(false);
 
   const submitDriver = useCallback(async () => {
     if (!driverForm.driver_id || !driverForm.first_name) return;
     setSaving(true);
     try {
-      await digitalTwinApi.createDriver({ ...driverForm, behavior_profile: driverForm.behavior_profile });
+      await digitalTwinApi.createDriver(buildDriverPayload(driverForm));
       onNotice('Driver created');
-      setDriverForm({ driver_id: '', first_name: '', last_name: '', behavior_profile: 'eco' });
+      setDriverForm(EMPTY_DRIVER_FORM);
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Failed to create driver');
+      onNotice(formatApiError(err, 'Failed to create driver'));
     } finally {
       setSaving(false);
     }
@@ -242,12 +253,12 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
     if (!vehicleForm.vehicle_id || !vehicleForm.manufacturer || !vehicleForm.model) return;
     setSaving(true);
     try {
-      await digitalTwinApi.createVehicle(vehicleForm);
+      await digitalTwinApi.createVehicle(buildVehiclePayload(vehicleForm));
       onNotice('Vehicle created');
-      setVehicleForm({ vehicle_id: '', manufacturer: '', model: '' });
+      setVehicleForm(EMPTY_VEHICLE_FORM);
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Failed to create vehicle');
+      onNotice(formatApiError(err, 'Failed to create vehicle'));
     } finally {
       setSaving(false);
     }
@@ -257,12 +268,12 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
     if (!routeForm.route_id || !routeForm.origin || !routeForm.destination) return;
     setSaving(true);
     try {
-      await digitalTwinApi.createRoute({ ...routeForm, estimated_distance_km: parseFloat(routeForm.estimated_distance_km) || 0 });
+      await digitalTwinApi.createRoute(buildRoutePayload(routeForm));
       onNotice('Route created');
-      setRouteForm({ route_id: '', origin: '', destination: '', estimated_distance_km: 10 });
+      setRouteForm(EMPTY_ROUTE_FORM);
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Failed to create route');
+      onNotice(formatApiError(err, 'Failed to create route'));
     } finally {
       setSaving(false);
     }
@@ -275,7 +286,7 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
       onNotice('Driver deleted');
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Delete failed');
+      onNotice(formatApiError(err, 'Delete failed'));
     } finally {
       setSaving(false);
     }
@@ -288,7 +299,7 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
       onNotice('Vehicle deleted');
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Delete failed');
+      onNotice(formatApiError(err, 'Delete failed'));
     } finally {
       setSaving(false);
     }
@@ -301,7 +312,7 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
       onNotice('Route deleted');
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Delete failed');
+      onNotice(formatApiError(err, 'Delete failed'));
     } finally {
       setSaving(false);
     }
@@ -340,10 +351,13 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
             </button>
           )}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 0.6fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
           <input placeholder="ID" value={vehicleForm.vehicle_id} onChange={(e) => setVehicleForm({ ...vehicleForm, vehicle_id: e.target.value })} style={inputStyle} />
           <input placeholder="Manufacturer" value={vehicleForm.manufacturer} onChange={(e) => setVehicleForm({ ...vehicleForm, manufacturer: e.target.value })} style={inputStyle} />
           <input placeholder="Model" value={vehicleForm.model} onChange={(e) => setVehicleForm({ ...vehicleForm, model: e.target.value })} style={inputStyle} />
+          <input placeholder="Registration number" value={vehicleForm.registration_number} onChange={(e) => setVehicleForm({ ...vehicleForm, registration_number: e.target.value })} style={inputStyle} />
+          <input placeholder="VIN" value={vehicleForm.vin} onChange={(e) => setVehicleForm({ ...vehicleForm, vin: e.target.value })} style={inputStyle} />
+          <input type="number" placeholder="Year" min="1980" max="2100" value={vehicleForm.year} onChange={(e) => setVehicleForm({ ...vehicleForm, year: e.target.value })} style={inputStyle} />
           <button onClick={submitVehicle} disabled={saving} style={addBtn}>
             {saving ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Plus size={14} />}
           </button>
@@ -363,10 +377,11 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
             </button>
           )}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 0.8fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
           <input placeholder="ID" value={driverForm.driver_id} onChange={(e) => setDriverForm({ ...driverForm, driver_id: e.target.value })} style={inputStyle} />
           <input placeholder="First name" value={driverForm.first_name} onChange={(e) => setDriverForm({ ...driverForm, first_name: e.target.value })} style={inputStyle} />
           <input placeholder="Last name" value={driverForm.last_name} onChange={(e) => setDriverForm({ ...driverForm, last_name: e.target.value })} style={inputStyle} />
+          <input placeholder="License number" value={driverForm.license_number} onChange={(e) => setDriverForm({ ...driverForm, license_number: e.target.value })} style={inputStyle} />
           <select value={driverForm.behavior_profile} onChange={(e) => setDriverForm({ ...driverForm, behavior_profile: e.target.value })} style={inputStyle}>
             <option value="eco">Eco</option>
             <option value="balanced">Balanced</option>
@@ -392,8 +407,9 @@ function FleetTab({ drivers, vehicles, routes, onRefresh, notice, onNotice }) {
             </button>
           )}
         />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 0.8fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 0.8fr auto', gap: 8, marginTop: 12, alignItems: 'end' }}>
           <input placeholder="ID" value={routeForm.route_id} onChange={(e) => setRouteForm({ ...routeForm, route_id: e.target.value })} style={inputStyle} />
+          <input placeholder="Name" value={routeForm.name} onChange={(e) => setRouteForm({ ...routeForm, name: e.target.value })} style={inputStyle} />
           <input placeholder="Origin" value={routeForm.origin} onChange={(e) => setRouteForm({ ...routeForm, origin: e.target.value })} style={inputStyle} />
           <input placeholder="Destination" value={routeForm.destination} onChange={(e) => setRouteForm({ ...routeForm, destination: e.target.value })} style={inputStyle} />
           <input type="number" placeholder="Distance km" value={routeForm.estimated_distance_km} onChange={(e) => setRouteForm({ ...routeForm, estimated_distance_km: e.target.value })} style={inputStyle} />
@@ -440,7 +456,7 @@ function AssignmentsTab({ assignments, drivers, vehicles, routes, onRefresh, onN
       setForm({ assignment_id: '', driver_id: '', vehicle_id: '', route_id: '', is_active: true });
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Failed to create assignment');
+      onNotice(formatApiError(err, 'Failed to create assignment'));
     } finally {
       setSaving(false);
     }
@@ -453,7 +469,7 @@ function AssignmentsTab({ assignments, drivers, vehicles, routes, onRefresh, onN
       onNotice('Assignment deleted');
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Delete failed');
+      onNotice(formatApiError(err, 'Delete failed'));
     } finally {
       setSaving(false);
     }
@@ -740,7 +756,7 @@ function ScenariosTab({ scenarios, assignments, drivers, vehicles, routes, runsB
       setForm({ name: '', description: '', seed: 1, duration_seconds: 600, simulation_speed: 1, selected: [] });
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Failed to create scenario');
+      onNotice(formatApiError(err, 'Failed to create scenario'));
     } finally {
       setForm((f) => ({ ...f, saving: false }));
     }
@@ -759,7 +775,7 @@ function ScenariosTab({ scenarios, assignments, drivers, vehicles, routes, runsB
       onNotice('Scenario activated (Ready)');
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Activate failed');
+      onNotice(formatApiError(err, 'Activate failed'));
     }
   }, [onRefresh, onNotice]);
 
@@ -770,7 +786,7 @@ function ScenariosTab({ scenarios, assignments, drivers, vehicles, routes, runsB
       setLaunchConfirm(null);
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Launch failed');
+      onNotice(formatApiError(err, 'Launch failed'));
     }
   }, [onRefresh, onNotice]);
 
@@ -780,7 +796,7 @@ function ScenariosTab({ scenarios, assignments, drivers, vehicles, routes, runsB
       onNotice('Scenario stopped');
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Stop failed');
+      onNotice(formatApiError(err, 'Stop failed'));
     }
   }, [onRefresh, onNotice]);
 
@@ -793,7 +809,7 @@ function ScenariosTab({ scenarios, assignments, drivers, vehicles, routes, runsB
       onNotice('Assignment removed from scenario');
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Failed to remove assignment');
+      onNotice(formatApiError(err, 'Failed to remove assignment'));
     }
   }, [scenarios, onRefresh, onNotice]);
 
@@ -803,7 +819,7 @@ function ScenariosTab({ scenarios, assignments, drivers, vehicles, routes, runsB
       onNotice('Scenario deleted');
       await onRefresh();
     } catch (err) {
-      onNotice(err?.detail || err?.message || 'Delete failed');
+      onNotice(formatApiError(err, 'Delete failed'));
     }
   }, [onRefresh, onNotice]);
 
@@ -1213,15 +1229,19 @@ export function DigitalTwinLabPage() {
   }, []);
 
   const handleLaunch = useCallback(async () => {
-    const ready = scenarios.find((s) => s.status === 'ready');
-    if (!ready) { flash('No Ready scenario to launch. Activate one first.'); return; }
+    const { target, conflict } = pickLaunchTarget(scenarios);
+    if (conflict.length) {
+      flash(`Multiple scenarios are Ready (${conflict.join(', ')}). Activate only the intended scenario on the Scenarios tab and launch it from there.`);
+      return;
+    }
+    if (!target) { flash('No Ready scenario to launch. Activate one first.'); return; }
     setBusy(true);
     try {
-      await digitalTwinApi.launchScenario(ready.scenario_id);
-      flash('Scenario launched');
+      await digitalTwinApi.launchScenario(target.scenario_id);
+      flash(`Launched \u201C${target.name}\u201D`);
       await refresh();
     } catch (err) {
-      flash(err?.detail || err?.message || 'Launch failed');
+      flash(formatApiError(err, 'Launch failed'));
     } finally {
       setBusy(false);
     }
@@ -1235,7 +1255,7 @@ export function DigitalTwinLabPage() {
       flash('Simulation stopped');
       await refresh();
     } catch (err) {
-      flash(err?.detail || err?.message || 'Stop failed');
+      flash(formatApiError(err, 'Stop failed'));
     } finally {
       setBusy(false);
     }
@@ -1248,7 +1268,7 @@ export function DigitalTwinLabPage() {
       flash('Simulation reset to default fleet');
       await refresh();
     } catch (err) {
-      flash(err?.detail || err?.message || 'Reset failed');
+      flash(formatApiError(err, 'Reset failed'));
     } finally {
       setBusy(false);
     }
@@ -1355,6 +1375,7 @@ export function DigitalTwinLabPage() {
           {activeTab === 'overview' && (
             <OverviewTab
               status={status}
+              launchName={pickLaunchTarget(scenarios).target?.name}
               onLaunch={handleLaunch}
               onStop={handleStop}
               onReset={handleReset}
@@ -1400,5 +1421,7 @@ export function DigitalTwinLabPage() {
     </div>
   );
 }
+
+export { FleetTab, OverviewTab };
 
 export default DigitalTwinLabPage;

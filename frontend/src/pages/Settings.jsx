@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { settingsApi } from '../api/settingsApi';
+import { formatApiError } from '../api/errors';
 import { Skeleton } from '../components/ui/Skeleton';
 
 const TABS = [
@@ -412,7 +413,7 @@ export function SettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setError(err?.detail || err?.message || 'Save failed');
+      setError(formatApiError(err, 'Save failed'));
     } finally {
       setSaving(false);
     }

@@ -23,7 +23,6 @@
 services:
   postgres:
     image: postgres:16
-    container_name: drivevitals-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-drivevitals}

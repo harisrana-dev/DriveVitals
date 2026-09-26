@@ -2,7 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthContext } from '../context/authCtx';
-import { DigitalTwinLabPage } from './DigitalTwinLab';
+import { DigitalTwinLabPage, FleetTab, OverviewTab } from './DigitalTwinLab';
+import { pickLaunchTarget } from './digitalTwinLaunch';
+import { buildDriverPayload, buildVehiclePayload, buildRoutePayload } from './digitalTwinPayloads';
 import { digitalTwinApi } from '../api/digitalTwinApi';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
@@ -280,5 +282,206 @@ describe('Scenario tab — scenario lifecycle states', () => {
     const validStatuses = ['ready', 'running', 'completed', 'failed', 'stopped'];
     expect(validStatuses).toContain('running');
     expect(validStatuses).toContain('stopped');
+  });
+});
+
+// ── M5.1 regression: fleet create payloads must satisfy the backend schema ──
+//
+// DriverCreate.license_number, VehicleCreate.registration_number / vin / year
+// and RouteCreate.name are all mandatory server-side. Before this fix the Fleet
+// tab omitted them, so every create returned 422 with an array `detail` that the
+// page then tried to render as a React child.
+
+describe('fleet create payload contract', () => {
+  const DRIVER = {
+    driver_id: 'd-1',
+    first_name: 'Ada',
+    last_name: 'Lovelace',
+    license_number: 'LIC-9001',
+    behavior_profile: 'eco',
+  };
+  const VEHICLE = {
+    vehicle_id: 'v-1',
+    manufacturer: 'Volvo',
+    model: 'FH16',
+    registration_number: 'REG-42',
+    vin: 'YV2RT40A8NB123456',
+    year: '2024',
+  };
+  const ROUTE = {
+    route_id: 'r-1',
+    name: 'Depot to Customer A',
+    origin: 'Depot',
+    destination: 'Customer A',
+    estimated_distance_km: '12.5',
+  };
+
+  it('sends every field required by DriverCreate', () => {
+    const payload = buildDriverPayload(DRIVER);
+    expect(Object.keys(payload).sort()).toEqual([
+      'behavior_profile',
+      'driver_id',
+      'first_name',
+      'last_name',
+      'license_number',
+    ]);
+    expect(payload.license_number).toBe('LIC-9001');
+  });
+
+  it('sends every field required by VehicleCreate', () => {
+    const payload = buildVehiclePayload(VEHICLE);
+    expect(Object.keys(payload).sort()).toEqual([
+      'manufacturer',
+      'model',
+      'registration_number',
+      'vehicle_id',
+      'vin',
+      'year',
+    ]);
+    expect(payload.registration_number).toBe('REG-42');
+    expect(payload.vin).toBe('YV2RT40A8NB123456');
+  });
+
+  it('coerces the vehicle year to an integer inside the schema range', () => {
+    expect(buildVehiclePayload(VEHICLE).year).toBe(2024);
+    expect(Number.isInteger(buildVehiclePayload(VEHICLE).year)).toBe(true);
+    expect(buildVehiclePayload({ ...VEHICLE, year: '' }).year).toBeGreaterThanOrEqual(1980);
+  });
+
+  it('sends every field required by RouteCreate', () => {
+    const payload = buildRoutePayload(ROUTE);
+    expect(Object.keys(payload).sort()).toEqual([
+      'destination',
+      'estimated_distance_km',
+      'name',
+      'origin',
+      'route_id',
+    ]);
+    expect(payload.name).toBe('Depot to Customer A');
+    expect(payload.estimated_distance_km).toBe(12.5);
+  });
+
+  it('trims whitespace so padded input does not fail min_length', () => {
+    expect(buildDriverPayload({ ...DRIVER, license_number: '  LIC-9  ' }).license_number)
+      .toBe('LIC-9');
+  });
+
+  it('normalises a blank id to null so the backend mints a UUID', () => {
+    expect(buildDriverPayload({ ...DRIVER, driver_id: '   ' }).driver_id).toBeNull();
+    expect(buildVehiclePayload({ ...VEHICLE, vehicle_id: '' }).vehicle_id).toBeNull();
+    expect(buildRoutePayload({ ...ROUTE, route_id: '' }).route_id).toBeNull();
+  });
+});
+
+describe('Fleet tab form wiring', () => {
+  function renderFleetTab() {
+    return renderToString(
+      <FleetTab
+        drivers={[]}
+        vehicles={[]}
+        routes={[]}
+        onRefresh={() => {}}
+        notice={null}
+        onNotice={() => {}}
+      />
+    );
+  }
+
+  it('exposes an input for every mandatory create field', () => {
+    const html = renderFleetTab();
+    expect(html).toContain('License number');
+    expect(html).toContain('Registration number');
+    expect(html).toContain('VIN');
+    expect(html).toContain('Year');
+    expect(html).toContain('Name');
+  });
+
+  it('constrains the year input to the range the schema accepts', () => {
+    const html = renderFleetTab();
+    expect(html).toContain('min="1980"');
+    expect(html).toContain('max="2100"');
+  });
+});
+
+// ── M5.1 regression: launch must have an unambiguous target ───────────────
+//
+// The Overview previously did `scenarios.find(s => s.status === 'ready')`,
+// so with multiple Ready scenarios it silently launched whichever sorted
+// first instead of the scenario the administrator intended.
+
+describe('pickLaunchTarget — Overview launch targeting', () => {
+  const ready = (id, name) => ({ scenario_id: id, name, status: 'ready' });
+
+  it('targets the single Ready scenario', () => {
+    const { target, conflict } = pickLaunchTarget([
+      ready('s1', 'Alpha'),
+      { scenario_id: 's2', name: 'Beta', status: 'draft' },
+      { scenario_id: 's3', name: 'Gamma', status: 'running' },
+    ]);
+    expect(target.scenario_id).toBe('s1');
+    expect(conflict).toEqual([]);
+  });
+
+  it('refuses to guess when multiple scenarios are Ready', () => {
+    const { target, conflict } = pickLaunchTarget([ready('s1', 'Alpha'), ready('s2', 'Beta')]);
+    expect(target).toBeNull();
+    expect(conflict).toEqual(['Alpha', 'Beta']);
+  });
+
+  it('reports no target when nothing is Ready', () => {
+    expect(pickLaunchTarget([])).toEqual({ target: null, conflict: [] });
+    expect(
+      pickLaunchTarget([{ scenario_id: 's1', name: 'X', status: 'draft' }])
+    ).toEqual({ target: null, conflict: [] });
+  });
+
+  it('tolerates undefined input', () => {
+    expect(pickLaunchTarget(undefined)).toEqual({ target: null, conflict: [] });
+  });
+});
+
+describe('Overview controls reflect backend state', () => {
+  function overviewHtml(status, launchName = 'Alpha') {
+    return renderToString(
+      <OverviewTab
+        status={status}
+        launchName={launchName}
+        onLaunch={() => {}}
+        onStop={() => {}}
+        onReset={() => {}}
+        busy={false}
+      />
+    );
+  }
+
+  const disabledCount = (html) => (html.match(/disabled=""/g) || []).length;
+
+  it('names the exact launch target in the button label', () => {
+    expect(overviewHtml(null)).toContain('Launch \u201CAlpha\u201D');
+  });
+
+  it('falls back to a generic label when there is no target', () => {
+    expect(overviewHtml(null, null)).toContain('Launch scenario');
+  });
+
+  it('disables Stop while the default fleet runs (no scenario run to stop)', () => {
+    const html = overviewHtml({ running: true, scenario_id: null, vehicles: 6 });
+    expect(disabledCount(html)).toBe(1); // only Stop is disabled
+    expect(html).toContain('Stop');
+  });
+
+  it('enables Stop when a scenario run is active', () => {
+    const html = overviewHtml({
+      running: true,
+      scenario_id: 's1',
+      run_id: 'r1',
+      vehicles: 2,
+    });
+    expect(disabledCount(html)).toBe(0);
+  });
+
+  it('disables Stop when the simulation is idle', () => {
+    const html = overviewHtml({ running: false, scenario_id: null, vehicles: 0 });
+    expect(disabledCount(html)).toBe(1);
   });
 });

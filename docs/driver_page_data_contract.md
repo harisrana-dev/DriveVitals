@@ -79,6 +79,15 @@ Model that must be adopted:
 
 Frontend adapter must **stop merging (a) into (b)** (currently `live?.driver_safety_score ?? stats?.safety_score ?? 100`).
 
+**Status (M5.2):** implemented. (a) was removed — `DashboardBuilder._compute_driver_safety`
+/ `_compute_risk_level` and the `driver_safety_score` / `driver_risk_level` fields are gone
+from `VehicleDashboardSummary`, so the WebSocket dashboard payload no longer carries a
+second, contradictory score. `driverAdapter.js` ignores those fields even if an older server
+sends them, and `driverRiskLevel()` derives risk from the canonical statistics only
+(`riskFor(safety, aggression)`). The driver page shows one safety score (canonical
+`driver_statistics.safety_score`) plus live event state shown separately. Trip scoring (c)
+is unchanged: `trips.trip_score` remains a distinct, legitimate per-trip metric.
+
 ---
 
 ## 3. Field-by-field contract

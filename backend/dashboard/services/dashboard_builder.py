@@ -163,14 +163,6 @@ class DashboardBuilder:
 
         health_reasons = flatten_health_reasons(health)
 
-        driver_safety_score = self._compute_driver_safety(
-            snapshot.active_event_types,
-        )
-
-        driver_risk_level = self._compute_risk_level(
-            driver_safety_score,
-        )
-
         alert_texts = [
             _ALERT_LABELS.get(evt, evt)
             for evt in snapshot.active_event_types
@@ -259,8 +251,6 @@ class DashboardBuilder:
             transmission_health_status=transmission_status,
             fuel_system_health_status=fuel_system_status,
             health_reasons=health_reasons,
-            driver_safety_score=driver_safety_score,
-            driver_risk_level=driver_risk_level,
             active_alert_count=len(
                 snapshot.active_event_types
             ),
@@ -383,8 +373,6 @@ class DashboardBuilder:
             transmission_health_status=vehicle.transmission_health_status,
             fuel_system_health_status=vehicle.fuel_system_health_status,
             health_reasons=vehicle.health_reasons,
-            driver_safety_score=vehicle.driver_safety_score,
-            driver_risk_level=vehicle.driver_risk_level,
             active_alert_count=0,
             active_alert_text=None,
             active_event_types=(),
@@ -447,31 +435,3 @@ class DashboardBuilder:
         if speed_kmh <= 0:
             return "IDLE"
         return "ACTIVE"
-
-    @staticmethod
-    def _compute_driver_safety(
-        active_events: tuple[str, ...],
-    ) -> float:
-        score = 100.0
-        score -= len(active_events) * 12
-        if "speeding" in active_events:
-            score -= 8
-        if "harsh_braking" in active_events:
-            score -= 10
-        if "aggressive_throttle" in active_events:
-            score -= 6
-        if "high_rpm" in active_events:
-            score -= 6
-        return max(0.0, min(100.0, round(score, 1)))
-
-    @staticmethod
-    def _compute_risk_level(
-        driver_safety_score: float,
-    ) -> str:
-        if driver_safety_score >= 90:
-            return "low"
-        if driver_safety_score >= 70:
-            return "moderate"
-        if driver_safety_score >= 50:
-            return "high"
-        return "critical"

@@ -102,6 +102,27 @@ class PersistenceService:
         for task in list(self._background_tasks):
             task.cancel()
 
+    async def cancel_and_wait_background_tasks(self) -> None:
+        """Cancel every tracked background task **and await its
+        cancellation** (M5.2 deterministic teardown).
+
+        A bare ``task.cancel()`` without a subsequent await is
+        fire-and-forget: the task may still hold a checked-out SQLAlchemy
+        connection when the event loop closes, which surfaces as the
+        garbage-collector "non-checked-in connection" warning. Awaiting
+        here guarantees every session has unwound (``async with`` closed,
+        connection returned to the pool) before this coroutine returns.
+        """
+        tasks = list(self._background_tasks)
+        if not tasks:
+            return
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        # Yield once so the done callbacks that discard tasks from the
+        # tracked set have run before callers inspect it.
+        await asyncio.sleep(0)
+
     def _emit_alert_event(
         self,
         event_type: str,

@@ -157,8 +157,6 @@ The `data` object is the backend's `DashboardSnapshot` (defined in `backend/dash
         "brake_health": 85.0,
         "transmission_health": 89.0,
         "fuel_system_health": 86.0,
-        "driver_safety_score": 92.0,
-        "driver_risk_level": "low",
         "active_alert_count": 0,
         "active_alert_text": null,
         "active_event_types": ["speeding"],
@@ -178,6 +176,8 @@ The `data` object is the backend's `DashboardSnapshot` (defined in `backend/dash
 ```
 
 Field values are illustrative; the field names and structure match `VehicleDashboardSummary`. See `docs/API.md` for full payload references.
+
+Note: the dashboard snapshot intentionally carries **no safety score**. The only safety score / risk level shown in the UI comes from the canonical persisted driver statistics (`GET /api/v1/driver-statistics`, source field `driver_safety_score` removed in M5.2 in favour of `safety_score`).
 
 ### `/ws/trips` payload
 

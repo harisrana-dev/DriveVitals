@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import uuid
+import zlib
 
 from datetime import (
     datetime,
@@ -722,6 +723,10 @@ class DriveVitalsRuntime:
 
     async def run(
         self,
+        *,
+        seed: int | None = None,
+        simulation_speed: float = 1.0,
+        duration_seconds: int | None = None,
     ) -> None:
         """
         Run the fleet continuously.
@@ -735,22 +740,64 @@ class DriveVitalsRuntime:
             AnalyticsEngine
                 ↓
             AnalyticsSnapshotStream
+
+        Per-run options (M5.2: these fields are functional, not decorative):
+
+        - ``seed``: seeds every vehicle's OBD generator so the same seed
+          with the same fleet configuration reproduces the same telemetry
+          values. ``None`` derives a per-run fallback seed from the run id.
+        - ``simulation_speed``: wall-clock speed multiplier. Simulated time
+          always advances ``tick_seconds`` per tick; the multiplier only
+          changes how fast ticks happen in real time (1.0 = real time,
+          4.0 = four times faster). Values <= 0 fall back to 1.0.
+        - ``duration_seconds``: stop the run once that much *simulated*
+          time has elapsed, even if trips remain in progress (in-progress
+          trips are then handled exactly as after a manual stop).
         """
 
         self._running = True
 
         self._simulation_run_id = str(uuid.uuid4())
         self._simulation_start_time = datetime.now(timezone.utc)
-        run_seed = hash(self._simulation_run_id) & 0x7FFFFFFF
 
         start_time = self._simulation_start_time
+
+        speed = (
+            simulation_speed
+            if simulation_speed is not None and simulation_speed > 0
+            else 1.0
+        )
+        sleep_seconds = self._tick_seconds / speed
+
+        deadline = (
+            start_time + timedelta(seconds=duration_seconds)
+            if duration_seconds is not None and duration_seconds > 0
+            else None
+        )
+
+        if seed is not None:
+            run_seed = seed & 0x7FFFFFFF
+        else:
+            # Fallback for runs without a scenario seed. ``hash()`` on str
+            # is salted per interpreter, which made the old value
+            # unreproducible even for the same run id; crc32 is stable.
+            run_seed = (
+                zlib.crc32(self._simulation_run_id.encode("utf-8"))
+                & 0x7FFFFFFF
+            )
 
         logger.info(
             "Simulation started  "
             "run_id=%s  "
-            "start_time=%s",
+            "start_time=%s  "
+            "seed=%s  "
+            "speed=%sx  "
+            "duration=%s",
             self._simulation_run_id,
             start_time.isoformat(),
+            run_seed,
+            speed,
+            duration_seconds,
         )
 
         # --------------------------------------------------------------
@@ -988,6 +1035,19 @@ class DriveVitalsRuntime:
             and self._fleet.active_runners()
         ):
 
+            # Enforce the configured scenario duration on simulated time.
+            # Checked before the tick so the run never overshoots the
+            # deadline by a tick; in-progress trips are left exactly as a
+            # manual stop would leave them (aborted by the next launch).
+            if deadline is not None and now >= deadline:
+                logger.info(
+                    "Fleet run duration reached run_id=%s duration=%ss; "
+                    "stopping run",
+                    self._simulation_run_id,
+                    duration_seconds,
+                )
+                break
+
             # The pre-tick vehicle set is recomputed every iteration so a
             # failed tick can never leave the completion tracker pointing
             # at vehicles that have already left the active set.
@@ -1099,7 +1159,7 @@ class DriveVitalsRuntime:
             )
 
             await asyncio.sleep(
-                self._tick_seconds
+                sleep_seconds
             )
 
     def _finalize_trip_metrics(

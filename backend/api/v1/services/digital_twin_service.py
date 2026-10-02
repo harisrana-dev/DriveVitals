@@ -502,6 +502,8 @@ class DigitalTwinService:
             scenario_name=scenario.name,
             run_id=run.run_id,
             seed=scenario.seed,
+            simulation_speed=scenario.simulation_speed,
+            duration_seconds=scenario.duration_seconds,
         )
         return run, status
 

@@ -166,12 +166,10 @@ function DrawerContent({ driver, activeTab, onTabChange, onClose }) {
 }
 
 function SummaryBlock({ driver, trend, TrendIcon }) {
-  const relativeTime = useRelativeTime(driver.lastActive);
   return (
     <div style={{ flexShrink: 0, padding: '16px 20px 0', boxSizing: 'border-box' }}>
-      <DualScoreBlocks
+      <SafetyScoreBlock
         driver={driver}
-        relativeTime={relativeTime}
         trend={trend}
         TrendIcon={TrendIcon}
       />
@@ -366,52 +364,41 @@ function Header({ driver, onClose, statusStyle }) {
   );
 }
 
-function DualScoreBlocks({ driver, relativeTime, trend, TrendIcon }) {
+function SafetyScoreBlock({ driver, trend, TrendIcon }) {
   const historical = driver.historical || {};
-  const hasLive = driver.status === 'active' && driver.live?.score != null;
 
+  // Single authoritative safety score (M5.2): canonical persisted
+  // driver statistics only. The old "Live Score" block rendered a
+  // fabricated momentary value that could contradict this number; live
+  // telemetry and active event state are shown on the Live tab and as
+  // event flags instead.
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 10,
-      }}
-    >
-      <ScoreBlock
-        label="Live Score"
-        score={driver.live?.score ?? null}
-        subtitle={hasLive ? `Live now · ${relativeTime}` : 'No live telemetry — driver not active'}
-        riskLevel={driver.live?.riskLevel || 'unknown'}
-        accent={hasLive ? 'var(--color-accent)' : 'var(--color-text-muted)'}
-      />
-      <ScoreBlock
-        label="Historical Safety"
-        score={historical.safetyScore}
-        subtitle={
-          historical.scoreQuality === 'insufficient_distance'
-            ? `Score unreliable — ${historical.totalDistanceKm != null ? `${historical.totalDistanceKm.toFixed(1)} km` : 'insufficient distance'} recorded`
-            : historical.scoreQuality === 'insufficient_trips'
-            ? 'Score unreliable — too few completed trips'
-            : historical.scoreQuality === 'no_data'
-            ? 'No trip data available yet'
-            : historical.grade
-            ? `Grade ${historical.grade} over ${historical.tripsCompleted ?? 0} trips`
-            : 'No completed-trip score recorded yet'
-        }
-        riskLevel={historical.riskLevel || 'unknown'}
-        grade={historical.grade}
-        accent={
-          historical.safetyScore == null
-            ? 'var(--color-text-muted)'
-            : historical.safetyScore >= 90 ? 'var(--color-green)' :
-              historical.safetyScore >= 70 ? 'var(--color-amber)' : 'var(--color-red)'
-        }
-        trend={trend}
-        TrendIcon={TrendIcon}
-        scoreDelta={historical.scoreDelta ?? null}
-      />
-    </div>
+    <ScoreBlock
+      label="Safety Score"
+      score={historical.safetyScore}
+      subtitle={
+        historical.scoreQuality === 'insufficient_distance'
+          ? `Score unreliable — ${historical.totalDistanceKm != null ? `${historical.totalDistanceKm.toFixed(1)} km` : 'insufficient distance'} recorded`
+          : historical.scoreQuality === 'insufficient_trips'
+          ? 'Score unreliable — too few completed trips'
+          : historical.scoreQuality === 'no_data'
+          ? 'No trip data available yet'
+          : historical.grade
+          ? `Grade ${historical.grade} over ${historical.tripsCompleted ?? 0} trips`
+          : 'No completed-trip score recorded yet'
+      }
+      riskLevel={historical.riskLevel || 'unknown'}
+      grade={historical.grade}
+      accent={
+        historical.safetyScore == null
+          ? 'var(--color-text-muted)'
+          : historical.safetyScore >= 90 ? 'var(--color-green)' :
+            historical.safetyScore >= 70 ? 'var(--color-amber)' : 'var(--color-red)'
+      }
+      trend={trend}
+      TrendIcon={TrendIcon}
+      scoreDelta={historical.scoreDelta ?? null}
+    />
   );
 }
 

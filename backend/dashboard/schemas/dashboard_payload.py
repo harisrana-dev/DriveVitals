@@ -41,9 +41,11 @@ class VehicleDashboardSummary:
 
     overall_health_score: float | None
 
-    driver_safety_score: float
-
-    driver_risk_level: str
+    # M5.2: the fabricated live "driver_safety_score" / "driver_risk_level"
+    # pair was removed. The ONLY safety score exposed to the UI is the
+    # canonical persisted driver_statistics.safety_score (served by
+    # GET /driver-statistics); live event state remains available through
+    # active_event_types / the per-event boolean flags below.
 
     active_alert_count: int
 

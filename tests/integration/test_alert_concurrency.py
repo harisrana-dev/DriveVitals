@@ -400,7 +400,7 @@ async def test_shutdown_cancels_background_tasks():
         assert task in svc._background_tasks
 
         controller = SimulationController(_StubRuntime(svc))
-        controller.shutdown()
+        await controller.shutdown()
         try:
             await task
         except asyncio.CancelledError:

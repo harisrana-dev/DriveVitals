@@ -28,31 +28,31 @@ describe('computeGrade', () => {
 });
 
 describe('driverRiskLevel', () => {
-  it('prefers live risk while the driver is active', () => {
+  it('uses canonical historical risk even while the driver is active', () => {
     const d = {
       status: 'active',
-      live: { riskLevel: 'critical' },
+      live: { status: 'active' },
       historical: { riskLevel: 'low' },
     };
-    expect(driverRiskLevel(d)).toBe('critical');
+    expect(driverRiskLevel(d)).toBe('low');
   });
 
   it('falls back to historical risk when not active', () => {
     const d = {
       status: 'off_duty',
-      live: { riskLevel: 'critical' },
+      live: { status: 'off_duty' },
       historical: { riskLevel: 'moderate' },
     };
     expect(driverRiskLevel(d)).toBe('moderate');
   });
 
-  it('never conflates live and historical: active driver ignores historical', () => {
+  it('returns unknown when canonical statistics carry no risk level', () => {
     const d = {
       status: 'active',
-      live: { riskLevel: 'unknown' },
-      historical: { riskLevel: 'high' },
+      live: { status: 'active' },
+      historical: { riskLevel: 'unknown' },
     };
-    expect(driverRiskLevel(d)).toBe('high');
+    expect(driverRiskLevel(d)).toBe('unknown');
   });
 
   it('returns unknown for drivers with no score data', () => {
@@ -150,9 +150,13 @@ describe('adaptDrivers', () => {
 
   const [d] = adaptDrivers(rawDrivers, stats, live, trips);
 
-  it('separates live and historical score groups without fabrication', () => {
-    expect(d.live.score).toBe(74);
-    expect(d.live.riskLevel).toBe('high');
+  it('separates live state from the single canonical score without fabrication', () => {
+    // M5.2: even when an older payload still carries the retired
+    // driver_safety_score / driver_risk_level fields (kept in the fixture
+    // above on purpose), the adapter must ignore them — there is exactly
+    // one authoritative safety score and it lives under historical.*.
+    expect(d.live.score).toBeUndefined();
+    expect(d.live.riskLevel).toBeUndefined();
     expect(d.live.status).toBe('active');
     expect(d.live.vehicleId).toBe('V9');
     expect(d.historical.safetyScore).toBe(92);
@@ -163,6 +167,8 @@ describe('adaptDrivers', () => {
     expect(d.historical.trend).toBeNull();
     expect(d.historical.scoreDelta).toBeNull();
     expect(d.historical.percentile).toBeNull();
+    // Risk exposed to the UI can only come from the canonical score.
+    expect(driverRiskLevel(d)).toBe(d.historical.riskLevel);
   });
 
   it('keeps live telemetry and active events under live.*', () => {
@@ -197,14 +203,14 @@ describe('adaptDrivers', () => {
 });
 
 describe('adaptDrivers with no live snapshot', () => {
-  it('emits a null live score — never a fabricated 100', () => {
+  it('emits a null canonical score — never a fabricated 100', () => {
     const [d] = adaptDrivers(
       [{ driver_id: 'D2', first_name: 'Bob', last_name: 'Oden' }],
       [{ driver_id: 'D2', safety_score: 55, total_trips: 1, total_distance_km: 10 }],
       [],
       []
     );
-    expect(d.live.score).toBeNull();
+    expect(d.live.score).toBeUndefined();
     expect(d.historical.safetyScore).toBe(55);
     expect(d.historical.grade).toBe('F');
     expect(d.historical.riskLevel).toBe('critical');

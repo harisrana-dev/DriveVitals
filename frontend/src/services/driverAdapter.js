@@ -6,17 +6,24 @@ import { tripIsHistorical } from '../utils/trips';
  *
  * Every field traces to a real source, split into two NEVER-conflated
  * groups:
- *  - `live.*`      — current telemetry / operational state and the live
- *                    driver safety score broadcast in the dashboard
- *                    WebSocket snapshot.
- *  - `historical.*`— persisted driver statistics (GET /driver-statistics).
+ *  - `live.*`      — current telemetry / operational state from the live
+ *                    dashboard WebSocket snapshot (speed, RPM, active
+ *                    events, vehicle status). Live event state is NEVER
+ *                    presented as a safety score.
+ *  - `historical.*`— persisted driver statistics (GET /driver-statistics),
+ *                    the ONLY source of safety score / grade / risk level.
  *  - `behaviour`   — recorded behaviour event counts plus per-100 km
  *                    rates normalised by recorded distance.
  *
  * Unknown values are represented explicitly as `null` (rendered as "—")
  * and are never replaced with defaults like 100, 0 or fabricated counts.
- * A driver without a live snapshot has no live score (null), which is
+ * A driver without persisted statistics has no score (null), which is
  * NOT the same as a score of 100.
+ *
+ * M5.2: the dashboard WebSocket's fabricated `driver_safety_score` /
+ * `driver_risk_level` fields were removed backend-side and are ignored
+ * here even if an older server still sends them — there is exactly one
+ * authoritative safety score (canonical `driver_statistics.safety_score`).
  */
 
 /**
@@ -123,22 +130,12 @@ function buildBehaviourEvents(stats, live, totalDistanceKm) {
   };
 }
 
-function mapLiveRiskLevel(level) {
-  if (
-    level === 'low' ||
-    level === 'moderate' ||
-    level === 'high' ||
-    level === 'critical'
-  ) {
-    return level;
-  }
-  return 'unknown';
-}
-
 function buildLive(driver, live) {
   return {
-    score: live?.driver_safety_score == null ? null : Math.round(live.driver_safety_score),
-    riskLevel: mapLiveRiskLevel(live?.driver_risk_level),
+    // NOTE (M5.2): no `score` / `riskLevel` here. The dashboard payload's
+    // fabricated driver_safety_score/driver_risk_level pair was removed;
+    // safety score and risk come exclusively from canonical persisted
+    // driver statistics via `historical.*`.
     status: mapStatus(live?.operational_status),
     vehicleId: live?.vehicle_id ?? null,
     vehicleName: live?.vehicle_name || null,
@@ -252,15 +249,14 @@ export function adaptDrivers(drivers, statistics, liveVehicles, trips) {
 }
 
 /**
- * The operative risk level for a driver: the live risk while the driver
- * is actively driving (the urgent signal), otherwise the historical risk
- * from persisted statistics, otherwise 'unknown'. Never both at once.
+ * The operative risk level for a driver: always derived from the
+ * canonical persisted driver statistics (GET /driver-statistics) via the
+ * single `riskFor(safety, aggression)` mapping. There is no separate
+ * "live" risk value — live event state is shown as event flags, not as a
+ * competing score (M5.2 truthfulness fix).
  */
 export function driverRiskLevel(d) {
   if (!d) return 'unknown';
-  if (d.status === 'active' && d.live?.riskLevel && d.live.riskLevel !== 'unknown') {
-    return d.live.riskLevel;
-  }
   if (d.historical?.riskLevel) return d.historical.riskLevel;
   return 'unknown';
 }

@@ -274,7 +274,10 @@ class TestAlertsLifecycleWiring:
             original_manager = alerts_module.websocket_manager
             alerts_module.websocket_manager = manager
 
-            async def _noop() -> None:
+            async def _noop(**_options) -> None:
+                # Accepts the runtime's per-run options (seed,
+                # simulation_speed, duration_seconds) so the stub matches
+                # the real ``DriveVitalsRuntime.run`` contract.
                 return None
 
             gen = None

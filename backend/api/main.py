@@ -12,6 +12,8 @@ from fastapi import (
     FastAPI,
 )
 
+from sqlalchemy import update as sa_update
+
 from fastapi.middleware.cors import (
     CORSMiddleware,
 )
@@ -72,12 +74,18 @@ from backend.db.repositories import (
     VehicleRepository,
 )
 
+from backend.db.models.scenario import (
+    SimulationRun,
+    SimulationScenario,
+)
+
 from backend.db.persistence_service import (
     PersistenceService,
 )
 
 from backend.db.session import (
     async_session_factory,
+    close_db,
 )
 
 from backend.trips.store.trip_store import (
@@ -97,6 +105,54 @@ runtime = (
 )
 
 simulation_controller = init_simulation_controller(runtime)
+
+
+async def _finalize_completed_run(
+    scenario_id: str,
+    run_id: str,
+) -> None:
+    """Mark a scenario run that finished naturally as completed.
+
+    Invoked by :class:`SimulationController` (via ``schedule_background``,
+    so it is tracked and drained like every other DB task) when a run task
+    ends without cancellation — all trips completed or the configured
+    ``duration_seconds`` elapsed. Both updates are guarded on the current
+    ``running`` status so a concurrent manual stop/shutdown can never be
+    overwritten by this callback.
+    """
+    try:
+        async with async_session_factory() as session:
+            now = datetime.now(timezone.utc)
+            run_result = await session.execute(
+                sa_update(SimulationRun)
+                .where(
+                    SimulationRun.run_id == run_id,
+                    SimulationRun.status == "running",
+                )
+                .values(status="completed", end_time=now)
+            )
+            if run_result.rowcount:
+                await session.execute(
+                    sa_update(SimulationScenario)
+                    .where(
+                        SimulationScenario.scenario_id == scenario_id,
+                        SimulationScenario.status == "running",
+                    )
+                    .values(status="completed")
+                )
+            await session.commit()
+    except Exception:
+        # Best-effort: the run/scenario rows are reconciled by
+        # complete_active_runs() at shutdown if this fails.
+        print(
+            f"Failed to finalize completed run {run_id} "
+            f"for scenario {scenario_id}"
+        )
+
+
+simulation_controller.set_run_finished_callback(
+    _finalize_completed_run
+)
 
 snapshot_publisher = DashboardSnapshotPublisher(
     queue=snapshot_queue,
@@ -269,10 +325,20 @@ async def lifespan(
     yield
 
     # --------------------------------------------------------------
-    # Stop DriveVitals runtime
+    # Deterministic shutdown ordering (M5.2):
+    #   1. stop accepting new runtime work (runtime.stop)
+    #   2. cancel the simulation run task AND await it
+    #   3. drain tracked background persistence tasks so every
+    #      AsyncSession closes and its connection returns to the pool
+    #   4. reconcile persisted state / stop broadcast workers
+    #   5. dispose the SQLAlchemy engine while the loop is still alive
+    #   6. let FastAPI/Uvicorn finish
+    # Fire-and-forget cancellation here previously left in-flight
+    # asyncpg work to the garbage collector, producing CancelledError
+    # cascades and "non-checked-in connection" SAWarnings.
     # --------------------------------------------------------------
 
-    simulation_controller.shutdown()
+    await simulation_controller.shutdown()
 
     # Mark any scenario/run still flagged "running" as stopped so the
     # persisted Digital Twin lifecycle tracks reality.
@@ -339,7 +405,19 @@ async def lifespan(
         snapshot_publisher
     )
 
-    print("DriveVitals runtime stopped")
+    # --------------------------------------------------------------
+    # Dispose the SQLAlchemy engine/pool. All sessions are closed and
+    # all background tasks awaited by this point, so every pooled
+    # connection can be closed cleanly instead of being torn down by
+    # the garbage collector after the event loop is gone.
+    # --------------------------------------------------------------
+
+    await close_db()
+
+    # flushed so the marker appears in order in a captured log (plain
+    # print() is block-buffered when stdout is redirected to a file, which
+    # would show it after uvicorn's own shutdown lines).
+    print("DriveVitals runtime stopped", flush=True)
 
 
 app = FastAPI(

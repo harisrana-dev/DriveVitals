@@ -15,7 +15,19 @@ load_dotenv()
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override sqlalchemy.url from environment if available
+# ---------------------------------------------------------------------------
+# Database URL.
+#
+# The URL committed in alembic.ini is intentionally credential-free: no
+# password — real or placeholder — may live in tracked configuration. The
+# real credentials come from the same environment mechanism the application
+# uses (POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_HOST / POSTGRES_PORT /
+# POSTGRES_DB), and a missing password fails loudly instead of silently
+# falling back to committed credentials.
+#
+# Offline mode (`alembic ... --sql`) never connects, so it keeps the
+# credential-free URL for rendering.
+# ---------------------------------------------------------------------------
 db_password = os.getenv("POSTGRES_PASSWORD")
 if db_password:
     db_user = os.getenv("POSTGRES_USER", "postgres")
@@ -25,6 +37,13 @@ if db_password:
     config.set_main_option(
         "sqlalchemy.url",
         f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}",
+    )
+elif not context.is_offline_mode():
+    raise RuntimeError(
+        "POSTGRES_PASSWORD environment variable is not set. "
+        "Copy .env.example to .env and configure your database credentials. "
+        "The URL in alembic.ini is credential-free and cannot be connected "
+        "with."
     )
 
 # Interpret the config file for Python logging.

@@ -173,6 +173,11 @@ def require_role(*roles: str):
     An authenticated user without a required role receives a 403
     ``INSUFFICIENT_PERMISSIONS`` — never a 401, which is reserved for
     unauthenticated requests.
+
+    The returned guard carries ``__authz_roles__`` so the authorization
+    perimeter can be audited by inspection (see
+    ``tests/api/test_authorization_perimeter.py``): every route's policy
+    is discoverable from the app object rather than from documentation.
     """
 
     async def _require(
@@ -185,11 +190,18 @@ def require_role(*roles: str):
             )
         return current_user
 
+    _require.__authz_roles__ = frozenset(roles)
     return _require
 
 
 require_admin = require_role("admin")
 require_operator_or_admin = require_role("operator", "admin")
+
+#: Marks a dependency as an authentication guard regardless of role.
+#: ``require_authenticated_user`` accepts any authenticated principal.
+require_authenticated_user.__authz_roles__ = frozenset(
+    {"admin", "operator", "viewer"}
+)
 
 
 async def get_settings_service(

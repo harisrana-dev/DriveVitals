@@ -15,6 +15,7 @@ state that belongs to the fleet/telemetry domain.
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable, List, Optional
+import zlib
 
 from backend.fleet.models.driver import Driver
 from backend.fleet.models.route import Route
@@ -43,13 +44,33 @@ class VehicleRunner:
     _generator: OBDGenerator = field(init=False)
 
     def __post_init__(self) -> None:
-        vehicle_seed = self.run_seed + hash(self.vehicle.vehicle_id) & 0xFFFFFFFF
+        self._rebuild_generator()
+
+    def _rebuild_generator(self) -> None:
+        """(Re)create the OBD generator from the runner's current ``run_seed``.
+
+        Built again in :meth:`start` because the runtime assigns
+        ``run_seed`` to the runner *after* FleetRunner constructs it —
+        without the reseed, every run would be seeded with the default 0
+        and the scenario seed had no effect (M5.2 determinism fix).
+
+        The per-vehicle offset uses ``zlib.crc32`` instead of ``hash()``:
+        str hashing is salted per interpreter, so ``hash(vehicle_id)``
+        produced a different "deterministic" seed on every process start.
+        """
+        vehicle_seed = self.run_seed + (
+            zlib.crc32(self.vehicle.vehicle_id.encode("utf-8"))
+            & 0xFFFFFFFF
+        )
         self._generator = OBDGenerator(
             behavior_profile=self.driver.behavior_profile,
             seed=vehicle_seed,
         )
 
     def start(self, now: Optional[datetime] = None) -> None:
+        # Reseed here so the run_seed assigned by DriveVitalsRuntime.run()
+        # actually governs this run's telemetry stream.
+        self._rebuild_generator()
         self.trip.start(starting_odometer_km=self.vehicle.odometer_km, at=now)
         self.vehicle.start_engine()
         self.runtime_state.reset()

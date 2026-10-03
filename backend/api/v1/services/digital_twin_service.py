@@ -13,10 +13,13 @@ Domain rules enforced here:
   (i.e. the application runtime is wired up).
 """
 
+import functools
 import logging
 import uuid
 
+from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -33,6 +36,38 @@ logger = logging.getLogger(__name__)
 
 VALID_SCENARIO_STATUSES = {"draft", "ready", "running", "completed", "failed"}
 VALID_RUN_STATUSES = {"ready", "running", "completed", "failed", "stopped"}
+
+CONFLICT_DETAIL = (
+    "Conflict: a driver, vehicle, route, assignment or scenario with these "
+    "unique values already exists"
+)
+
+
+def _translates_conflicts(method):
+    """Translate a database constraint violation into ``409 Conflict``.
+
+    Control-plane fixtures are protected by unique indexes (vehicle VIN and
+    registration number, driver licence number, assignment triples) and by
+    foreign keys. Violating one of those is a client-correctable conflict, not
+    a server fault: the database raises ``IntegrityError`` on flush, which
+    without this translation escapes the router as an unhandled ``500`` with a
+    database traceback in the log. The failed transaction is rolled back first
+    so the request-scoped session stays usable.
+    """
+
+    @functools.wraps(method)
+    async def wrapper(self, *args, **kwargs):
+        try:
+            return await method(self, *args, **kwargs)
+        except IntegrityError as exc:
+            await self._session.rollback()
+            logger.info(
+                "Digital Twin write rejected: constraint violation (%s)",
+                exc.orig,
+            )
+            raise HTTPException(status_code=409, detail=CONFLICT_DETAIL) from exc
+
+    return wrapper
 
 
 class DigitalTwinService:
@@ -56,8 +91,6 @@ class DigitalTwinService:
 
     def _controller_or_400(self) -> SimulationController:
         if self._controller is None:
-            from fastapi import HTTPException
-
             raise HTTPException(
                 status_code=503,
                 detail="Simulation controller is not available",
@@ -68,6 +101,7 @@ class DigitalTwinService:
     # Drivers
     # ------------------------------------------------------------------
 
+    @_translates_conflicts
     async def create_driver(self, payload: schemas.DriverCreate) -> PersistedDriver:
         driver_id = payload.driver_id or str(uuid.uuid4())
         driver = await self._drivers.create(
@@ -81,6 +115,7 @@ class DigitalTwinService:
         await self._session.commit()
         return driver
 
+    @_translates_conflicts
     async def update_driver(
         self, driver_id: str, payload: schemas.DriverUpdate
     ) -> PersistedDriver | None:
@@ -96,6 +131,7 @@ class DigitalTwinService:
             await self._session.commit()
         return driver
 
+    @_translates_conflicts
     async def delete_driver(self, driver_id: str) -> bool:
         deleted = await self._drivers.delete(driver_id)
         if deleted:
@@ -109,6 +145,7 @@ class DigitalTwinService:
     # Vehicles
     # ------------------------------------------------------------------
 
+    @_translates_conflicts
     async def create_vehicle(self, payload: schemas.VehicleCreate) -> PersistedVehicle:
         vehicle_id = payload.vehicle_id or str(uuid.uuid4())
         vehicle = await self._vehicles.create(
@@ -128,6 +165,7 @@ class DigitalTwinService:
         await self._session.commit()
         return vehicle
 
+    @_translates_conflicts
     async def update_vehicle(
         self, vehicle_id: str, payload: schemas.VehicleUpdate
     ) -> PersistedVehicle | None:
@@ -149,6 +187,7 @@ class DigitalTwinService:
             await self._session.commit()
         return vehicle
 
+    @_translates_conflicts
     async def delete_vehicle(self, vehicle_id: str) -> bool:
         deleted = await self._vehicles.delete(vehicle_id)
         if deleted:
@@ -162,6 +201,7 @@ class DigitalTwinService:
     # Routes
     # ------------------------------------------------------------------
 
+    @_translates_conflicts
     async def create_route(self, payload: schemas.RouteCreate) -> PersistedRoute:
         route_id = payload.route_id or str(uuid.uuid4())
         route = await self._routes.create(
@@ -177,6 +217,7 @@ class DigitalTwinService:
         await self._session.commit()
         return route
 
+    @_translates_conflicts
     async def update_route(
         self, route_id: str, payload: schemas.RouteUpdate
     ) -> PersistedRoute | None:
@@ -194,6 +235,7 @@ class DigitalTwinService:
             await self._session.commit()
         return route
 
+    @_translates_conflicts
     async def delete_route(self, route_id: str) -> bool:
         deleted = await self._routes.delete(route_id)
         if deleted:
@@ -219,6 +261,7 @@ class DigitalTwinService:
         if await self._routes.get(route_id) is None:
             raise HTTPException(status_code=404, detail=f"Route {route_id} not found")
 
+    @_translates_conflicts
     async def create_assignment(
         self, payload: schemas.AssignmentCreate
     ) -> PersistedAssignment:
@@ -249,6 +292,7 @@ class DigitalTwinService:
         await self._session.commit()
         return assignment
 
+    @_translates_conflicts
     async def update_assignment(
         self, assignment_id: str, payload: schemas.AssignmentUpdate
     ) -> PersistedAssignment | None:
@@ -273,6 +317,7 @@ class DigitalTwinService:
             await self._session.commit()
         return assignment
 
+    @_translates_conflicts
     async def delete_assignment(self, assignment_id: str) -> bool:
         deleted = await self._assignments.delete(assignment_id)
         if deleted:
@@ -289,6 +334,7 @@ class DigitalTwinService:
     # Scenarios
     # ------------------------------------------------------------------
 
+    @_translates_conflicts
     async def create_scenario(
         self, payload: schemas.ScenarioCreate, assignment_ids: list[str] | None = None
     ) -> SimulationScenario:
@@ -306,6 +352,7 @@ class DigitalTwinService:
             await self._session.commit()
         return scenario
 
+    @_translates_conflicts
     async def update_scenario(
         self, scenario_id: str, payload: schemas.ScenarioUpdate
     ) -> SimulationScenario | None:
@@ -335,6 +382,7 @@ class DigitalTwinService:
         )
         await self._session.commit()
         return updated
+    @_translates_conflicts
     async def delete_scenario(self, scenario_id: str) -> bool:
         scenario = await self._scenarios.get(scenario_id)
         if scenario is None:
@@ -363,6 +411,7 @@ class DigitalTwinService:
     async def list_scenarios(self, limit: int, offset: int, status: str | None = None):
         return await self._scenarios.list(limit, offset, status=status)
 
+    @_translates_conflicts
     async def set_scenario_assignments(
         self, scenario_id: str, assignment_ids: list[str]
     ) -> SimulationScenario:
@@ -390,6 +439,7 @@ class DigitalTwinService:
         await self._session.commit()
         return scenario
 
+    @_translates_conflicts
     async def activate_scenario(
         self, scenario_id: str
     ) -> SimulationScenario | None:
@@ -424,6 +474,7 @@ class DigitalTwinService:
     # Runs & launch
     # ------------------------------------------------------------------
 
+    @_translates_conflicts
     async def launch_scenario(
         self, scenario_id: str
     ) -> tuple[SimulationRun, dict]:
@@ -507,6 +558,7 @@ class DigitalTwinService:
         )
         return run, status
 
+    @_translates_conflicts
     async def stop_scenario(self, scenario_id: str) -> dict | None:
         from fastapi import HTTPException
 
@@ -531,6 +583,7 @@ class DigitalTwinService:
             await self._session.commit()
         return status
 
+    @_translates_conflicts
     async def reset(self) -> dict:
         controller = self._controller_or_400()
         return await controller.reset()
@@ -547,6 +600,7 @@ class DigitalTwinService:
             }
         return self._controller.status()
 
+    @_translates_conflicts
     async def complete_active_runs(self) -> None:
         """Mark any running scenario/run as stopped/failed on shutdown.
 

@@ -9,44 +9,67 @@
 
 ```text
 tests/
-├── unit/              # Fast, isolated tests
+├── unit/                       # Fast, isolated tests
+│   ├── test_active_trip_snapshot.py
 │   ├── test_analytics_context.py
 │   ├── test_analytics_engine.py
-│   ├── test_runtime_state_store.py
-│   ├── test_runtime_trip_completion.py
+│   ├── test_driver_statistics_engine.py
+│   ├── test_health_reasons.py
 │   ├── test_runtime_resilience.py
 │   ├── test_runtime_stale_trip_abort.py
+│   ├── test_runtime_state_store.py
+│   ├── test_runtime_trip_completion.py
+│   ├── test_safety_score_sources.py
 │   ├── test_safety_scoring.py
+│   ├── test_scenario_parameters.py
 │   ├── test_trip_snapshot_contract.py
-│   └── test_active_trip_snapshot.py
-├── integration/       # Multi-component tests
+│   └── test_vehicle_runner_peak_speed.py
+├── integration/                # Multi-component tests
+│   ├── test_active_trip_invariant.py
+│   ├── test_alert_concurrency.py
+│   ├── test_alert_lifecycle.py
 │   ├── test_fleet_runtime.py
 │   ├── test_intelligence_consumers.py
 │   ├── test_intelligence_persistence.py
+│   ├── test_runtime_shutdown.py
+│   ├── test_scenario_assignments.py
+│   ├── test_simulation_controller.py
 │   ├── test_stale_trip_abort_persistence.py
-│   ├── test_telemetry_brake_percent.py
-│   └── test_active_trip_invariant.py
-└── api/               # FastAPI endpoint tests
-    ├── test_vehicles.py
-    ├── test_drivers.py
-    ├── test_routes.py
-    ├── test_trips.py
-    ├── test_telemetry.py
-    ├── test_vehicle_health.py
-    ├── test_driver_statistics.py
-    ├── test_maintenance.py
+│   └── test_telemetry_brake_percent.py
+└── api/                        # FastAPI endpoint tests
     ├── test_alerts.py
+    ├── test_auth.py
+    ├── test_authorization.py
+    ├── test_authorization_perimeter.py
+    ├── test_bootstrap_admin.py
+    ├── test_digital_twin.py
+    ├── test_drivers.py
+    ├── test_driver_statistics.py
+    ├── test_empty.py
+    ├── test_lifespan_shutdown.py
+    ├── test_maintenance.py
+    ├── test_maintenance_reconciliation.py
+    ├── test_routes.py
+    ├── test_settings.py
+    ├── test_settings_integration.py
     ├── test_system.py
-    ├── test_websockets.py
-    └── test_empty.py
+    ├── test_telemetry.py
+    ├── test_trips.py
+    ├── test_trip_deletion.py
+    ├── test_vehicles.py
+    ├── test_vehicle_health.py
+    └── test_websockets.py
 ```
+
+Additionally, `tests/test_analytics_api.py` sits at the `tests/` root. Total: 48 backend test files, 525 passing tests. The frontend has 23 Vitest suites (265 passing tests) under `frontend/src/**/*.test.js(x)`.
 
 ---
 
 ## 2. Running Tests
 
 ```bash
-pytest
+pytest                      # backend: 525 tests
+cd frontend && npm test     # frontend: 23 suites, 265 tests
 ```
 
 Configuration (`pytest.ini`):
@@ -56,7 +79,7 @@ asyncio_mode = auto
 testpaths = tests
 ```
 
-Uses `pytest-asyncio` for async tests and `httpx` for async FastAPI test clients.
+Uses `pytest-asyncio` for async tests and `httpx` for async FastAPI test clients. The API layer needs a live PostgreSQL instance: set `POSTGRES_PASSWORD`, and point `POSTGRES_DB` at a dedicated database whose name ends in `_test` (the suite refuses to run otherwise, because it drops and recreates the schema).
 
 ---
 
@@ -83,9 +106,9 @@ Uses `pytest-asyncio` for async tests and `httpx` for async FastAPI test clients
 
 ### 3.3 API Tests (`tests/api/`)
 
-- One test file per router, exercising `GET` and (for alerts) `POST` endpoints.
-- Tests use a live/test database session via FastAPI's dependency injection.
-- WebSocket tests verify connection lifecycle and message receipt.
+- One test file per router, exercising `GET` and (for alerts, trips, maintenance, auth, digital twin, settings) the supported mutations.
+- Tests use a live test database session via FastAPI's dependency injection.
+- WebSocket tests verify connection lifecycle and message receipt, including session enforcement (unauthenticated upgrades are rejected).
 
 ---
 
@@ -108,9 +131,8 @@ Uses `pytest-asyncio` for async tests and `httpx` for async FastAPI test clients
 ## 5. Known Limitations
 
 - **No coverage reporting configured.** The suite does not enforce a minimum coverage threshold.
-- **No CI workflow.** Tests must be run locally.
-- **API tests use a shared test database session** rather than fully isolated fixtures per test. This is acceptable for current development but should be hardened before treating the suite as a production regression gate.
-- **`test_empty.py`** exists but currently contains no tests.
+- **API test isolation is destructive, not transactional.** Each API test drops and recreates the whole schema through the `ids` fixture and reseeds it, which guarantees isolation but makes the layer slower than a rollback-based design and requires a dedicated `*_test` database.
+- **Frontend linting is not part of `npm test`.** ESLint runs as its own step (`npm run lint`, also executed in CI).
 
 ---
 

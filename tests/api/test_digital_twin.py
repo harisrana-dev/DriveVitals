@@ -756,3 +756,76 @@ async def test_create_scenario_single_assignment_keeps_working(fleet_ids, admin_
     )
     assert resp.status_code == 200, resp.text
     assert resp.json()["data"]["assignment_ids"] == ["single-a-1"]
+
+
+# ---------------------------------------------------------------------------
+# Uniqueness violations are conflicts, not server errors
+# ---------------------------------------------------------------------------
+
+async def test_duplicate_vehicle_vin_returns_409_not_500(admin_client):
+    """A repeated VIN/registration is client-correctable, never a 500.
+
+    Regression: the unhandled ``UniqueViolationError`` used to escape the
+    router as an internal server error with a database traceback.
+    """
+    body = {
+        "registration_number": "DUP-REG-1",
+        "vin": "DUPVIN0000000001",
+        "manufacturer": "M",
+        "model": "Mo",
+        "year": 2024,
+    }
+    first = await admin_client.post("/api/v1/digital-twin/vehicles", json=body)
+    assert first.status_code == 200, first.text
+
+    duplicate_vin = await admin_client.post(
+        "/api/v1/digital-twin/vehicles",
+        json={**body, "registration_number": "DUP-REG-2"},
+    )
+    assert duplicate_vin.status_code == 409, duplicate_vin.text
+    assert "Conflict" in duplicate_vin.json()["detail"]
+
+    duplicate_reg = await admin_client.post(
+        "/api/v1/digital-twin/vehicles",
+        json={**body, "vin": "DUPVIN0000000002"},
+    )
+    assert duplicate_reg.status_code == 409, duplicate_reg.text
+
+
+async def test_duplicate_driver_licence_returns_409(admin_client):
+    body = {
+        "driver_id": "dup-lic-driver",
+        "first_name": "A",
+        "last_name": "B",
+        "license_number": "DUP-LIC-1",
+    }
+    first = await admin_client.post("/api/v1/digital-twin/drivers", json=body)
+    assert first.status_code == 200, first.text
+
+    duplicate = await admin_client.post(
+        "/api/v1/digital-twin/drivers",
+        json={**body, "driver_id": "dup-lic-driver-2"},
+    )
+    assert duplicate.status_code == 409, duplicate.text
+
+
+async def test_duplicate_conflict_leaves_the_session_usable(admin_client):
+    """After a rejected write the service must still serve further requests."""
+    body = {
+        "registration_number": "DUP-REG-3",
+        "vin": "DUPVIN0000000003",
+        "manufacturer": "M",
+        "model": "Mo",
+        "year": 2024,
+    }
+    assert (await admin_client.post(
+        "/api/v1/digital-twin/vehicles", json=body)).status_code == 200
+    assert (await admin_client.post(
+        "/api/v1/digital-twin/vehicles", json=body)).status_code == 409
+
+    fresh = await admin_client.post(
+        "/api/v1/digital-twin/vehicles",
+        json={**body, "registration_number": "DUP-REG-4",
+              "vin": "DUPVIN0000000004"},
+    )
+    assert fresh.status_code == 200, fresh.text

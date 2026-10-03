@@ -77,15 +77,16 @@ All analytics are **100% rule-based and deterministic** (no machine learning in 
 
 ### WebSocket Channels
 
-Two independent WebSocket channels:
+Three independent WebSocket channels (all require an authenticated session token; unauthenticated upgrades are closed with code `4401`):
 - `/ws/dashboard` — Live fleet-wide snapshots every tick
 - `/ws/trips` — Trip completion and update snapshots
+- `/ws/alerts` — Alert lifecycle events (raised, acknowledged, resolved)
 
 See [`API.md`](API.md) for full details.
 
 ### REST API
 
-10 read-only routers covering vehicles, drivers, routes, trips, telemetry, vehicle health, driver statistics, maintenance, alerts, and system status. Alerts router also supports acknowledge and resolve mutations.
+14 routers under `/api/v1`: vehicles, drivers, routes, assignments, trips, telemetry, vehicle health, driver statistics, maintenance, alerts, analytics, system status, auth, and the Digital Twin control plane plus Settings. Read-oriented analytics routers are read-only; alerts, trips, and maintenance also support mutations, and auth supports signup/login/logout/me.
 
 See [`API.md`](API.md) for complete reference.
 
@@ -108,7 +109,8 @@ See [`API.md`](API.md) for complete reference.
 - [`TRIP_INTELLIGENCE.md`](TRIP_INTELLIGENCE.md) for trip lifecycle
 
 **DevOps / Deployment:**
-- Root `docker-compose.yml` for PostgreSQL provisioning
+- Root `docker-compose.yml` for the full containerized environment (PostgreSQL, migration job, backend, frontend)
+- Root [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) for the CI pipeline (backend tests + migrations, frontend tests + lint)
 - [`design/DigitalTwinArchitecture/06_integration_deployment_architecture.md`](design/DigitalTwinArchitecture/06_integration_deployment_architecture.md) for deployment strategy
 
 **Test Engineer:**
@@ -116,4 +118,4 @@ See [`API.md`](API.md) for complete reference.
 
 ## Document Status
 
-All documentation in this directory accurately reflects the current implementation as of August 2026. Historical documents are clearly marked. See [`DOCUMENTATION_AUDIT.md`](DOCUMENTATION_AUDIT.md) for details on what was updated and why.
+The reference documents in this directory (`API.md`, `LIMITATIONS.md`, `ANALYTICS.md`, `TESTING.md`, `TELEMETRY.md`, `TRIP_INTELLIGENCE.md`) were re-verified against the running implementation for the final release check. `design/`, `team/`, `engineering/` and `DOCUMENTATION_AUDIT.md` are historical design and audit records: they describe the intended architecture and the state of the tree at the time they were written, and are kept for context rather than as current specifications. Where a historical document disagrees with the code, the code and the reference documents above win.

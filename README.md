@@ -65,12 +65,6 @@ Fleet alert feed with severity, category, acknowledgement, and resolution workfl
 
 Fleet-wide analytics with behaviour trends, health distributions, and operational intelligence.
 
-### Reports
-
-![Reports](docs/images/8_Reports.png)
-
-Exportable fleet reports summarizing driver performance, vehicle health, and maintenance status.
-
 ---
 
 ## System Architecture
@@ -193,9 +187,9 @@ Three WebSocket channels provide live fleet intelligence:
 | `/ws/trips` | Trip snapshots | Active and recent trip status |
 | `/ws/alerts` | Alert events | New, acknowledged, and resolved alerts |
 
-Each channel follows the same pattern: an internal publisher feeds an `asyncio.Queue`, a background worker drains the queue, and a `WebSocketManager` broadcasts to all connected clients.
+Each channel follows the same pattern: an internal publisher feeds an `asyncio.Queue`, a background worker drains the queue, and a `WebSocketManager` broadcasts to all connected clients. All three channels require a valid session token; unauthenticated upgrades are closed with code `4401`.
 
-REST APIs (`/api/v1/`) provide read-only access to historical and per-entity data across 11 routers: vehicles, drivers, routes, trips, telemetry, analytics, vehicle health, driver statistics, maintenance, alerts, and system status.
+REST APIs (`/api/v1/`) expose 14 routers: vehicles, drivers, routes, assignments, trips, telemetry, analytics, vehicle health, driver statistics, maintenance, alerts, system status, auth, and the admin Digital Twin control plane plus settings. Authentication uses opaque, revocable bearer sessions with `admin`, `operator`, and `viewer` roles enforced on every endpoint.
 
 ---
 
@@ -292,16 +286,20 @@ The following are planned extensions, not current capabilities:
 - **Machine-learning driver behaviour modelling** — learned classifiers augmenting the rule-based baseline
 - **Anomaly detection** — over rolling telemetry windows for early fault identification
 - **Predictive maintenance** — replacing rule-based estimators with trained models
-- **Full frontend-backend REST integration** — retiring mock data fallbacks
-- **Authentication and multi-user access control**
-- **Containerized application deployment**
+- **Full frontend-backend REST integration** — retiring mock data fallbacks — *shipped*
+- **Authentication and multi-user access control** — *shipped*
+- **Containerized application deployment** — *shipped*
 - **Cloud deployment and multi-tenant operation**
+
+Items marked *shipped* are implemented today and are documented in
+[`docs/API.md`](docs/API.md) and [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md);
+they remain here only as a record of the original roadmap.
 
 ---
 
 ## Project Status
 
-Core product is **feature-frozen** and undergoing product polish, validation, and evidence preparation. The architecture, analytics pipeline, persistence layer, real-time communication, and React dashboard are implemented and tested. Documentation and presentation are being refined for professional and academic evaluation.
+Core product is **feature-frozen** and has completed a final release verification: the architecture, analytics pipeline, persistence layer, real-time communication, authentication/authorization perimeter, and React dashboard are implemented, tested, and verified end-to-end against a running stack. Documentation has been corrected to match the implementation.
 
 ---
 

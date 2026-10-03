@@ -18,11 +18,15 @@
 - Alert generation framework with deduplication and stale-alert resolution.
 - PostgreSQL persistence via async SQLAlchemy + Alembic migrations.
 - Stale-trip recovery at runtime startup.
-- 10 REST API routers under `/api/v1` (read-oriented + alert mutations).
-- Two WebSocket channels: `/ws/dashboard` (fleet snapshots) and `/ws/trips` (trip snapshots).
+- Authentication and role-based authorization: DB-backed `User` + `AuthSession`, scrypt password hashing, opaque revocable bearer tokens, `/api/v1/auth/*` (`signup`, `login`, `logout`, `me`), and session enforcement on all three WebSocket channels (close code `4401`).
+- 14 REST API routers under `/api/v1` (read-oriented, plus alert/trip/maintenance mutations and the admin Digital Twin + Settings control plane).
+- Three WebSocket channels: `/ws/dashboard` (fleet snapshots), `/ws/trips` (trip snapshots), `/ws/alerts` (alert lifecycle events).
 - React dashboard with live WebSocket data, REST hydration, and trip drill-down.
 - Active-trip live streaming with real-time behaviour flags and fuel tracking.
-- 35 backend test files across unit, integration, and API layers (298 tests passing) plus 15 frontend Vitest suites.
+- Scenario control plane (driver/vehicle/route/assignment/scenario CRUD) with functional `seed`, `simulation_speed` and `duration_seconds` simulation controls.
+- Containerized local environment: `docker compose up --build` starts PostgreSQL, a one-shot migration service, the FastAPI backend and the Vite frontend.
+- GitHub Actions CI on `develop` (backend `pytest` + `alembic upgrade head`; frontend `npm test` + `npm run lint`).
+- 48 backend test files across unit, integration, and API layers (525 tests passing) plus 23 frontend Vitest suites (265 tests passing).
 
 ---
 
@@ -38,19 +42,14 @@
 
 - **Real OBD-II / CAN bus integration.** The simulator is the only telemetry source. Hardware integration groundwork exists in `docs/engineering/` and `scripts/` but is not connected.
 - **Machine learning.** All analytics are rule-based. ML-based driver classification, anomaly detection, and predictive maintenance are roadmap items.
-- **Authentication / multi-user access control — Phase 7 M1 (identity) shipped, M2 (authorization) deferred.**
-  M1: DB-backed `User` + `AuthSession`, scrypt password hashing, opaque revocable bearer tokens,
-  and `/api/v1/auth/*` (`signup`, `login`, `logout`, `me`) with an `AuthProvider`/`ProtectedRoute` UI layer.
-  Not yet implemented: role-based access control enforcement, WebSocket session enforcement, JWT/OAuth
-  providers, password reset, single sign-on.
-- **Containerized application deployment.** `docker-compose.yml` provisions PostgreSQL only. The FastAPI backend and React frontend are not containerized.
-- **CI/CD pipeline.** No GitHub Actions, linting checks, or automated test runs are configured.
+- **External identity providers.** Not implemented. Sessions are first-party bearer tokens only: there is no JWT/OAuth integration, password reset, or single sign-on.
+- **Reports / data export.** No report page and no CSV/PDF export exist in the product. Every viewable surface is served by the REST APIs and the React dashboard.
+- **Public (cloud) deployment.** Not implemented. The supported runtime is a local Docker Compose environment or a local Python/Node install.
 - **Coverage reporting.** No pytest-cov or similar tooling is configured.
-- **Full frontend REST integration.** Some frontend API service files exist (`vehicleApi.js`, `tripApi.js`, etc.) and are partially used, but several views still rely on mock data or are not fully wired.
 - **Route intelligence / GPS.** No geofencing, terrain detection, or real map integration.
 - **Driver fatigue detection.** Not implemented.
 - **ERP / logistics integration.** Not implemented.
-- **Fleet sizes beyond 6 vehicles.** `FleetFactory` hardcodes 6 assignments.
+- **Fleet sizes beyond the 6-vehicle default fixture fleet.** `FleetFactory` builds exactly the 6 vehicles/drivers/routes/assignments in `backend/fleet/config/fleet_config.py`. Larger fleets must be created through the Digital Twin control plane (which persists them) and wired into a scenario.
 
 ---
 
@@ -60,8 +59,13 @@
 - **In-memory state is not shared across restarts.** `AnalyticsSnapshotStore`, `RuntimeStateStore`, and `AnalyticsContextStore` are rebuilt on each startup. Only persisted data survives.
 - **No per-client WebSocket filtering.** Every connected client receives every snapshot. There is no subscription protocol.
 - **No client-to-server WebSocket commands.** The WebSocket endpoints read (and discard) incoming text frames only to detect disconnects.
-- **60 L assumed tank capacity.** Fuel calculations use a fixed 60 L tank. Vehicles with different capacities would need per-vehicle configuration.
+- **Fuel volume: per-vehicle for persisted trips, fixed 60 L for the live dashboard estimate.** Persisted trip fuel (`trips.fuel_used_liters`) uses each vehicle's configured `tank_capacity_liters`. The dashboard's *live* fuel-used estimate in `dashboard_builder.py` still converts the tank percentage with a fixed 60 L constant (`_TANK_CAPACITY_LITERS`), so it is approximate for vehicles configured with a different tank size.
 - **Brake pressure internal range.** `TelemetrySample.brake_pressure` is 0.0–1.0, but the database column `brake_percent` stores 0–100. This conversion happens at persistence time.
+- **Live telemetry renders `0` when a signal is absent.** The dashboard and driver adapters fall back to `0` for missing live signals (speed/RPM/coolant/engine load), so "no value" can read as a real zero. Persisted and computed analytics do not use this fallback.
+- **The `vehicle_statistics` table is unused.** It exists in the schema (with a legacy `lifetime_health_score DEFAULT 100`) but nothing writes or reads it; all vehicle-level metrics come from `vehicle_health`, `trips`, and `driver_statistics`.
+- **`simulation_speed` sets the tick interval, with a small per-tick cost.** The runtime sleeps `tick_seconds / simulation_speed` between ticks, so the achieved rate lands slightly below the requested multiplier. Verified on the release host: `10x` produced 9.6 telemetry samples/s against 1.1 samples/s at `1x` (an 8.6x effect for a 10x setting).
+- **Telemetry timestamps follow simulated time.** The runtime advances a simulation clock from the run's start time, so `telemetry_samples.timestamp` is simulated time. At `simulation_speed > 1` a run advances that clock faster than wall clock, and a later low-speed run of the same vehicle can therefore carry timestamps earlier than the previous run's. Consumers that need strict arrival order must key on the trip, not on the timestamp.
+- **Windows `--reload` supervisor noise.** `uvicorn --reload` on Windows can print an asyncpg/`CancelledError` traceback while the reload process shuts down. This is development-supervisor behaviour: the supported lifecycle (without `--reload`) shuts down cleanly with no traceback.
 
 ---
 

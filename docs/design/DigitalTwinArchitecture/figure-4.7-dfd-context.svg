@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="495" viewBox="0 0 1040 495">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="23" text-anchor="start" fill="#162e48">Figure 4.7  Data flow diagram · Level 0</text>
+<rect x="30" y="133" width="222" height="69" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="141.0" y="172.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Administrator</text>
+<rect x="30" y="310" width="222" height="69" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="141.0" y="349.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Viewer / operator / admin</text>
+<ellipse cx="517.0" cy="254.0" rx="123.0" ry="73.0" fill="#fff" stroke="#829bb5"/>
+<text x="517.0" y="259.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">0  DriveVitals</text>
+<rect x="783" y="217" width="231" height="74" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="898.5" y="259.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Browser / React dashboard</text>
+<path d="M252,168 L324,168 L324,223 L407,223" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M407,223 L400.0,226.5 L400.0,219.5 Z" fill="#526c86"/>
+<path d="M252,344 L324,344 L324,288 L407,288" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M407,288 L400.0,291.5 L400.0,284.5 Z" fill="#526c86"/>
+<path d="M640,254 L783,254" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M783,254 L776.0,257.5 L776.0,250.5 Z" fill="#526c86"/>
+<rect x="194.7890625" y="113" width="232.421875" height="14" fill="#fff"/>
+<text x="311" y="124" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Scenario configuration and run commands</text>
+<rect x="237.140625" y="357" width="149.71875" height="14" fill="#fff"/>
+<text x="312" y="368" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Fleet and analytics queries</text>
+<rect x="609.0390625" y="188" width="209.921875" height="14" fill="#fff"/>
+<text x="714" y="199" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">REST JSON and live WebSocket data</text>
+</svg>

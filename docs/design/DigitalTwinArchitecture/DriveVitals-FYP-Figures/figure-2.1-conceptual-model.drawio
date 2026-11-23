@@ -1,0 +1,71 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Figure 2.1">
+    <mxGraphModel page="1" pageWidth="1050" pageHeight="465" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t2" parent="1" vertex="1" value="&lt;b&gt;Figure 2.1  Reviewed approaches and identified gap&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=23;connectable=0;">
+          <mxGeometry x="20" y="7" width="544.046875" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="prior" parent="1" vertex="1" value="" style="html=1;fontFamily=Arial;rounded=0;arcSize=8;fillColor=#f5f8fc;strokeColor=#c7d5e4;connectable=0;">
+          <mxGeometry x="20" y="65" width="294" height="365" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" parent="1" vertex="1" value="&lt;b&gt;Prior work and commercial systems&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=15;connectable=0;">
+          <mxGeometry x="32" y="70" width="248.765625" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="gap" parent="1" vertex="1" value="" style="html=1;fontFamily=Arial;rounded=0;arcSize=8;fillColor=#f5f8fc;strokeColor=#c7d5e4;connectable=0;">
+          <mxGeometry x="354" y="65" width="282" height="365" as="geometry" />
+        </mxCell>
+        <mxCell id="t6" parent="1" vertex="1" value="&lt;b&gt;Identified gap&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=15;connectable=0;">
+          <mxGeometry x="366" y="70" width="102.09375" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="project" parent="1" vertex="1" value="" style="html=1;fontFamily=Arial;rounded=0;arcSize=8;fillColor=#f5f8fc;strokeColor=#c7d5e4;connectable=0;">
+          <mxGeometry x="676" y="65" width="354" height="365" as="geometry" />
+        </mxCell>
+        <mxCell id="t8" parent="1" vertex="1" value="&lt;b&gt;DriveVitals&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=15;connectable=0;">
+          <mxGeometry x="688" y="70" width="83.40625" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="p0" parent="1" vertex="1" value="&lt;b&gt;Physical OBD-II / CAN ingestion&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Requires access to hardware&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="37" y="106" width="260" height="59" as="geometry" />
+        </mxCell>
+        <mxCell id="p1" parent="1" vertex="1" value="&lt;b&gt;Data-driven or ML scoring&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Opaque model decisions&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="37" y="182" width="260" height="59" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" parent="1" vertex="1" value="&lt;b&gt;Commercial telematics SaaS&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Closed, subscription-based services&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="37" y="258" width="260" height="59" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" parent="1" vertex="1" value="&lt;b&gt;Digital twin prototypes&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Single-vehicle or laboratory CAN&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="37" y="334" width="260" height="59" as="geometry" />
+        </mxCell>
+        <mxCell id="g" parent="1" vertex="1" value="&lt;b&gt;Open end-to-end pipeline&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Seeded, reproducible telemetry&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Rule-based analytics&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Relational persistence&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Authenticated live dashboard&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#ecf4fb;strokeColor=#7e9ab7;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="369" y="147" width="252" height="165" as="geometry" />
+        </mxCell>
+        <mxCell id="d0" parent="1" vertex="1" value="&lt;b&gt;Scenario-configurable fleet&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Seed, speed, duration and assignments&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="690" y="99" width="326" height="51" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" parent="1" vertex="1" value="&lt;b&gt;OBD-II-shaped synthetic telemetry&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Deterministic generation&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="690" y="163" width="326" height="51" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" parent="1" vertex="1" value="&lt;b&gt;Rule-based analytics&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Behaviour, health, maintenance and alerts&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="690" y="227" width="326" height="51" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" parent="1" vertex="1" value="&lt;b&gt;PostgreSQL persistence&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;18 domain tables and migrations&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="690" y="291" width="326" height="51" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" parent="1" vertex="1" value="&lt;b&gt;FastAPI and React dashboard&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;REST and three authenticated WebSockets&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="690" y="355" width="326" height="51" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" parent="1" edge="1" target="g" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;entryX=0.0;entryY=0.48484848484848486;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="314" y="227" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1" parent="1" edge="1" source="g" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.48484848484848486;exitPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="676" y="227" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

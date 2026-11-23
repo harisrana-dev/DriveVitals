@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="465" viewBox="0 0 1050 465">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="23" text-anchor="start" fill="#162e48">Figure 2.1  Reviewed approaches and identified gap</text>
+<rect x="20" y="65" width="294" height="365" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="32" y="85" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Prior work and commercial systems</text>
+<rect x="354" y="65" width="282" height="365" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="366" y="85" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Identified gap</text>
+<rect x="676" y="65" width="354" height="365" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="688" y="85" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">DriveVitals</text>
+<rect x="37" y="106" width="260" height="59" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="167.0" y="132.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Physical OBD-II / CAN ingestion</text>
+<text x="167.0" y="148.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Requires access to hardware</text>
+<rect x="37" y="182" width="260" height="59" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="167.0" y="208.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Data-driven or ML scoring</text>
+<text x="167.0" y="224.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Opaque model decisions</text>
+<rect x="37" y="258" width="260" height="59" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="167.0" y="284.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Commercial telematics SaaS</text>
+<text x="167.0" y="300.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Closed, subscription-based services</text>
+<rect x="37" y="334" width="260" height="59" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="167.0" y="360.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Digital twin prototypes</text>
+<text x="167.0" y="376.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Single-vehicle or laboratory CAN</text>
+<rect x="369" y="147" width="252" height="165" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="495.0" y="202.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Open end-to-end pipeline</text>
+<text x="495.0" y="218.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Seeded, reproducible telemetry</text>
+<text x="495.0" y="234.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Rule-based analytics</text>
+<text x="495.0" y="250.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Relational persistence</text>
+<text x="495.0" y="266.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Authenticated live dashboard</text>
+<rect x="690" y="99" width="326" height="51" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="853.0" y="121.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Scenario-configurable fleet</text>
+<text x="853.0" y="137.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Seed, speed, duration and assignments</text>
+<rect x="690" y="163" width="326" height="51" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="853.0" y="185.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">OBD-II-shaped synthetic telemetry</text>
+<text x="853.0" y="201.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Deterministic generation</text>
+<rect x="690" y="227" width="326" height="51" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="853.0" y="249.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Rule-based analytics</text>
+<text x="853.0" y="265.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Behaviour, health, maintenance and alerts</text>
+<rect x="690" y="291" width="326" height="51" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="853.0" y="313.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">PostgreSQL persistence</text>
+<text x="853.0" y="329.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">18 domain tables and migrations</text>
+<rect x="690" y="355" width="326" height="51" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="853.0" y="377.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">FastAPI and React dashboard</text>
+<text x="853.0" y="393.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">REST and three authenticated WebSockets</text>
+<path d="M314,227 L369,227" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M369,227 L362.0,230.5 L362.0,223.5 Z" fill="#526c86"/>
+<path d="M621,227 L676,227" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M676,227 L669.0,230.5 L669.0,223.5 Z" fill="#526c86"/>
+</svg>

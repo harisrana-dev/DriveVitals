@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="970" viewBox="0 0 1060 970">
+<rect width="100%" height="100%" fill="#fff"/>
+<rect x="20" y="52" width="1020" height="59" fill="#f5f8fc" stroke="#ccd8e5" rx="6"/>
+<text x="32" y="74" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">1  Simulation &amp;</text>
+<text x="46" y="90" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Telemetry Generation</text>
+<rect x="20" y="119" width="1020" height="65" fill="#eff4f9" stroke="#ccd8e5" rx="6"/>
+<text x="32" y="141" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">2  Fleet &amp; Vehicle</text>
+<text x="46" y="157" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Runtime</text>
+<rect x="20" y="192" width="1020" height="65" fill="#f5f8fc" stroke="#ccd8e5" rx="6"/>
+<text x="32" y="215" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">3  Telemetry Distribution</text>
+<rect x="20" y="265" width="1020" height="219" fill="#eff4f9" stroke="#ccd8e5" rx="6"/>
+<text x="32" y="287" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">4  Rule-Based Analytics</text>
+<text x="46" y="303" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">&amp; Intelligence</text>
+<rect x="20" y="492" width="1020" height="136" fill="#f5f8fc" stroke="#ccd8e5" rx="6"/>
+<text x="32" y="515" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">5  Persistence</text>
+<rect x="20" y="636" width="1020" height="210" fill="#eff4f9" stroke="#ccd8e5" rx="6"/>
+<text x="32" y="658" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">6  API &amp; Real-Time</text>
+<text x="46" y="674" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Delivery</text>
+<rect x="20" y="854" width="1020" height="96" fill="#f5f8fc" stroke="#ccd8e5" rx="6"/>
+<text x="32" y="877" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">7  Presentation</text>
+<text x="20" y="32" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="23" font-weight="700" fill="#172b41">DriveVitals system architecture</text>
+<text x="1038" y="31" text-anchor="end" font-family="Arial, Liberation Sans, sans-serif" font-size="13" font-weight="400" fill="#172b41">Dashed arrows denote runtime calls or callbacks</text>
+<rect x="231" y="62" width="250" height="38" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="356.0" y="85.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Driver profiles · route/scenario</text>
+<rect x="581" y="62" width="205" height="38" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="683.5" y="85.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">OBDGenerator</text>
+<rect x="231" y="131" width="250" height="42" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="356.0" y="149.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">FleetRunner</text>
+<text x="356.0" y="163.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Active vehicle coordination</text>
+<rect x="581" y="131" width="205" height="42" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="683.5" y="149.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">VehicleRunner</text>
+<text x="683.5" y="163.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Per-vehicle trip state</text>
+<rect x="581" y="204" width="205" height="42" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="683.5" y="222.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">TelemetryPipeline</text>
+<text x="683.5" y="236.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Typed TelemetrySample fan-out</text>
+<rect x="230" y="280" width="248" height="77" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="354.0" y="294.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">VehicleHealthConsumer</text>
+<text x="354.0" y="308.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Snapshot store + telemetry</text>
+<text x="354.0" y="322.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">VehicleHealthEngine</text>
+<text x="354.0" y="336.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Engine, brakes, cooling,</text>
+<text x="354.0" y="350.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">transmission and fuel system</text>
+<rect x="581" y="280" width="205" height="42" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="683.5" y="298.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">AnalyticsEngine</text>
+<text x="683.5" y="312.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Behaviour rules and events</text>
+<rect x="581" y="362" width="205" height="39" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="683.5" y="385.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">AnalyticsSnapshotStream</text>
+<rect x="798" y="284" width="224" height="76" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="910.0" y="305.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Runtime trip completion</text>
+<text x="910.0" y="319.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Completed trip + flushed events</text>
+<text x="910.0" y="333.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">DriverStatisticsConsumer</text>
+<text x="910.0" y="347.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">→ DriverStatisticsEngine</text>
+<rect x="230" y="391" width="248" height="72" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="354.0" y="410.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">MaintenanceService / AlertEngine</text>
+<text x="354.0" y="424.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Trip: health and vehicle context</text>
+<text x="354.0" y="438.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Telemetry alerts: health + sample</text>
+<text x="354.0" y="452.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Trip alerts: trip, events, recommendations</text>
+<rect x="230" y="508" width="248" height="40" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="354.0" y="525.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Telemetry persistence adapter</text>
+<text x="354.0" y="539.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Samples, health and telemetry alerts</text>
+<rect x="581" y="508" width="205" height="53" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="683.5" y="524.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">PersistenceService</text>
+<text x="683.5" y="538.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Async writes via repositories</text>
+<text x="683.5" y="552.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Snapshots → behaviour events</text>
+<rect x="230" y="572" width="248" height="42" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="354.0" y="590.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">PostgreSQL 16</text>
+<text x="354.0" y="604.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Async SQLAlchemy data access</text>
+<rect x="230" y="665" width="157" height="48" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="308.5" y="686.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">FastAPI REST</text>
+<text x="308.5" y="700.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">/api/v1/*</text>
+<rect x="419" y="665" width="177" height="69" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="507.5" y="689.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Dashboard publisher</text>
+<text x="507.5" y="703.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Snapshot builder</text>
+<text x="507.5" y="717.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Queue → snapshot_worker</text>
+<rect x="619" y="665" width="177" height="69" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="707.5" y="689.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Trips publisher</text>
+<text x="707.5" y="703.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Runtime trip callbacks</text>
+<text x="707.5" y="717.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Queue → trips_worker</text>
+<rect x="823" y="665" width="199" height="69" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="922.5" y="689.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">Persistence alert callback</text>
+<text x="922.5" y="703.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Alert events</text>
+<text x="922.5" y="717.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Queue → alerts_worker</text>
+<rect x="419" y="772" width="603" height="48" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="720.5" y="793.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">WebSocketManager</text>
+<text x="720.5" y="807.0" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">/ws/dashboard     ·     /ws/trips     ·     /ws/alerts</text>
+<rect x="230" y="891" width="792" height="45" fill="#ffffff" stroke="#8299b0" rx="5"/>
+<text x="626.0" y="910.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="14" font-weight="700" fill="#172b41">React 18 + Vite dashboard</text>
+<text x="626.0" y="924.5" text-anchor="middle" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">REST hydration and live updates</text>
+<text x="319" y="802" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">REST hydration</text>
+<text x="731" y="864" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Live updates</text>
+<text x="785" y="469" text-anchor="start" font-family="Arial, Liberation Sans, sans-serif" font-size="12" font-weight="400" fill="#172b41">Completion status</text>
+<path d="M481,81 L581,81" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M581,81 L575,84 L575,78 Z" fill="#425c78"/>
+<path d="M481,152 L581,152" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M581,152 L575,155 L575,149 Z" fill="#425c78"/>
+<path d="M684,131 L684,100" fill="none" stroke="#425c78" stroke-width="1.3" stroke-dasharray="5 4"/>
+<path d="M684,100 L687,106 L681,106 Z" fill="#425c78"/>
+<path d="M684,173 L684,204" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M684,204 L681,198 L687,198 Z" fill="#425c78"/>
+<path d="M684,246 L684,280" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M684,280 L681,274 L687,274 Z" fill="#425c78"/>
+<path d="M581,226 L350,226 L350,280" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M350,280 L347,274 L353,274 Z" fill="#425c78"/>
+<path d="M581,213 L207,213 L207,529 L230,529" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M230,529 L224,532 L224,526 Z" fill="#425c78"/>
+<path d="M581,302 L478,302" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M478,302 L484,299 L484,305 Z" fill="#425c78"/>
+<path d="M684,322 L684,362" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M684,362 L681,356 L687,356 Z" fill="#425c78"/>
+<path d="M786,302 L798,302" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M798,302 L792,305 L792,299 Z" fill="#425c78"/>
+<path d="M786,152 L910,152 L910,284" fill="none" stroke="#425c78" stroke-width="1.3" stroke-dasharray="5 4"/>
+<path d="M910,284 L907,278 L913,278 Z" fill="#425c78"/>
+<path d="M354,357 L354,391" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M354,391 L351,385 L357,385 Z" fill="#425c78"/>
+<path d="M230,338 L218,338 L218,517 L230,517" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M230,517 L224,520 L224,514 Z" fill="#425c78"/>
+<path d="M888,360 L888,419 L708,419 Q705,413 702,419 L533,419 Q530,413 527,419 L478,419" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M478,419 L484,416 L484,422 Z" fill="#425c78"/>
+<path d="M933,360 L933,535 L786,535" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M786,535 L792,532 L792,538 Z" fill="#425c78"/>
+<path d="M478,445 L527,445 Q530,439 533,445 L630,445 L630,508" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M630,508 L627,502 L633,502 Z" fill="#425c78"/>
+<path d="M354,508 L354,463" fill="none" stroke="#425c78" stroke-width="1.3" stroke-dasharray="5 4"/>
+<path d="M354,463 L357,469 L351,469 Z" fill="#425c78"/>
+<path d="M478,527 L527,527 Q530,521 533,527 L551,527 Q554,521 557,527 L581,527" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M581,527 L575,530 L575,524 Z" fill="#425c78"/>
+<path d="M705,401 L705,508" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M705,508 L702,502 L708,502 Z" fill="#425c78"/>
+<path d="M684,561 L684,593 L557,593 Q554,587 551,593 L533,593 Q530,587 527,593 L478,593" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M478,593 L484,590 L484,596 Z" fill="#425c78"/>
+<path d="M581,381 L530,381 L530,665" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M530,665 L527,659 L533,659 Z" fill="#425c78"/>
+<path d="M907,360 L907,477 L708,477 Q705,471 702,477 L633,477 Q630,471 627,477 L554,477 L554,665" fill="none" stroke="#425c78" stroke-width="1.3" stroke-dasharray="5 4"/>
+<path d="M554,665 L551,659 L557,659 Z" fill="#425c78"/>
+<path d="M786,165 L907,165 Q910,159 913,165 L1032,165 L1032,640 L963,640 Q960,634 957,640 L710,640 L710,665" fill="none" stroke="#425c78" stroke-width="1.3" stroke-dasharray="5 4"/>
+<path d="M710,665 L707,659 L713,659 Z" fill="#425c78"/>
+<path d="M786,549 L960,549 L960,665" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M960,665 L957,659 L963,659 Z" fill="#425c78"/>
+<path d="M308,614 L308,665" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M308,665 L305,659 L311,659 Z" fill="#425c78"/>
+<path d="M507,734 L507,772" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M507,772 L504,766 L510,766 Z" fill="#425c78"/>
+<path d="M708,734 L708,772" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M708,772 L705,766 L711,766 Z" fill="#425c78"/>
+<path d="M923,734 L923,772" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M923,772 L920,766 L926,766 Z" fill="#425c78"/>
+<path d="M308,713 L308,891" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M308,891 L305,885 L311,885 Z" fill="#425c78"/>
+<path d="M720,820 L720,891" fill="none" stroke="#425c78" stroke-width="1.3"/>
+<path d="M720,891 L717,885 L723,885 Z" fill="#425c78"/>
+</svg>

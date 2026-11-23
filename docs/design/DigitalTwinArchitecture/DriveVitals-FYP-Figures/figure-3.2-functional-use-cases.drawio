@@ -1,0 +1,115 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Figure 3.2">
+    <mxGraphModel page="1" pageWidth="1020" pageHeight="696" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t2" parent="1" vertex="1" value="&lt;b&gt;Figure 3.2  Functional use case diagram&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=23;connectable=0;">
+          <mxGeometry x="20" y="7" width="422.46875" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="p0" parent="1" vertex="1" value="" style="html=1;fontFamily=Arial;rounded=0;arcSize=8;fillColor=#f5f8fc;strokeColor=#c7d5e4;connectable=0;">
+          <mxGeometry x="20" y="67" width="980" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="t4" parent="1" vertex="1" value="&lt;b&gt;Authentication &amp;amp; access control  ·  UC-01, UC-02&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=15;connectable=0;">
+          <mxGeometry x="32" y="72" width="338.03125" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="n00" parent="1" vertex="1" value="&lt;b&gt;Authenticate by email/password&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="36" y="107" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n01" parent="1" vertex="1" value="&lt;b&gt;Issue bearer session token&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="360" y="107" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n02" parent="1" vertex="1" value="&lt;b&gt;Enforce role guards&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="684" y="107" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="p1" parent="1" vertex="1" value="" style="html=1;fontFamily=Arial;rounded=0;arcSize=8;fillColor=#f5f8fc;strokeColor=#c7d5e4;connectable=0;">
+          <mxGeometry x="20" y="187" width="980" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="t9" parent="1" vertex="1" value="&lt;b&gt;Digital Twin control plane  ·  UC-03 to UC-05, UC-11&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=15;connectable=0;">
+          <mxGeometry x="32" y="192" width="358.296875" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="n10" parent="1" vertex="1" value="&lt;b&gt;Manage fleet fixtures&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="36" y="227" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n11" parent="1" vertex="1" value="&lt;b&gt;Configure simulation scenario&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="360" y="227" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n12" parent="1" vertex="1" value="&lt;b&gt;Activate, launch, stop or reset&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="684" y="227" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" parent="1" vertex="1" value="" style="html=1;fontFamily=Arial;rounded=0;arcSize=8;fillColor=#f5f8fc;strokeColor=#c7d5e4;connectable=0;">
+          <mxGeometry x="20" y="307" width="980" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="t14" parent="1" vertex="1" value="&lt;b&gt;Simulation &amp;amp; telemetry  ·  UC-04, UC-05, UC-12&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=15;connectable=0;">
+          <mxGeometry x="32" y="312" width="330.484375" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="n20" parent="1" vertex="1" value="&lt;b&gt;Advance per-vehicle tick loop&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="36" y="347" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n21" parent="1" vertex="1" value="&lt;b&gt;Generate OBD-II telemetry&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="360" y="347" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n22" parent="1" vertex="1" value="&lt;b&gt;Start, update and end trips&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="684" y="347" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" parent="1" vertex="1" value="" style="html=1;fontFamily=Arial;rounded=0;arcSize=8;fillColor=#f5f8fc;strokeColor=#c7d5e4;connectable=0;">
+          <mxGeometry x="20" y="427" width="980" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="t19" parent="1" vertex="1" value="&lt;b&gt;Rule-based analytics  ·  UC-07 to UC-09&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=15;connectable=0;">
+          <mxGeometry x="32" y="432" width="280.484375" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="n30" parent="1" vertex="1" value="&lt;b&gt;Detect behaviour and score trips&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="36" y="467" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n31" parent="1" vertex="1" value="&lt;b&gt;Score vehicle subsystem health&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="360" y="467" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n32" parent="1" vertex="1" value="&lt;b&gt;Estimate maintenance and raise alerts&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="684" y="467" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" parent="1" vertex="1" value="" style="html=1;fontFamily=Arial;rounded=0;arcSize=8;fillColor=#f5f8fc;strokeColor=#c7d5e4;connectable=0;">
+          <mxGeometry x="20" y="547" width="980" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="t24" parent="1" vertex="1" value="&lt;b&gt;Delivery &amp;amp; presentation  ·  UC-06 to UC-10, UC-12&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=15;connectable=0;">
+          <mxGeometry x="32" y="552" width="348.015625" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="n40" parent="1" vertex="1" value="&lt;b&gt;Read operational data via REST&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="36" y="587" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n41" parent="1" vertex="1" value="&lt;b&gt;Receive live WebSocket updates&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="360" y="587" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="n42" parent="1" vertex="1" value="&lt;b&gt;Merge data in the React dashboard&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="684" y="587" width="299" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" parent="1" edge="1" source="n00" target="n01" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" parent="1" edge="1" source="n01" target="n02" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" parent="1" edge="1" source="n10" target="n11" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" parent="1" edge="1" source="n11" target="n12" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" parent="1" edge="1" source="n20" target="n21" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" parent="1" edge="1" source="n21" target="n22" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" parent="1" edge="1" source="n31" target="n32" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" parent="1" edge="1" source="n40" target="n41" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" parent="1" edge="1" source="n41" target="n42" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="858" viewBox="0 0 1140 858">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="23" text-anchor="start" fill="#162e48">Figure 4.4  Authentication and WebSocket connection</text>
+<rect x="9.0" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="85.0" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Browser</text>
+<rect x="332.3333333333333" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="408.3333333333333" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">FastAPI</text>
+<rect x="655.6666666666666" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="731.6666666666666" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">security.py</text>
+<rect x="979.0" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="1055.0" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">PostgreSQL</text>
+<rect x="24" y="108" width="1092" height="23" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="36" y="128" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Authentication</text>
+<rect x="24" y="418" width="1092" height="23" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="36" y="438" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Authenticated REST</text>
+<rect x="24" y="573" width="1092" height="23" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="36" y="593" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Authenticated WebSocket</text>
+<path d="M85.0,102 L85.0,834" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,102 L408.3333333333333,834" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M731.6666666666666,102 L731.6666666666666,834" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M1055.0,102 L1055.0,834" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M85.0,157 L408.3333333333333,157" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,157 L401.3333333333333,160.5 L401.3333333333333,153.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,188 L1055.0,188" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,188 L1048.0,191.5 L1048.0,184.5 Z" fill="#526c86"/>
+<path d="M1055.0,219 L408.3333333333333,219" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,219 L415.3333333333333,215.5 L415.3333333333333,222.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,250 L731.6666666666666,250" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M731.6666666666666,250 L724.6666666666666,253.5 L724.6666666666666,246.5 Z" fill="#526c86"/>
+<path d="M731.6666666666666,281 L408.3333333333333,281" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,281 L415.3333333333333,277.5 L415.3333333333333,284.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,312 L1055.0,312" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,312 L1048.0,315.5 L1048.0,308.5 Z" fill="#526c86"/>
+<path d="M1055.0,343 L408.3333333333333,343" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,343 L415.3333333333333,339.5 L415.3333333333333,346.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,374 L85.0,374" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M85.0,374 L92.0,370.5 L92.0,377.5 Z" fill="#526c86"/>
+<path d="M85.0,405 L130.0,405 L130.0,417 L85.0,417" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M85.0,417 L92.0,413.5 L92.0,420.5 Z" fill="#526c86"/>
+<path d="M85.0,467 L408.3333333333333,467" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,467 L401.3333333333333,470.5 L401.3333333333333,463.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,498 L1055.0,498" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,498 L1048.0,501.5 L1048.0,494.5 Z" fill="#526c86"/>
+<path d="M1055.0,529 L408.3333333333333,529" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,529 L415.3333333333333,525.5 L415.3333333333333,532.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,560 L85.0,560" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M85.0,560 L92.0,556.5 L92.0,563.5 Z" fill="#526c86"/>
+<path d="M85.0,622 L408.3333333333333,622" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,622 L401.3333333333333,625.5 L401.3333333333333,618.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,653 L1055.0,653" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,653 L1048.0,656.5 L1048.0,649.5 Z" fill="#526c86"/>
+<path d="M1055.0,684 L408.3333333333333,684" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,684 L415.3333333333333,680.5 L415.3333333333333,687.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,715 L85.0,715" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M85.0,715 L92.0,711.5 L92.0,718.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,746 L85.0,746" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M85.0,746 L92.0,742.5 L92.0,749.5 Z" fill="#526c86"/>
+<path d="M85.0,777 L408.3333333333333,777" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,777 L401.3333333333333,780.5 L401.3333333333333,773.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,808 L453.3333333333333,808 L453.3333333333333,820 L408.3333333333333,820" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,820 L415.3333333333333,816.5 L415.3333333333333,823.5 Z" fill="#526c86"/>
+<rect x="130.91666666666666" y="140" width="231.5" height="14" fill="#fff"/>
+<text x="246.66666666666666" y="151" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">POST /api/v1/auth/login (email, password)</text>
+<rect x="676.4791666666666" y="171" width="110.375" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="182" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Read user by email</text>
+<rect x="671.4869791666666" y="202" width="120.359375" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="213" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">User and scrypt hash</text>
+<rect x="502.484375" y="233" width="135.03125" height="14" fill="#fff"/>
+<text x="570.0" y="244" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Verify password (scrypt)</text>
+<rect x="519.1484375" y="264" width="101.703125" height="14" fill="#fff"/>
+<text x="570.0" y="275" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Password verified</text>
+<rect x="587.4635416666666" y="295" width="288.40625" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="306" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Insert auth session (SHA-256 token hash and expiry)</text>
+<rect x="695.4869791666666" y="326" width="72.359375" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="337" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Session row</text>
+<rect x="168.81510416666666" y="357" width="155.703125" height="14" fill="#fff"/>
+<text x="246.66666666666666" y="368" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">200 · token, role, expires_at</text>
+<rect x="130.828125" y="388" width="68.34375" height="14" fill="#fff"/>
+<text x="165.0" y="399" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Store token</text>
+<rect x="126.26041666666666" y="450" width="240.8125" height="14" fill="#fff"/>
+<text x="246.66666666666666" y="461" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">GET /api/v1/… · Authorization: Bearer token</text>
+<rect x="596.1276041666666" y="481" width="271.078125" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="492" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Resolve token hash and check expiry / revocation</text>
+<rect x="681.8151041666666" y="512" width="99.703125" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="523" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Session and user</text>
+<rect x="172.81510416666666" y="543" width="147.703125" height="14" fill="#fff"/>
+<text x="246.66666666666666" y="554" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">200 resource, or 401 / 403</text>
+<rect x="152.62760416666666" y="605" width="188.078125" height="14" fill="#fff"/>
+<text x="246.66666666666666" y="616" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Connect /ws/dashboard?token=…</text>
+<rect x="616.1354166666666" y="636" width="231.0625" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="647" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Authenticate with a short-lived DB session</text>
+<rect x="668.2526041666666" y="667" width="126.828125" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="678" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Valid session and user</text>
+<rect x="179.14322916666666" y="698" width="135.046875" height="14" fill="#fff"/>
+<text x="246.66666666666666" y="709" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">101 Switching Protocols</text>
+<rect x="123.77604166666666" y="729" width="245.78125" height="14" fill="#fff"/>
+<text x="246.66666666666666" y="740" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Loop while connected · dashboard_snapshot</text>
+<rect x="213.48697916666666" y="760" width="66.359375" height="14" fill="#fff"/>
+<text x="246.66666666666666" y="771" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Disconnect</text>
+<rect x="412.83333333333326" y="791" width="252.1875" height="14" fill="#fff"/>
+<text x="538.9270833333333" y="802" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Remove connection from WebSocketManager</text>
+</svg>

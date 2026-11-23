@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="1131" viewBox="0 0 1140 1131">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="23" text-anchor="start" fill="#162e48">Figure 4.5  Simulation launch</text>
+<rect x="9.0" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="85.0" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Administrator</text>
+<rect x="170.66666666666666" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="246.66666666666666" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">React Twin Lab</text>
+<rect x="332.3333333333333" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="408.3333333333333" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">digital_twin router</text>
+<rect x="494.0" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="570.0" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">SimulationController</text>
+<rect x="655.6666666666666" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="731.6666666666666" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">DriveVitalsRuntime</text>
+<rect x="817.3333333333334" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="893.3333333333334" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">FleetRunner</text>
+<rect x="979.0" y="59" width="152" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="1055.0" y="85.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">PostgreSQL</text>
+<rect x="24" y="108" width="1092" height="23" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="36" y="128" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Create and activate scenario</text>
+<rect x="24" y="398" width="1092" height="23" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="36" y="418" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Launch and run</text>
+<rect x="24" y="775" width="1092" height="23" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="36" y="795" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Alternative A · duration expires</text>
+<rect x="24" y="862" width="1092" height="23" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="36" y="882" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Alternative B · administrator stops run</text>
+<path d="M85.0,102 L85.0,1107" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M246.66666666666666,102 L246.66666666666666,1107" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,102 L408.3333333333333,1107" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M570.0,102 L570.0,1107" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M731.6666666666666,102 L731.6666666666666,1107" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M893.3333333333334,102 L893.3333333333334,1107" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M1055.0,102 L1055.0,1107" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M85.0,155 L246.66666666666666,155" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M246.66666666666666,155 L239.66666666666666,158.5 L239.66666666666666,151.5 Z" fill="#526c86"/>
+<path d="M246.66666666666666,184 L408.3333333333333,184" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,184 L401.3333333333333,187.5 L401.3333333333333,180.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,213 L1055.0,213" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,213 L1048.0,216.5 L1048.0,209.5 Z" fill="#526c86"/>
+<path d="M1055.0,242 L408.3333333333333,242" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,242 L415.3333333333333,238.5 L415.3333333333333,245.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,271 L246.66666666666666,271" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M246.66666666666666,271 L253.66666666666666,267.5 L253.66666666666666,274.5 Z" fill="#526c86"/>
+<path d="M85.0,300 L246.66666666666666,300" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M246.66666666666666,300 L239.66666666666666,303.5 L239.66666666666666,296.5 Z" fill="#526c86"/>
+<path d="M246.66666666666666,329 L408.3333333333333,329" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,329 L401.3333333333333,332.5 L401.3333333333333,325.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,358 L1055.0,358" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,358 L1048.0,361.5 L1048.0,354.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,387 L246.66666666666666,387" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M246.66666666666666,387 L253.66666666666666,383.5 L253.66666666666666,390.5 Z" fill="#526c86"/>
+<path d="M85.0,445 L246.66666666666666,445" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M246.66666666666666,445 L239.66666666666666,448.5 L239.66666666666666,441.5 Z" fill="#526c86"/>
+<path d="M246.66666666666666,474 L408.3333333333333,474" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,474 L401.3333333333333,477.5 L401.3333333333333,470.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,503 L570.0,503" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M570.0,503 L563.0,506.5 L563.0,499.5 Z" fill="#526c86"/>
+<path d="M570.0,532 L1055.0,532" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,532 L1048.0,535.5 L1048.0,528.5 Z" fill="#526c86"/>
+<path d="M1055.0,561 L570.0,561" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M570.0,561 L577.0,557.5 L577.0,564.5 Z" fill="#526c86"/>
+<path d="M570.0,590 L731.6666666666666,590" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M731.6666666666666,590 L724.6666666666666,593.5 L724.6666666666666,586.5 Z" fill="#526c86"/>
+<path d="M731.6666666666666,619 L893.3333333333334,619" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M893.3333333333334,619 L886.3333333333334,622.5 L886.3333333333334,615.5 Z" fill="#526c86"/>
+<path d="M893.3333333333334,648 L731.6666666666666,648" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M731.6666666666666,648 L738.6666666666666,644.5 L738.6666666666666,651.5 Z" fill="#526c86"/>
+<path d="M570.0,677 L408.3333333333333,677" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,677 L415.3333333333333,673.5 L415.3333333333333,680.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,706 L246.66666666666666,706" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M246.66666666666666,706 L253.66666666666666,702.5 L253.66666666666666,709.5 Z" fill="#526c86"/>
+<path d="M731.6666666666666,735 L893.3333333333334,735" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M893.3333333333334,735 L886.3333333333334,738.5 L886.3333333333334,731.5 Z" fill="#526c86"/>
+<path d="M893.3333333333334,764 L938.3333333333334,764 L938.3333333333334,776 L893.3333333333334,776" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M893.3333333333334,776 L900.3333333333334,772.5 L900.3333333333334,779.5 Z" fill="#526c86"/>
+<path d="M731.6666666666666,822 L776.6666666666666,822 L776.6666666666666,834 L731.6666666666666,834" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M731.6666666666666,834 L738.6666666666666,830.5 L738.6666666666666,837.5 Z" fill="#526c86"/>
+<path d="M731.6666666666666,851 L1055.0,851" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,851 L1048.0,854.5 L1048.0,847.5 Z" fill="#526c86"/>
+<path d="M85.0,909 L246.66666666666666,909" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M246.66666666666666,909 L239.66666666666666,912.5 L239.66666666666666,905.5 Z" fill="#526c86"/>
+<path d="M246.66666666666666,938 L408.3333333333333,938" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M408.3333333333333,938 L401.3333333333333,941.5 L401.3333333333333,934.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,967 L570.0,967" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M570.0,967 L563.0,970.5 L563.0,963.5 Z" fill="#526c86"/>
+<path d="M570.0,996 L731.6666666666666,996" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M731.6666666666666,996 L724.6666666666666,999.5 L724.6666666666666,992.5 Z" fill="#526c86"/>
+<path d="M731.6666666666666,1025 L1055.0,1025" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1055.0,1025 L1048.0,1028.5 L1048.0,1021.5 Z" fill="#526c86"/>
+<path d="M570.0,1054 L408.3333333333333,1054" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M408.3333333333333,1054 L415.3333333333333,1050.5 L415.3333333333333,1057.5 Z" fill="#526c86"/>
+<path d="M408.3333333333333,1083 L246.66666666666666,1083" fill="none" stroke="#526c86" stroke-width="1.35" stroke-dasharray="5 4"/>
+<path d="M246.66666666666666,1083 L253.66666666666666,1079.5 L253.66666666666666,1086.5 Z" fill="#526c86"/>
+<rect x="101.31770833333331" y="138" width="129.03125" height="14" fill="#fff"/>
+<text x="165.83333333333331" y="149" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Enter scenario settings</text>
+<rect x="278.7734375" y="167" width="97.453125" height="14" fill="#fff"/>
+<text x="327.5" y="178" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">POST /scenarios</text>
+<rect x="641.8072916666666" y="196" width="179.71875" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="207" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Insert scenario and assignments</text>
+<rect x="697.4791666666666" y="225" width="68.375" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="236" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">scenario_id</text>
+<rect x="290.984375" y="254" width="73.03125" height="14" fill="#fff"/>
+<text x="327.5" y="265" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">201 Created</text>
+<rect x="116.65364583333331" y="283" width="98.359375" height="14" fill="#fff"/>
+<text x="165.83333333333331" y="294" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Activate scenario</text>
+<rect x="277.78125" y="312" width="99.4375" height="14" fill="#fff"/>
+<text x="327.5" y="323" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">POST …/activate</text>
+<rect x="653.8229166666666" y="341" width="155.6875" height="14" fill="#fff"/>
+<text x="731.6666666666666" y="352" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Set scenario status to ready</text>
+<rect x="303.6640625" y="370" width="47.671875" height="14" fill="#fff"/>
+<text x="327.5" y="381" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">200 OK</text>
+<rect x="118.30989583333331" y="428" width="95.046875" height="14" fill="#fff"/>
+<text x="165.83333333333331" y="439" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Launch scenario</text>
+<rect x="280.7734375" y="457" width="93.453125" height="14" fill="#fff"/>
+<text x="327.5" y="468" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">POST …/launch</text>
+<rect x="433.29947916666663" y="486" width="111.734375" height="14" fill="#fff"/>
+<text x="489.16666666666663" y="497" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">launch(scenario_id)</text>
+<rect x="706.9609375" y="515" width="211.078125" height="14" fill="#fff"/>
+<text x="812.5" y="526" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Insert running simulation run and seed</text>
+<rect x="792.3203125" y="544" width="40.359375" height="14" fill="#fff"/>
+<text x="812.5" y="555" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">run_id</text>
+<rect x="608.3177083333333" y="573" width="85.03125" height="14" fill="#fff"/>
+<text x="650.8333333333333" y="584" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Configure fleet</text>
+<rect x="753.984375" y="602" width="117.03125" height="14" fill="#fff"/>
+<text x="812.5" y="613" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Start vehicle runners</text>
+<rect x="766.3203125" y="631" width="92.359375" height="14" fill="#fff"/>
+<text x="812.5" y="642" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Runners started</text>
+<rect x="439.65104166666663" y="660" width="99.03125" height="14" fill="#fff"/>
+<text x="489.16666666666663" y="671" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">run_id and status</text>
+<rect x="291.984375" y="689" width="71.03125" height="14" fill="#fff"/>
+<text x="327.5" y="700" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">200 · run_id</text>
+<rect x="727.9609375" y="718" width="169.078125" height="14" fill="#fff"/>
+<text x="812.5" y="729" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Loop · tick_all(simulated_now)</text>
+<rect x="897.8333333333334" y="747" width="229.75" height="14" fill="#fff"/>
+<text x="1012.7083333333334" y="758" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">VehicleRunner.tick → OBDGenerator.step</text>
+<rect x="748.4713541666666" y="805" width="126.390625" height="14" fill="#fff"/>
+<text x="811.6666666666666" y="816" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Break loop at deadline</text>
+<rect x="761.8098958333333" y="834" width="263.046875" height="14" fill="#fff"/>
+<text x="893.3333333333333" y="845" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Set run status to completed and record end time</text>
+<rect x="139.66145833333331" y="892" width="52.34375" height="14" fill="#fff"/>
+<text x="165.83333333333331" y="903" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Stop run</text>
+<rect x="287.1171875" y="921" width="80.765625" height="14" fill="#fff"/>
+<text x="327.5" y="932" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">POST …/stop</text>
+<rect x="470.33072916666663" y="950" width="37.671875" height="14" fill="#fff"/>
+<text x="489.16666666666663" y="961" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">stop()</text>
+<rect x="607.6536458333333" y="979" width="86.359375" height="14" fill="#fff"/>
+<text x="650.8333333333333" y="990" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Signal run task</text>
+<rect x="768.1458333333333" y="1008" width="250.375" height="14" fill="#fff"/>
+<text x="893.3333333333333" y="1019" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Set run status to stopped and record end time</text>
+<rect x="445.32291666666663" y="1037" width="87.6875" height="14" fill="#fff"/>
+<text x="489.16666666666663" y="1048" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Terminal status</text>
+<rect x="271.6484375" y="1066" width="111.703125" height="14" fill="#fff"/>
+<text x="327.5" y="1077" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Updated run history</text>
+</svg>

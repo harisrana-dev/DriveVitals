@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1020" height="696" viewBox="0 0 1020 696">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="23" text-anchor="start" fill="#162e48">Figure 3.2  Functional use case diagram</text>
+<rect x="20" y="67" width="980" height="108" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="32" y="87" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Authentication &amp; access control  ·  UC-01, UC-02</text>
+<ellipse cx="185.5" cy="131.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="185.5" y="136.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Authenticate by email/password</text>
+<ellipse cx="509.5" cy="131.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="509.5" y="136.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Issue bearer session token</text>
+<ellipse cx="833.5" cy="131.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="833.5" y="136.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Enforce role guards</text>
+<rect x="20" y="187" width="980" height="108" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="32" y="207" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Digital Twin control plane  ·  UC-03 to UC-05, UC-11</text>
+<ellipse cx="185.5" cy="251.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="185.5" y="256.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Manage fleet fixtures</text>
+<ellipse cx="509.5" cy="251.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="509.5" y="256.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Configure simulation scenario</text>
+<ellipse cx="833.5" cy="251.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="833.5" y="256.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Activate, launch, stop or reset</text>
+<rect x="20" y="307" width="980" height="108" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="32" y="327" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Simulation &amp; telemetry  ·  UC-04, UC-05, UC-12</text>
+<ellipse cx="185.5" cy="371.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="185.5" y="376.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Advance per-vehicle tick loop</text>
+<ellipse cx="509.5" cy="371.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="509.5" y="376.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Generate OBD-II telemetry</text>
+<ellipse cx="833.5" cy="371.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="833.5" y="376.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Start, update and end trips</text>
+<rect x="20" y="427" width="980" height="108" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="32" y="447" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Rule-based analytics  ·  UC-07 to UC-09</text>
+<ellipse cx="185.5" cy="491.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="185.5" y="496.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Detect behaviour and score trips</text>
+<ellipse cx="509.5" cy="491.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="509.5" y="496.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Score vehicle subsystem health</text>
+<ellipse cx="833.5" cy="491.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="833.5" y="496.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Estimate maintenance and raise alerts</text>
+<rect x="20" y="547" width="980" height="108" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="32" y="567" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">Delivery &amp; presentation  ·  UC-06 to UC-10, UC-12</text>
+<ellipse cx="185.5" cy="611.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="185.5" y="616.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Read operational data via REST</text>
+<ellipse cx="509.5" cy="611.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="509.5" y="616.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Receive live WebSocket updates</text>
+<ellipse cx="833.5" cy="611.5" rx="149.5" ry="24.5" fill="#fff" stroke="#829bb5"/>
+<text x="833.5" y="616.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Merge data in the React dashboard</text>
+<path d="M335,131.5 L360,131.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M360,131.5 L353.0,135.0 L353.0,128.0 Z" fill="#526c86"/>
+<path d="M659,131.5 L684,131.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M684,131.5 L677.0,135.0 L677.0,128.0 Z" fill="#526c86"/>
+<path d="M335,251.5 L360,251.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M360,251.5 L353.0,255.0 L353.0,248.0 Z" fill="#526c86"/>
+<path d="M659,251.5 L684,251.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M684,251.5 L677.0,255.0 L677.0,248.0 Z" fill="#526c86"/>
+<path d="M335,371.5 L360,371.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M360,371.5 L353.0,375.0 L353.0,368.0 Z" fill="#526c86"/>
+<path d="M659,371.5 L684,371.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M684,371.5 L677.0,375.0 L677.0,368.0 Z" fill="#526c86"/>
+<path d="M659,491.5 L684,491.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M684,491.5 L677.0,495.0 L677.0,488.0 Z" fill="#526c86"/>
+<path d="M335,611.5 L360,611.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M360,611.5 L353.0,615.0 L353.0,608.0 Z" fill="#526c86"/>
+<path d="M659,611.5 L684,611.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M684,611.5 L677.0,615.0 L677.0,608.0 Z" fill="#526c86"/>
+</svg>

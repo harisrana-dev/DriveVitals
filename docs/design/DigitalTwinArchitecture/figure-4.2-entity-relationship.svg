@@ -1,0 +1,259 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="1040" viewBox="0 0 1140 1040">
+<rect width="100%" height="100%" fill="white"/>
+<text x="16" y="36" font-family="Arial,Liberation Sans,sans-serif" font-size="25" font-weight="700" fill="#152c43">DriveVitals entity–relationship diagram</text>
+<text x="17" y="60" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">18 domain tables · 23 foreign keys · key attributes from the report inventory</text>
+<text x="17" y="77" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  primary key    FK  foreign key    UQ  unique    ?  nullable FK    [ref]  repeated table key</text>
+<text x="17" y="94" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">Each line reads from referenced key to foreign key. Cardinalities follow the report inventory.</text>
+<rect x="16" y="113" width="390" height="219" fill="#f5f8fc" stroke="#cfdae6"/>
+<text x="29" y="137" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="700" fill="#152c43">Identity &amp; settings</text>
+<rect x="420" y="113" width="704" height="274" fill="#f5f8fc" stroke="#cfdae6"/>
+<text x="433" y="137" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="700" fill="#152c43">Fleet &amp; trip records</text>
+<rect x="16" y="339" width="390" height="366" fill="#f5f8fc" stroke="#cfdae6"/>
+<text x="29" y="363" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="700" fill="#152c43">Scenario configuration &amp; execution</text>
+<rect x="420" y="390" width="704" height="330" fill="#f5f8fc" stroke="#cfdae6"/>
+<text x="433" y="414" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="700" fill="#152c43">Telemetry, behaviour &amp; alerts</text>
+<rect x="16" y="724" width="1108" height="295" fill="#f5f8fc" stroke="#cfdae6"/>
+<text x="29" y="748" font-family="Arial,Liberation Sans,sans-serif" font-size="16" font-weight="700" fill="#152c43">Maintenance, health &amp; statistics</text>
+<rect x="30" y="188" width="134" height="109" fill="#fff" stroke="#8fa5bb"/>
+<rect x="30" y="188" width="134" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="38" y="204" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">users</text>
+<text x="38" y="226" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  user_id</text>
+<text x="38" y="242" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">UQ  email</text>
+<text x="38" y="258" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">password_hash</text>
+<text x="38" y="274" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">full_name, role</text>
+<text x="38" y="290" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">is_active</text>
+<rect x="210" y="152" width="180" height="93" fill="#fff" stroke="#8fa5bb"/>
+<rect x="210" y="152" width="180" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="218" y="168" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">auth_sessions</text>
+<text x="218" y="190" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  session_id</text>
+<text x="218" y="206" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  user_id</text>
+<text x="218" y="222" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">UQ  token_hash</text>
+<text x="218" y="238" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">expires_at, revoked_at</text>
+<rect x="210" y="250" width="180" height="77" fill="#fff" stroke="#8fa5bb"/>
+<rect x="210" y="250" width="180" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="218" y="266" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">system_settings</text>
+<text x="218" y="288" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  category</text>
+<text x="218" y="304" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK? updated_by</text>
+<text x="218" y="320" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">settings_data (JSON)</text>
+<rect x="435" y="151" width="191" height="93" fill="#fff" stroke="#8fa5bb"/>
+<rect x="435" y="151" width="191" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="443" y="167" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">drivers</text>
+<text x="443" y="189" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  driver_id</text>
+<text x="443" y="205" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">UQ  license_number</text>
+<text x="443" y="221" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">first_name, last_name</text>
+<text x="443" y="237" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">behavior_profile</text>
+<rect x="435" y="252" width="191" height="109" fill="#fff" stroke="#8fa5bb"/>
+<rect x="435" y="252" width="191" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="443" y="268" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">vehicles</text>
+<text x="443" y="290" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  vehicle_id</text>
+<text x="443" y="306" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">UQ  registration_number</text>
+<text x="443" y="322" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">UQ  vin</text>
+<text x="443" y="338" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">fuel_type</text>
+<text x="443" y="354" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">tank_capacity_liters</text>
+<rect x="665" y="183" width="193" height="93" fill="#fff" stroke="#8fa5bb"/>
+<rect x="665" y="183" width="193" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="673" y="199" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">routes</text>
+<text x="673" y="221" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  route_id</text>
+<text x="673" y="237" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">name, route_type</text>
+<text x="673" y="253" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">estimated_distance_km</text>
+<text x="673" y="269" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">speed_limit_kmh</text>
+<rect x="912" y="150" width="198" height="109" fill="#fff" stroke="#8fa5bb"/>
+<rect x="912" y="150" width="198" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="920" y="166" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">assignments</text>
+<text x="920" y="188" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  assignment_id</text>
+<text x="920" y="204" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  driver_id, vehicle_id</text>
+<text x="920" y="220" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  route_id</text>
+<text x="920" y="236" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">UQ  (driver, vehicle, route)</text>
+<text x="920" y="252" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">name, notes, is_active</text>
+<rect x="912" y="267" width="198" height="119" fill="#fff" stroke="#8fa5bb"/>
+<rect x="912" y="267" width="198" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="920" y="283" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">trips</text>
+<text x="920" y="305" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  trip_id</text>
+<text x="920" y="321" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  vehicle_id, driver_id</text>
+<text x="920" y="337" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  route_id</text>
+<text x="920" y="353" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">start_time, end_time, status</text>
+<text x="920" y="369" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">distance_km, fuel_used_liters</text>
+<text x="920" y="385" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">trip_score</text>
+<rect x="35" y="369" width="151" height="45" fill="#fff" stroke="#8fa5bb"/>
+<rect x="35" y="369" width="151" height="24" fill="#eaf1f8" stroke="#8fa5bb"/>
+<text x="43" y="385" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">assignments [ref]</text>
+<text x="43" y="407" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  assignment_id</text>
+<rect x="217" y="369" width="173" height="61" fill="#fff" stroke="#8fa5bb"/>
+<rect x="217" y="369" width="173" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="225" y="385" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">scenario_assignments</text>
+<text x="225" y="407" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK/FK  assignment_id</text>
+<text x="225" y="423" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK/FK  scenario_id</text>
+<rect x="35" y="463" width="172" height="93" fill="#fff" stroke="#8fa5bb"/>
+<rect x="35" y="463" width="172" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="43" y="479" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">simulation_scenarios</text>
+<text x="43" y="501" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  scenario_id</text>
+<text x="43" y="517" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">name, status</text>
+<text x="43" y="533" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">duration_seconds</text>
+<text x="43" y="549" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">simulation_speed, seed</text>
+<rect x="217" y="570" width="173" height="125" fill="#fff" stroke="#8fa5bb"/>
+<rect x="217" y="570" width="173" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="225" y="586" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">simulation_runs</text>
+<text x="225" y="608" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  run_id</text>
+<text x="225" y="624" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  scenario_id</text>
+<text x="225" y="640" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">status, seed</text>
+<text x="225" y="656" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">start_time, end_time</text>
+<text x="225" y="672" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">vehicles_active</text>
+<text x="225" y="688" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">trips_completed</text>
+<rect x="435" y="429" width="191" height="45" fill="#fff" stroke="#8fa5bb"/>
+<rect x="435" y="429" width="191" height="24" fill="#eaf1f8" stroke="#8fa5bb"/>
+<text x="443" y="445" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">trips [ref]</text>
+<text x="443" y="467" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  trip_id</text>
+<rect x="435" y="520" width="191" height="45" fill="#fff" stroke="#8fa5bb"/>
+<rect x="435" y="520" width="191" height="24" fill="#eaf1f8" stroke="#8fa5bb"/>
+<text x="443" y="536" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">vehicles [ref]</text>
+<text x="443" y="558" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  vehicle_id</text>
+<rect x="435" y="611" width="191" height="45" fill="#fff" stroke="#8fa5bb"/>
+<rect x="435" y="611" width="191" height="24" fill="#eaf1f8" stroke="#8fa5bb"/>
+<text x="443" y="627" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">drivers [ref]</text>
+<text x="443" y="649" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  driver_id</text>
+<rect x="880" y="422" width="230" height="93" fill="#fff" stroke="#8fa5bb"/>
+<rect x="880" y="422" width="230" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="888" y="438" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">telemetry_samples</text>
+<text x="888" y="460" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  sample_id</text>
+<text x="888" y="476" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  trip_id, vehicle_id</text>
+<text x="888" y="492" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">timestamp, speed_kmh, rpm</text>
+<text x="888" y="508" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">throttle, brake, fuel, odometer_km</text>
+<rect x="880" y="522" width="230" height="93" fill="#fff" stroke="#8fa5bb"/>
+<rect x="880" y="522" width="230" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="888" y="538" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">behaviour_events</text>
+<text x="888" y="560" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  behaviour_event_id</text>
+<text x="888" y="576" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  vehicle_id, driver_id, trip_id</text>
+<text x="888" y="592" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">event_type, severity</text>
+<text x="888" y="608" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">timestamps, evidence</text>
+<rect x="880" y="622" width="230" height="93" fill="#fff" stroke="#8fa5bb"/>
+<rect x="880" y="622" width="230" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="888" y="638" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">alerts</text>
+<text x="888" y="660" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  alert_id</text>
+<text x="888" y="676" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  vehicle_id   FK? driver_id, trip_id</text>
+<text x="888" y="692" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">alert_type, severity, status</text>
+<text x="888" y="708" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">acknowledged, condition, category</text>
+<rect x="35" y="815" width="166" height="45" fill="#fff" stroke="#8fa5bb"/>
+<rect x="35" y="815" width="166" height="24" fill="#eaf1f8" stroke="#8fa5bb"/>
+<text x="43" y="831" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">vehicles [ref]</text>
+<text x="43" y="853" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  vehicle_id</text>
+<rect x="817" y="771" width="172" height="45" fill="#fff" stroke="#8fa5bb"/>
+<rect x="817" y="771" width="172" height="24" fill="#eaf1f8" stroke="#8fa5bb"/>
+<text x="825" y="787" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">drivers [ref]</text>
+<text x="825" y="809" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  driver_id</text>
+<rect x="286" y="766" width="227" height="93" fill="#fff" stroke="#8fa5bb"/>
+<rect x="286" y="766" width="227" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="294" y="782" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">maintenance_records</text>
+<text x="294" y="804" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK  maintenance_record_id</text>
+<text x="294" y="820" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">FK  vehicle_id</text>
+<text x="294" y="836" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">component, priority, status</text>
+<text x="294" y="852" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">due_odometer_km, estimated_cost</text>
+<rect x="286" y="866" width="227" height="77" fill="#fff" stroke="#8fa5bb"/>
+<rect x="286" y="866" width="227" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="294" y="882" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">vehicle_health</text>
+<text x="294" y="904" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK/FK  vehicle_id</text>
+<text x="294" y="920" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">overall and five subsystem scores</text>
+<text x="294" y="936" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">health_reasons (JSON)</text>
+<rect x="550" y="917" width="238" height="77" fill="#fff" stroke="#8fa5bb"/>
+<rect x="550" y="917" width="238" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="558" y="933" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">vehicle_statistics</text>
+<text x="558" y="955" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK/FK  vehicle_id</text>
+<text x="558" y="971" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">trip_count, total_distance_km</text>
+<text x="558" y="987" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">fuel_consumed_liters</text>
+<rect x="817" y="869" width="280" height="61" fill="#fff" stroke="#8fa5bb"/>
+<rect x="817" y="869" width="280" height="24" fill="#dbe8f5" stroke="#8fa5bb"/>
+<text x="825" y="885" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="700" fill="#152c43">driver_statistics</text>
+<text x="825" y="907" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">PK/FK  driver_id</text>
+<text x="825" y="923" font-family="Arial,Liberation Sans,sans-serif" font-size="13" font-weight="400" fill="#152c43">total_trips, safety/aggression/efficiency scores</text>
+<path d="M164,210 L185,210 L185,178 L210,178" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="164" cy="210" r="2" fill="#476581"/>
+<path d="M205.0,181.0 L210,178 L205.0,175.0" fill="none" stroke="#476581"/>
+<path d="M164,245 L186,245 L186,273 L210,273" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="164" cy="245" r="2" fill="#476581"/>
+<path d="M205.0,276.0 L210,273 L205.0,270.0" fill="none" stroke="#476581"/>
+<path d="M626,171 L645,171 Q648,165 651,171 L877,171 Q880,165 883,171 L912,171" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="171" r="2" fill="#476581"/>
+<path d="M907.0,174.0 L912,171 L907.0,168.0" fill="none" stroke="#476581"/>
+<path d="M626,258 L634,258 Q637,252 640,258 L648,258 L648,145 L880,145 L880,199 L912,199" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="258" r="2" fill="#476581"/>
+<path d="M907.0,202.0 L912,199 L907.0,196.0" fill="none" stroke="#476581"/>
+<path d="M858,216 L912,216" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="858" cy="216" r="2" fill="#476581"/>
+<path d="M907.0,219.0 L912,216 L907.0,213.0" fill="none" stroke="#476581"/>
+<path d="M858,255 L880,255 L880,274 L912,274" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="858" cy="255" r="2" fill="#476581"/>
+<path d="M907.0,277.0 L912,274 L907.0,271.0" fill="none" stroke="#476581"/>
+<path d="M626,223 L637,223 L637,350 L871,350 L871,309 L912,309" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="223" r="2" fill="#476581"/>
+<path d="M907.0,312.0 L912,309 L907.0,306.0" fill="none" stroke="#476581"/>
+<path d="M626,292 L634,292 Q637,286 640,292 L657,292 L657,311 L892,311 L892,298 L912,298" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="292" r="2" fill="#476581"/>
+<path d="M907.0,301.0 L912,298 L907.0,295.0" fill="none" stroke="#476581"/>
+<path d="M186,391 L217,391" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="186" cy="391" r="2" fill="#476581"/>
+<path d="M212.0,394.0 L217,391 L212.0,388.0" fill="none" stroke="#476581"/>
+<path d="M172,463 L172,444 L287,444 L287,430" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="172" cy="463" r="2" fill="#476581"/>
+<path d="M290.0,435.0 L287,430 L284.0,435.0" fill="none" stroke="#476581"/>
+<path d="M117,556 L117,605 L217,605" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="117" cy="556" r="2" fill="#476581"/>
+<path d="M212.0,608.0 L217,605 L212.0,602.0" fill="none" stroke="#476581"/>
+<path d="M626,444 L880,444" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="444" r="2" fill="#476581"/>
+<path d="M875.0,447.0 L880,444 L875.0,441.0" fill="none" stroke="#476581"/>
+<path d="M626,534 L668,534 L668,467 L686,467 Q689,461 692,467 L880,467" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="534" r="2" fill="#476581"/>
+<path d="M875.0,470.0 L880,467 L875.0,464.0" fill="none" stroke="#476581"/>
+<path d="M626,459 L689,459 L689,541 L740,541 Q743,535 746,541 L880,541" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="459" r="2" fill="#476581"/>
+<path d="M875.0,544.0 L880,541 L875.0,538.0" fill="none" stroke="#476581"/>
+<path d="M626,545 L650,545 L650,552 L740,552 Q743,546 746,552 L880,552" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="545" r="2" fill="#476581"/>
+<path d="M875.0,555.0 L880,552 L875.0,549.0" fill="none" stroke="#476581"/>
+<path d="M626,622 L709,622 L709,570 L720,570 Q723,564 726,570 L740,570 Q743,564 746,570 L880,570" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="622" r="2" fill="#476581"/>
+<path d="M875.0,573.0 L880,570 L875.0,567.0" fill="none" stroke="#476581"/>
+<path d="M626,469 L686,469 Q689,463 692,469 L743,469 L743,639 L880,639" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="469" r="2" fill="#476581"/>
+<path d="M875.0,642.0 L880,639 L875.0,636.0" fill="none" stroke="#476581"/>
+<path d="M626,558 L723,558 L723,655 L880,655" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="558" r="2" fill="#476581"/>
+<path d="M875.0,658.0 L880,655 L875.0,652.0" fill="none" stroke="#476581"/>
+<path d="M626,643 L679,643 L679,674 L880,674" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="626" cy="643" r="2" fill="#476581"/>
+<path d="M875.0,677.0 L880,674 L875.0,671.0" fill="none" stroke="#476581"/>
+<path d="M201,829 L244,829 L244,804 L286,804" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="201" cy="829" r="2" fill="#476581"/>
+<path d="M281.0,807.0 L286,804 L281.0,801.0" fill="none" stroke="#476581"/>
+<path d="M201,849 L244,849 L244,893 L286,893" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="201" cy="849" r="2" fill="#476581"/>
+<path d="M281.0,896.0 L286,893 L281.0,890.0" fill="none" stroke="#476581"/>
+<path d="M117,860 L117,979 L529,979 L529,951 L550,951" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="117" cy="860" r="2" fill="#476581"/>
+<path d="M545.0,954.0 L550,951 L545.0,948.0" fill="none" stroke="#476581"/>
+<path d="M903,816 L903,869" fill="none" stroke="#476581" stroke-width="1.2"/>
+<circle cx="903" cy="816" r="2" fill="#476581"/>
+<path d="M900.0,864.0 L903,869 L906.0,864.0" fill="none" stroke="#476581"/>
+<text x="169" y="169" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="168" y="292" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="891" y="164" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="844" y="139" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="865" y="211" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="886" y="267" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="787" y="345" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="819" y="305" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="193" y="385" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="237" y="439" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="174" y="599" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="847" y="439" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="847" y="462" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="847" y="536" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="847" y="551" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="847" y="565" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="847" y="634" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="847" y="650" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="847" y="669" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="252" y="799" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:N</text>
+<text x="252" y="888" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:1</text>
+<text x="491" y="973" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:1</text>
+<text x="911" y="844" font-family="Arial,Liberation Sans,sans-serif" font-size="11" font-weight="400" fill="#152c43">1:1</text>
+</svg>

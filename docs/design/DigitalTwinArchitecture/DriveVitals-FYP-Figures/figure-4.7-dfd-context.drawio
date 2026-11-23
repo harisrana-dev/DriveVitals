@@ -1,0 +1,53 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Figure 4.7">
+    <mxGraphModel page="1" pageWidth="1040" pageHeight="495" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t2" parent="1" vertex="1" value="&lt;b&gt;Figure 4.7  Data flow diagram · Level 0&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=23;connectable=0;">
+          <mxGeometry x="20" y="7" width="408.375" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="admin" parent="1" vertex="1" value="&lt;b&gt;Administrator&lt;/b&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#ecf4fb;strokeColor=#7e9ab7;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="30" y="133" width="222" height="69" as="geometry" />
+        </mxCell>
+        <mxCell id="read" parent="1" vertex="1" value="&lt;b&gt;Viewer / operator / admin&lt;/b&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#ecf4fb;strokeColor=#7e9ab7;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="30" y="310" width="222" height="69" as="geometry" />
+        </mxCell>
+        <mxCell id="drive" parent="1" vertex="1" value="&lt;b&gt;0  DriveVitals&lt;/b&gt;" style="html=1;fontFamily=Arial;ellipse;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="394" y="181" width="246" height="146" as="geometry" />
+        </mxCell>
+        <mxCell id="browser" parent="1" vertex="1" value="&lt;b&gt;Browser / React dashboard&lt;/b&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#ecf4fb;strokeColor=#7e9ab7;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="783" y="217" width="231" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" parent="1" edge="1" source="admin" target="drive" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5072463768115942;exitPerimeter=0;entryX=0.052845528455284556;entryY=0.2876712328767123;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="324" y="168" />
+              <mxPoint x="324" y="223" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1" parent="1" edge="1" source="read" target="drive" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.4927536231884058;exitPerimeter=0;entryX=0.052845528455284556;entryY=0.7328767123287672;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="324" y="344" />
+              <mxPoint x="324" y="288" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e2" parent="1" edge="1" source="drive" target="browser" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="l10" parent="1" vertex="1" value="Scenario configuration and run commands" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="194.7890625" y="112" width="232.421875" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="l11" parent="1" vertex="1" value="Fleet and analytics queries" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="237.140625" y="356" width="149.71875" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="l12" parent="1" vertex="1" value="REST JSON and live WebSocket data" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="609.0390625" y="187" width="209.921875" height="14" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

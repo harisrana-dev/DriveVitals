@@ -1,0 +1,158 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Figure 4.6">
+    <mxGraphModel page="1" pageWidth="1040" pageHeight="1115" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t2" parent="1" vertex="1" value="&lt;b&gt;Figure 4.6  Scenario lifecycle activity diagram&lt;/b&gt;" style="html=1;fontFamily=Arial;text;spacing=0;align=left;verticalAlign=top;fontColor=#162e48;fontSize=23;connectable=0;">
+          <mxGeometry x="20" y="7" width="473.546875" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="1" vertex="1" value="&lt;b&gt;Scenario created&lt;/b&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=25;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#dceee6;strokeColor=#619478;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="421" y="71" width="199" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="config" parent="1" vertex="1" value="&lt;b&gt;Configure seed, speed, duration&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;and assignments&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="386" y="138" width="269" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="activate" parent="1" vertex="1" value="&lt;b&gt;Activate scenario&lt;/b&gt;" style="html=1;fontFamily=Arial;rhombus;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff4dc;strokeColor=#b69656;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="416" y="217" width="209" height="69" as="geometry" />
+        </mxCell>
+        <mxCell id="guard" parent="1" vertex="1" value="&lt;b&gt;Launch requested&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Run already active?&lt;/span&gt;" style="html=1;fontFamily=Arial;rhombus;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff4dc;strokeColor=#b69656;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="383" y="313" width="275" height="81" as="geometry" />
+        </mxCell>
+        <mxCell id="reject" parent="1" vertex="1" value="&lt;b&gt;Reject with HTTP 409&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Single-run guard&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="58" y="422" width="224" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="created" parent="1" vertex="1" value="&lt;b&gt;Create running run row&lt;/b&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="412" y="422" width="217" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="fleet" parent="1" vertex="1" value="&lt;b&gt;Build fleet from assignments&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Start one runner per assignment&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="390" y="513" width="261" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="clock" parent="1" vertex="1" value="&lt;b&gt;Advance simulated clock&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Wait tick_seconds / speed&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="392" y="603" width="257" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="sample" parent="1" vertex="1" value="&lt;b&gt;Generate and publish sample&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;OBDGenerator → TelemetryPipeline&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="381" y="690" width="279" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="effects" parent="1" vertex="1" value="&lt;b&gt;Process tick outputs&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Analytics, persistence, live delivery&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="376" y="780" width="289" height="59" as="geometry" />
+        </mxCell>
+        <mxCell id="due" parent="1" vertex="1" value="&lt;b&gt;Duration reached?&lt;/b&gt;" style="html=1;fontFamily=Arial;rhombus;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff4dc;strokeColor=#b69656;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="395" y="862" width="251" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="stop" parent="1" vertex="1" value="&lt;b&gt;Signal run task&lt;/b&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="742" y="741" width="244" height="59" as="geometry" />
+        </mxCell>
+        <mxCell id="stopped" parent="1" vertex="1" value="&lt;b&gt;Mark stopped&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Write end time&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="742" y="957" width="244" height="57" as="geometry" />
+        </mxCell>
+        <mxCell id="complete" parent="1" vertex="1" value="&lt;b&gt;Mark completed&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:13px&quot;&gt;Finalize trips, statistics, alerts&lt;/span&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=8;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#fff;strokeColor=#829bb5;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="376" y="957" width="289" height="57" as="geometry" />
+        </mxCell>
+        <mxCell id="end" parent="1" vertex="1" value="&lt;b&gt;Persist run history · finish&lt;/b&gt;" style="html=1;fontFamily=Arial;rounded=1;arcSize=25;align=center;verticalAlign=middle;spacing=0;whiteSpace=wrap;fillColor=#dceee6;strokeColor=#619478;fontColor=#162e48;fontSize=14;">
+          <mxGeometry x="504" y="1054" width="270" height="41" as="geometry" />
+        </mxCell>
+        <mxCell id="e0" parent="1" edge="1" source="start" target="config" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" parent="1" edge="1" source="config" target="activate" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" parent="1" edge="1" source="activate" target="guard" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" parent="1" edge="1" source="guard" target="created" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" parent="1" edge="1" source="created" target="fleet" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" parent="1" edge="1" source="fleet" target="clock" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" parent="1" edge="1" source="clock" target="sample" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" parent="1" edge="1" source="sample" target="effects" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" parent="1" edge="1" source="effects" target="due" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" parent="1" edge="1" source="due" target="complete" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" parent="1" edge="1" source="stop" target="stopped" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" parent="1" edge="1" source="activate" target="config" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="335" y="251.5" />
+              <mxPoint x="335" y="165" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" parent="1" edge="1" source="guard" target="reject" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="170" y="353.5" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" parent="1" edge="1" source="due" target="clock" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="309" y="897" />
+              <mxPoint x="309" y="631" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14" parent="1" edge="1" source="clock" target="stop" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;dashed=1;dashPattern=5 4;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="864" y="631" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" parent="1" edge="1" source="complete" target="end" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.3851851851851852;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="520.5" y="1034" />
+              <mxPoint x="608" y="1034" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16" parent="1" edge="1" source="stopped" target="end" style="html=1;edgeStyle=segmentEdgeStyle;rounded=0;strokeColor=#526c86;strokeWidth=1.35;endArrow=block;endSize=6;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.7296296296296296;entryY=0.0;entryPerimeter=0;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="864" y="1034" />
+              <mxPoint x="701" y="1034" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="l35" parent="1" vertex="1" value="Ready" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="499.65625" y="280.5" width="41.6875" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="l36" parent="1" vertex="1" value="Idle" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="507.328125" y="389.0" width="26.34375" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="l37" parent="1" vertex="1" value="Yes" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="507.2109375" y="925.5" width="26.578125" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="l38" parent="1" vertex="1" value="Not ready" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="334.4921875" y="230" width="59.015625" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="l39" parent="1" vertex="1" value="Run active" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="253.15625" y="334" width="63.6875" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="l40" parent="1" vertex="1" value="Next tick" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="320.5" y="876" width="53.0" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="l41" parent="1" vertex="1" value="Admin stop" style="html=1;fontFamily=Arial;text;spacing=0;align=center;verticalAlign=middle;fillColor=#ffffff;fontSize=12;fontColor=#162e48;connectable=0;">
+          <mxGeometry x="731.4921875" y="611" width="67.015625" height="14" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

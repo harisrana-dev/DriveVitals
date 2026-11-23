@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1110" height="795" viewBox="0 0 1110 795">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="23" text-anchor="start" fill="#162e48">Figure 3.1  System-level use case diagram</text>
+<text x="20" y="52" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="start" fill="#162e48">Role labels inside each use case show the access policy recorded in the report.</text>
+<rect x="229" y="72" width="858" height="702" rx="0" fill="#f5f8fc" stroke="#c7d5e4"/>
+<text x="241" y="92" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="15" text-anchor="start" fill="#162e48">DriveVitals system boundary</text>
+<rect x="33" y="131" width="145" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="105.5" y="157.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Anonymous visitor</text>
+<ellipse cx="366.0" cy="152.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="366.0" y="149.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-01  Authenticate</text>
+<text x="366.0" y="165.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Visitor</text>
+<ellipse cx="652.0" cy="152.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="652.0" y="149.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-12  View live telemetry</text>
+<text x="652.0" y="165.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Any reader</text>
+<rect x="33" y="259" width="145" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="105.5" y="285.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Viewer</text>
+<ellipse cx="366.0" cy="280.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="366.0" y="277.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-02  Log out</text>
+<text x="366.0" y="293.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Authenticated roles</text>
+<ellipse cx="652.0" cy="280.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="652.0" y="277.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-06  Monitor live dashboard</text>
+<text x="652.0" y="293.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Viewer and higher</text>
+<ellipse cx="938.0" cy="280.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="938.0" y="277.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-07  Review driver performance</text>
+<text x="938.0" y="293.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Viewer and higher</text>
+<rect x="33" y="387" width="145" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="105.5" y="413.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Operator</text>
+<ellipse cx="366.0" cy="408.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="366.0" y="405.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-08  View health and maintenance</text>
+<text x="366.0" y="421.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Viewer read · operator action</text>
+<ellipse cx="652.0" cy="408.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="652.0" y="405.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-09  Triage alerts</text>
+<text x="652.0" y="421.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Viewer read · operator action</text>
+<ellipse cx="938.0" cy="408.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="938.0" y="405.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-10  Review trip history</text>
+<text x="938.0" y="421.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Viewer read · operator action</text>
+<rect x="33" y="515" width="145" height="43" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="105.5" y="541.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Administrator</text>
+<ellipse cx="366.0" cy="536.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="366.0" y="533.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-03  Manage fleet fixtures</text>
+<text x="366.0" y="549.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Administrator</text>
+<ellipse cx="652.0" cy="536.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="652.0" y="533.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-04  Configure and launch runs</text>
+<text x="652.0" y="549.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Administrator</text>
+<ellipse cx="938.0" cy="536.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="938.0" y="533.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-05  Stop a run / duration expiry</text>
+<text x="938.0" y="549.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Administrator / timed expiry</text>
+<ellipse cx="366.0" cy="664.5" rx="127.0" ry="36.5" fill="#fff" stroke="#829bb5"/>
+<text x="366.0" y="661.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">UC-11  View and update settings</text>
+<text x="366.0" y="677.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Administrator</text>
+<text x="385" y="752" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Viewer access includes read-only review of health, alerts and trips.</text>
+<path d="M178,152.5 L205,152.5 L205,105 L652,105" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M366,105 L366,116" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M652,105 L652,116" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M178,280.5 L205,280.5 L205,233 L938,233" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M366,233 L366,244" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M652,233 L652,244" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M938,233 L938,244" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M178,408.5 L205,408.5 L205,361 L938,361" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M366,361 L366,372" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M652,361 L652,372" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M938,361 L938,372" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M178,536.5 L205,536.5 L205,489 L938,489" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M366,489 L366,500" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M652,489 L652,500" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M938,489 L938,500" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M105,558 L105,617 L366,617 L366,628" fill="none" stroke="#526c86" stroke-width="1.35"/>
+</svg>

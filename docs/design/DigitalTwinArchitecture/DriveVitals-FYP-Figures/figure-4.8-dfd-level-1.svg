@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1190" height="730" viewBox="0 0 1190 730">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="23" text-anchor="start" fill="#162e48">Figure 4.8  Data flow diagram · Level 1</text>
+<rect x="24" y="106" width="157" height="60" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="102.5" y="141.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Administrator</text>
+<rect x="995" y="106" width="170" height="60" rx="5" fill="#ecf4fb" stroke="#7e9ab7"/>
+<text x="1080.0" y="141.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Browser / dashboard</text>
+<rect x="215" y="90" width="243" height="120" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="336.5" y="139.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">1  Simulation and telemetry</text>
+<text x="336.5" y="155.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Scenario lifecycle and tick loop</text>
+<text x="336.5" y="171.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">OBDGenerator → TelemetrySample</text>
+<rect x="215" y="392" width="243" height="135" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="336.5" y="440.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">2  Rule-based analytics</text>
+<text x="336.5" y="456.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Behaviour and safety scoring</text>
+<text x="336.5" y="472.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Health and maintenance</text>
+<text x="336.5" y="488.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Alert generation</text>
+<rect x="585" y="392" width="260" height="135" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="715.0" y="440.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">3  Persistence</text>
+<text x="715.0" y="456.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Telemetry, trips and behaviour</text>
+<text x="715.0" y="472.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Health, maintenance, alerts</text>
+<text x="715.0" y="488.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Scenario and run repositories</text>
+<rect x="920" y="392" width="245" height="135" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="1042.5" y="440.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">4  API and realtime delivery</text>
+<text x="1042.5" y="456.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">REST routes</text>
+<text x="1042.5" y="472.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Dashboard snapshots</text>
+<text x="1042.5" y="488.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">Three WebSocket workers</text>
+<rect x="585" y="626" width="260" height="58" rx="0" fill="#eef6ec" stroke="#7c9b83"/>
+<text x="715.0" y="660.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">D1  PostgreSQL</text>
+<path d="M181,136.0 L215,150.0" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M215,150.0 L207.19462899228697,150.57112470788144 L209.85987762906703,144.09837801855844 Z" fill="#526c86"/>
+<path d="M336.5,210 L336.5,392" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M336.5,392 L333.0,385.0 L340.0,385.0 Z" fill="#526c86"/>
+<path d="M458,145 L712,145 L712,392" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M712,392 L708.5,385.0 L715.5,385.0 Z" fill="#526c86"/>
+<path d="M458,459.5 L585,459.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M585,459.5 L578.0,463.0 L578.0,456.0 Z" fill="#526c86"/>
+<path d="M845,459.5 L920,459.5" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M920,459.5 L913.0,463.0 L913.0,456.0 Z" fill="#526c86"/>
+<path d="M458,500 L493,500 L493,570 L1042,570 L1042,527" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1042,527 L1045.5,534.0 L1038.5,534.0 Z" fill="#526c86"/>
+<path d="M668,527 L668,626" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M668,626 L664.5,619.0 L671.5,619.0 Z" fill="#526c86"/>
+<path d="M780,626 L780,527" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M780,527 L783.5,534.0 L776.5,534.0 Z" fill="#526c86"/>
+<path d="M1009,392 L1009,166" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1009,166 L1012.5,173.0 L1005.5,173.0 Z" fill="#526c86"/>
+<path d="M1100,166 L1100,392" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M1100,392 L1096.5,385.0 L1103.5,385.0 Z" fill="#526c86"/>
+<rect x="99.140625" y="70" width="133.71875" height="14" fill="#fff"/>
+<text x="166" y="81" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Scenario and run inputs</text>
+<rect x="282.984375" y="283.0" width="107.03125" height="14" fill="#fff"/>
+<text x="336.5" y="294.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Telemetry samples</text>
+<rect x="532.484375" y="126" width="127.03125" height="14" fill="#fff"/>
+<text x="596" y="137" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Samples and run state</text>
+<rect x="457.8125" y="440" width="128.375" height="14" fill="#fff"/>
+<text x="522" y="451" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Events and projections</text>
+<rect x="843.828125" y="440" width="78.34375" height="14" fill="#fff"/>
+<text x="883" y="451" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Query results</text>
+<rect x="666.484375" y="552" width="87.03125" height="14" fill="#fff"/>
+<text x="710" y="563" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Live snapshots</text>
+<rect x="610.15625" y="590" width="51.6875" height="14" fill="#fff"/>
+<text x="636" y="601" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Records</text>
+<rect x="786.4921875" y="590" width="69.015625" height="14" fill="#fff"/>
+<text x="821" y="601" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">Stored data</text>
+<rect x="845.9453125" y="254" width="160.109375" height="14" fill="#fff"/>
+<text x="926" y="265" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">REST JSON and WS frames</text>
+<rect x="1058.265625" y="302" width="81.46875" height="14" fill="#fff"/>
+<text x="1099" y="313" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">REST queries</text>
+</svg>

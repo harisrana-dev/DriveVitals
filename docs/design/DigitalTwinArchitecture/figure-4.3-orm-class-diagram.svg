@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="781" viewBox="0 0 1100 781">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="23" text-anchor="start" fill="#162e48">Figure 4.3  Principal ORM aggregates</text>
+<text x="20" y="52" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="start" fill="#162e48">Selected attributes and associations from the report’s class diagram.</text>
+<rect x="25" y="98" width="190" height="94" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="120.0" y="134.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">SimulationScenario</text>
+<text x="120.0" y="150.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">scenario_id, name, status</text>
+<text x="120.0" y="166.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">duration_seconds, speed, seed</text>
+<rect x="264" y="98" width="162" height="94" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="345.0" y="134.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Route</text>
+<text x="345.0" y="150.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">route_id, name</text>
+<text x="345.0" y="166.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">estimated_distance_km</text>
+<rect x="466" y="98" width="167" height="94" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="549.5" y="134.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Driver</text>
+<text x="549.5" y="150.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">driver_id, name</text>
+<text x="549.5" y="166.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">license_number</text>
+<rect x="684" y="98" width="184" height="94" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="776.0" y="134.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Vehicle</text>
+<text x="776.0" y="150.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">vehicle_id, VIN</text>
+<text x="776.0" y="166.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">registration_number</text>
+<rect x="25" y="289" width="175" height="104" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="112.5" y="330.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">SimulationRun</text>
+<text x="112.5" y="346.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">run_id, status, seed</text>
+<text x="112.5" y="362.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">start_time, end_time</text>
+<rect x="240" y="289" width="165" height="104" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="322.5" y="330.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Assignment</text>
+<text x="322.5" y="346.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">assignment_id</text>
+<text x="322.5" y="362.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">name, is_active</text>
+<rect x="457" y="289" width="168" height="104" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="541.0" y="322.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Trip</text>
+<text x="541.0" y="338.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">trip_id, status</text>
+<text x="541.0" y="354.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">start_time, end_time</text>
+<text x="541.0" y="370.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">distance_km, trip_score</text>
+<rect x="663" y="289" width="171" height="104" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="748.5" y="330.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">DriverStatistics</text>
+<text x="748.5" y="346.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">driver_id</text>
+<text x="748.5" y="362.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">total_trips, scores</text>
+<rect x="880" y="289" width="190" height="104" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="975.0" y="330.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">VehicleHealth</text>
+<text x="975.0" y="346.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">vehicle_id</text>
+<text x="975.0" y="362.0" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">overall and subsystem scores</text>
+<rect x="199" y="535" width="174" height="99" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="286.0" y="573.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">TelemetrySample</text>
+<text x="286.0" y="589.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">sample_id, timestamp</text>
+<text x="286.0" y="605.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">speed_kmh, rpm</text>
+<rect x="418" y="535" width="174" height="99" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="505.0" y="573.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">BehaviourEvent</text>
+<text x="505.0" y="589.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">behaviour_event_id</text>
+<text x="505.0" y="605.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">event_type, severity</text>
+<rect x="636" y="535" width="173" height="99" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="722.5" y="573.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">Alert</text>
+<text x="722.5" y="589.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">alert_id, alert_type</text>
+<text x="722.5" y="605.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">severity, status</text>
+<rect x="875" y="535" width="195" height="99" rx="5" fill="#fff" stroke="#829bb5"/>
+<text x="972.5" y="573.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="700" font-size="14" text-anchor="middle" fill="#162e48">MaintenanceRecord</text>
+<text x="972.5" y="589.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">maintenance_record_id</text>
+<text x="972.5" y="605.5" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="13" text-anchor="middle" fill="#162e48">component, priority, status</text>
+<text x="550" y="693" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="14" text-anchor="middle" fill="#162e48">Shared primary-key companions  ·  VehicleHealth and DriverStatistics</text>
+<path d="M112,192 L112,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M182,192 L182,234 L267,234 L267,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M323,192 L323,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M374,192 L374,242 L490,242 L490,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M487,192 L487,210 L353,210 L353,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M545,192 L545,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M604,192 L604,223 L726,223 L726,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M702,192 L702,257 L382,257 L382,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M754,192 L754,273 L583,273 L583,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M804,192 L804,242 L959,242 L959,289" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M844,192 L844,510 L754,510 L754,535" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M868,133 L1084,133 L1084,581 L1070,581" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M477,393 L477,455 L286,455 L286,535" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M522,393 L522,535" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<path d="M600,393 L600,470 L707,470 L707,535" fill="none" stroke="#526c86" stroke-width="1.35"/>
+<rect x="121.828125" y="239" width="30.34375" height="14" fill="#fff"/>
+<text x="137" y="250" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">runs</text>
+<rect x="183.8125" y="214" width="144.375" height="14" fill="#fff"/>
+<text x="256" y="225" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">scenarios ↔ assignments</text>
+<rect x="650.5" y="201" width="53.0" height="14" fill="#fff"/>
+<text x="677" y="212" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">statistics</text>
+<rect x="902.15625" y="223" width="39.6875" height="14" fill="#fff"/>
+<text x="922" y="234" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">health</text>
+<rect x="794.828125" y="488" width="36.34375" height="14" fill="#fff"/>
+<text x="813" y="499" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">alerts</text>
+<rect x="920.4765625" y="114" width="119.046875" height="14" fill="#fff"/>
+<text x="980" y="125" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">maintenance records</text>
+<rect x="321.1484375" y="434" width="107.703125" height="14" fill="#fff"/>
+<text x="375" y="445" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">telemetry_samples</text>
+<rect x="471.140625" y="472" width="101.71875" height="14" fill="#fff"/>
+<text x="522" y="483" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">behaviour_events</text>
+<rect x="651.828125" y="448" width="36.34375" height="14" fill="#fff"/>
+<text x="670" y="459" font-family="Arial,Liberation Sans,sans-serif" font-weight="400" font-size="12" text-anchor="middle" fill="#162e48">alerts</text>
+</svg>
